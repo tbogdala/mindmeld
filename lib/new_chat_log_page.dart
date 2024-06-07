@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:developer';
 
 import 'chat_log.dart';
+import 'config_models.dart';
 
 class NewChatLogUserData {
   final String modelFilepath;
@@ -13,7 +14,13 @@ class NewChatLogUserData {
 }
 
 class NewChatLogPage extends StatefulWidget {
-  const NewChatLogPage({super.key});
+  final ConfigModelFiles configModelFiles;
+  final void Function(ConfigModelFiles) onConfigModelFilesChange;
+
+  const NewChatLogPage(
+      {super.key,
+      required this.configModelFiles,
+      required this.onConfigModelFilesChange});
 
   @override
   State<NewChatLogPage> createState() => _NewChatLogPageState();
@@ -24,7 +31,9 @@ class _NewChatLogPageState extends State<NewChatLogPage> {
 
   late List<String> promptFormatOptions;
   late String selectedPromptFormatOption;
-  String selectedModelFilepath = "";
+
+  late List<String> modelFileOptions;
+  late String selectedModelFileOption;
 
   @override
   void dispose() {
@@ -36,9 +45,14 @@ class _NewChatLogPageState extends State<NewChatLogPage> {
   void initState() {
     super.initState();
 
+    // build the data for the prompt format dropdown
     promptFormatOptions =
         ModelPromptStyle.values.map((v) => v.nameAsString()).toList();
     selectedPromptFormatOption = promptFormatOptions[0];
+
+    // build the data for the model dropdown to select already imported models
+    modelFileOptions = widget.configModelFiles.modelFiles.keys.toList();
+    selectedModelFileOption = modelFileOptions.first;
   }
 
   @override
@@ -54,33 +68,44 @@ class _NewChatLogPageState extends State<NewChatLogPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                  'First, choose an AI neural net model file to load by pressing the \'Select Model File\' button and browsing to an appropriate file.'),
-              const SizedBox(height: 8),
-              Text('Model: $selectedModelFilepath'),
-              const SizedBox(height: 8),
-              FilledButton(
-                child: const Text('Select AI Model File'),
-                onPressed: () async {
-                  try {
-                    FilePickerResult? result = await FilePicker.platform
-                        .pickFiles(
-                            dialogTitle: "Load Model File",
-                            type: FileType.any,
-                            allowMultiple: false,
-                            allowCompression: false);
-                    log("await returned");
-                    if (result != null) {
-                      setState(() {
-                        selectedModelFilepath = result.files.first.path!;
-                        log("selected file: $selectedModelFilepath");
-                      });
-                    }
-                  } catch (e) {
-                    log("Excemption from the file picker: $e");
-                  }
+                  'First, select an AI Model that has already been imported to use for this chatlog.'),
+              const SizedBox(height: 16),
+              DropdownMenu(
+                initialSelection: selectedModelFileOption,
+                dropdownMenuEntries: modelFileOptions
+                    .map((option) =>
+                        DropdownMenuEntry(value: option, label: option))
+                    .toList(),
+                onSelected: (value) {
+                  setState(() {
+                    selectedModelFileOption = value as String;
+                  });
                 },
               ),
               const SizedBox(height: 8),
+              // FilledButton(
+              //   child: const Text('Import a New AI Model'),
+              //   onPressed: () async {
+              //     try {
+              //       FilePickerResult? result = await FilePicker.platform
+              //           .pickFiles(
+              //               dialogTitle: "Load Model File",
+              //               type: FileType.any,
+              //               allowMultiple: false,
+              //               allowCompression: false);
+              //       log("await returned");
+              //       if (result != null) {
+              //         setState(() {
+              //           final selectedModelFilepath = result.files.first.path!;
+              //           log("selected file: $selectedModelFilepath");
+              //         });
+              //       }
+              //     } catch (e) {
+              //       log("Excemption from the file picker: $e");
+              //     }
+              //   },
+              // ),
+              // const SizedBox(height: 8),
               const Divider(),
               const SizedBox(height: 8),
               const Text(
@@ -115,8 +140,11 @@ class _NewChatLogPageState extends State<NewChatLogPage> {
                 child: FilledButton(
                   child: const Text('Create Chatlog'),
                   onPressed: () {
-                    var result = NewChatLogUserData(selectedModelFilepath,
-                        logNameController.text, selectedPromptFormatOption);
+                    var result = NewChatLogUserData(
+                        widget.configModelFiles
+                            .modelFiles[selectedModelFileOption]!,
+                        logNameController.text,
+                        selectedPromptFormatOption);
                     Navigator.pop(context, result);
                   },
                 ),

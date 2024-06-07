@@ -24,6 +24,8 @@
 
 *   iOS builds need to have the binaries built manually first.
 
+*   `dart run build_runner build` to update the json serializable code.
+
 ```bash
 cd packages/woolydart/src/llama.cpp
 mkdir build-ios
@@ -38,8 +40,30 @@ install_name_tool -id @rpath/libllama.framework/libllama ios/Frameworks/libllama
 
     Looks like ios-cmake will be needed, but I've removed it from the `packages` folder for now.
 
+#### Models to explore:
+
+https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF   (tinychat)
+https://huggingface.co/stabilityai/stablelm-zephyr-3b           (zephyr)
+https://huggingface.co/NousResearch/Nous-Capybara-3B-V1.9       (chatml)
+https://huggingface.co/tsunemoto/TinyDolphin-2.8-1.1b-GGUF      (chatml probably)
+https://huggingface.co/rhysjones/phi-2-orange-v2                (chatml)
+https://huggingface.co/cognitivecomputations/dolphin-2_6-phi-2  (chatml)
+https://huggingface.co/BeaverAI/Cream-Phi-3-4B-v1.1-GGUF        (phi3?)
+
+Configurations can be consulted from the LM Studio repo:
+https://github.com/lmstudio-ai/configs
+
+#### TODO
+
 * Need to break apart the new chat log page to have model setup on it's own page.
 * Model setup should be how models are copied over ('installed') with the file picker
   and the formatting set. Then in the new chat log page, the configured model can just be
   chosen from a drop down.
 * Add avatar pictures to the chat log and to be used in the AppBar for the chat log page
+* Timestamp messages in the chat log?
+* Three-dot menu next to messages - or a swipe gesture - for editing/regenerate/continue/delete options
+* Low nBatch ruined something in llama_decode somewhere in the bindings. Batch of 8 limited incoming prompt to 166 characters.
+* flexible prompt formatter, maybe similar to lm studio?
+* think about how to deal with extra messages getting sent while one is being predicted.
+* Provide a text hint as to how to add more models in the onboarding page.
+* BUG: make sure chat logs with duplicate names can't be made

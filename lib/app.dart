@@ -1,11 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'dart:developer';
 
-import 'chat_log_page.dart';
-import 'new_chat_log_page.dart';
 import 'chat_log.dart';
+import 'chat_log_page.dart';
+import 'config_models.dart';
+import 'new_chat_log_page.dart';
+import 'onboarding_page.dart';
 
 class App extends StatefulWidget {
+  final String appTitle = 'MindMeld';
+
   const App({super.key});
 
   @override
@@ -14,23 +20,78 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   List<ChatLog> chatLogs = [];
+  ConfigModelFiles? configModelFiles;
 
   @override
   void initState() {
     super.initState();
+
+    ConfigModelFiles.loadFromConfigFile().then((v) {
+      setState(() {
+        configModelFiles = v;
+      });
+    });
+
+    ChatLog.ensureLogsFolderExists().then((_) {});
+    ChatLog.getLogsFolder().then((chatLogFolder) async {
+      try {
+        var d = Directory(chatLogFolder);
+        await for (final entity in d.list()) {
+          if (entity is File && entity.path.endsWith(".json")) {
+            var newChatLog = await ChatLog.loadFromFile(entity.path);
+            if (newChatLog != null) {
+              setState(() {
+                chatLogs.add(newChatLog!);
+              });
+            }
+          }
+        }
+      } catch (e) {
+        log("Failed to load all the chat files: $e");
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (configModelFiles == null) {
+      return MaterialApp(
+        home: Builder(builder: buildOnboarding),
+      );
+    } else {
+      return MaterialApp(
+        home: Builder(builder: buildHomepage),
+      );
+    }
+  }
+
+  Widget buildOnboarding(BuildContext context) {
     return MaterialApp(
-      home: Builder(builder: buildHomepage),
-    );
+        title: widget.appTitle,
+        theme: ThemeData(),
+        darkTheme: ThemeData.dark(),
+        themeMode: ThemeMode.system,
+
+        // we use a new Builder here so that the theme choice above are applied
+        // for the context object.
+        home: Builder(builder: (context) {
+          return Scaffold(
+              appBar: AppBar(
+                title: Text(widget.appTitle),
+              ),
+              body: OnboardingPage(
+                onNewConfigModelFiles: (newConfigModelFiles) {
+                  setState(() {
+                    updateConfigModelFiles(newConfigModelFiles);
+                  });
+                },
+              ));
+        }));
   }
 
   Widget buildHomepage(BuildContext context) {
-    const String appTitle = 'MindMeld';
     return MaterialApp(
-      title: appTitle,
+      title: widget.appTitle,
       theme: ThemeData(),
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
@@ -40,7 +101,7 @@ class _AppState extends State<App> {
       home: Builder(builder: (context) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text(appTitle),
+            title: Text(widget.appTitle),
           ),
           body: Padding(
               padding: const EdgeInsets.all(16),
@@ -79,7 +140,15 @@ class _AppState extends State<App> {
               final result = await Navigator.push<NewChatLogUserData>(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const NewChatLogPage()));
+                      builder: (context) => NewChatLogPage(
+                            configModelFiles:
+                                configModelFiles!, // should only get to this widget if we have this data
+                            onConfigModelFilesChange: (newConfigModelFiles) {
+                              setState(() {
+                                updateConfigModelFiles(newConfigModelFiles);
+                              });
+                            },
+                          )));
               if (result != null) {
                 var newChatLog = ChatLog(
                     result.chatlogName,
@@ -94,6 +163,7 @@ class _AppState extends State<App> {
 
                 setState(() {
                   chatLogs.add(newChatLog);
+                  newChatLog.saveToFile();
                 });
               }
             },
@@ -102,5 +172,15 @@ class _AppState extends State<App> {
         );
       }),
     );
+  }
+
+  void updateConfigModelFiles(ConfigModelFiles newConfigModelFiles) async {
+    // update our internal variable first
+    configModelFiles = newConfigModelFiles;
+
+    // now write the new data out to our configuration file
+    await configModelFiles!.saveJsonToConfigFile();
+
+    log('Saved ConfigModelFiles out to JSON config file.');
   }
 }
