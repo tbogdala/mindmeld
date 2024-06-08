@@ -76,4 +76,4 @@ https://github.com/lmstudio-ai/configs
 * Launch icon
 * When app isn't focus, maybe send the user a notification?
 * BUG: backing out of log view while generating doesn't stop generation; will eventually show up in log, but feels awkward.
-* Sort chatlog list by recent use?
+* Sort chat log list by recent use?

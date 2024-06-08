@@ -268,6 +268,7 @@ class _ChatLogPageState extends State<ChatLogPage>
                       messageBeingEdited = null;
                       newMessgeController.clear();
                     });
+                    await widget.chatLog.saveToFile();
                   } else {
                     // We're wanting to send a new message, so add it to
                     // the log and start generating a new message.
