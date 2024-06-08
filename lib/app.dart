@@ -41,7 +41,7 @@ class _AppState extends State<App> {
             var newChatLog = await ChatLog.loadFromFile(entity.path);
             if (newChatLog != null) {
               setState(() {
-                chatLogs.add(newChatLog!);
+                chatLogs.add(newChatLog);
               });
             }
           }
@@ -124,7 +124,7 @@ class _AppState extends State<App> {
                         subtitle:
                             Text('message count: ${thisLog.messages.length}'),
                         onTap: () {
-                          Navigator.push<NewChatLogUserData>(
+                          Navigator.push(
                               context,
                               MaterialPageRoute(
                                   builder: (context) =>
@@ -137,7 +137,7 @@ class _AppState extends State<App> {
               )),
           floatingActionButton: FloatingActionButton(
             onPressed: () async {
-              final result = await Navigator.push<NewChatLogUserData>(
+              final newChatLog = await Navigator.push<ChatLog>(
                   context,
                   MaterialPageRoute(
                       builder: (context) => NewChatLogPage(
@@ -149,17 +149,9 @@ class _AppState extends State<App> {
                               });
                             },
                           )));
-              if (result != null) {
-                var newChatLog = ChatLog(
-                    result.chatlogName,
-                    result.modelFilepath,
-                    modelPromptStyleFromString(result.promptFormat));
-
+              if (newChatLog != null) {
                 // FIXME: no safety nets on making sure a model file was actually selected.
                 // there's a delay because it haas to copy it over to the app storage...
-                log('Main chatlog select screen got a new log named: ${newChatLog.name}');
-                log('Selected gguf: ${newChatLog.modelFilepath}');
-                log('Model prompt format: ${newChatLog.modelPromptStyle.nameAsString()}');
 
                 setState(() {
                   chatLogs.add(newChatLog);

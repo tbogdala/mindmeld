@@ -44,6 +44,8 @@ class ModelPromptConfig {
   late String preSystemSuffix;
   late String userPrefix;
   late String userSuffix;
+  late String aiPrefix;
+  late String aiSuffix;
   late List<String> stopPhrases;
 
   ModelPromptConfig.alpaca() {
@@ -53,7 +55,9 @@ class ModelPromptConfig {
     preSystemPrefix = "";
     preSystemSuffix = "";
     userPrefix = "\n### Instruction:\n";
-    userSuffix = "\n### Response:\n";
+    userSuffix = "";
+    aiPrefix = "\n### Response:\n";
+    aiSuffix = "";
     stopPhrases = ["### Instruction:"];
   }
 
@@ -61,9 +65,11 @@ class ModelPromptConfig {
     name = "ChatML";
     system = "Perform the task to the best of your ability.";
     preSystemPrefix = "<|im_start|>system\n";
-    preSystemSuffix = "";
-    userPrefix = "<|im_end|>\n<|im_start|>user\n";
-    userSuffix = "<|im_end|>\n<|im_start|>assistant\n";
+    preSystemSuffix = "<|im_end|>\n";
+    userPrefix = "<|im_start|>user\n";
+    userSuffix = "<|im_end|>\n";
+    aiPrefix = "<|im_start|>assistant\n";
+    aiSuffix = "<|im_end|>\n";
     stopPhrases = [
       "<|im_start|>",
       "<|im_end|>",
@@ -76,7 +82,9 @@ class ModelPromptConfig {
     preSystemPrefix = "<|system|>\n";
     preSystemSuffix = "<|end|>\n";
     userPrefix = "<|user|>\n";
-    userSuffix = "<|end|>\n<|assistant|>\n";
+    userSuffix = "<|end|>\n";
+    aiPrefix = "<|assistant|>\n";
+    aiSuffix = "<|end|>\n";
     stopPhrases = ["<|end|>", "<|user|>"];
   }
 
@@ -84,9 +92,11 @@ class ModelPromptConfig {
     name = "TinyChat-Zephyr";
     system = "";
     preSystemPrefix = "<|system|>\n";
-    preSystemSuffix = "";
-    userPrefix = "\n<|user|>\n";
-    userSuffix = "\n<|assistant|>\n";
+    preSystemSuffix = "\n";
+    userPrefix = "<|user|>\n";
+    userSuffix = "\n";
+    aiPrefix = "<|assistant|>\n";
+    aiSuffix = "\n";
     stopPhrases = ["<|system|>", "<|user|>"];
   }
 
@@ -96,8 +106,10 @@ class ModelPromptConfig {
         "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions.";
     preSystemPrefix = "";
     preSystemSuffix = "\n\n";
-    userPrefix = "USER:";
-    userSuffix = "ASSISTANT:";
+    userPrefix = "USER: ";
+    userSuffix = "\n";
+    aiPrefix = "ASSISTANT: ";
+    aiSuffix = "\n";
     stopPhrases = ["USER:"];
   }
 
@@ -106,8 +118,10 @@ class ModelPromptConfig {
     system = "";
     preSystemPrefix = "";
     preSystemSuffix = "";
-    userPrefix = "\n<|user|>\n";
-    userSuffix = "<|endoftext|>\n<|assistant|>\n";
+    userPrefix = "<|user|>\n";
+    userSuffix = "<|endoftext|>\n";
+    aiPrefix = "<|assistant|>\n";
+    aiSuffix = "<|endoftext|>\n";
     stopPhrases = ["<|system|>", "<|user|>", "<|endoftext|>"];
   }
 }
@@ -116,13 +130,15 @@ class ModelPromptConfig {
 class ChatLogMessage {
   String senderName;
   String message;
+  bool humanSent;
   DateTime messageCreatedAt = DateTime.now();
 
   // how long it took to generate the message in tokens / s
   // null if the message wasn't generated with AI
   double? generationSpeedTPS;
 
-  ChatLogMessage(this.senderName, this.message, this.generationSpeedTPS);
+  ChatLogMessage(
+      this.senderName, this.message, this.humanSent, this.generationSpeedTPS);
 
   factory ChatLogMessage.fromJson(Map<String, dynamic> json) {
     return _$ChatLogMessageFromJson(json);
@@ -136,11 +152,18 @@ class ChatLogMessage {
 @JsonSerializable()
 class ChatLog {
   String name;
+  String humanName;
+  String? humanDescription;
+  String aiName;
+  String? aiDescription;
+  String? aiPersonality;
+  String? context;
   String modelFilepath;
   ModelPromptStyle modelPromptStyle;
   List<ChatLogMessage> messages = [];
 
-  ChatLog(this.name, this.modelFilepath, this.modelPromptStyle);
+  ChatLog(this.name, this.humanName, this.aiName, this.modelFilepath,
+      this.modelPromptStyle);
 
   static Future<String> getLogsFolder() async {
     final directory = await getApplicationDocumentsDirectory();
@@ -208,15 +231,15 @@ class ChatLog {
     // ballpark esimating for building up a prompt
     const charsPerToken = 3.5;
     final estCharBudget = tokenBudget * charsPerToken;
-    final aiName = "AI";
 
-    // TODO: Eventually make this configurable
-    const String sysMsg = '';
+    var promptConfig = modelPromptStyle.getPromptConfig();
 
     // bulid the whole system preamble
-    var promptConfig = modelPromptStyle.getPromptConfig();
+    final system =
+        "${promptConfig.system}$context\n\n$humanName's Description:\n$humanDescription\n\n$aiName's Description:\n$aiDescription\n$aiName's Personality: $aiPersonality\n";
+
     final String preamble =
-        promptConfig.preSystemPrefix + sysMsg + promptConfig.preSystemSuffix;
+        promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
 
     // start keeping a running estimate of how many characters we have left to use
     var remainingBudget = estCharBudget - preamble.length;
@@ -224,11 +247,12 @@ class ChatLog {
     List<String> msgBuffer = [];
     for (final m in messages.reversed) {
       var formattedMsg = "";
-      if (m.senderName == "AI") {
-        formattedMsg = "${m.senderName}: ${m.message}";
+      if (m.humanSent) {
+        formattedMsg =
+            "${promptConfig.userPrefix}$humanName: ${m.message}${promptConfig.userSuffix}";
       } else {
         formattedMsg =
-            "${promptConfig.userPrefix}${m.senderName}: ${m.message}${promptConfig.userSuffix}";
+            "${promptConfig.aiPrefix}$aiName: ${m.message}${promptConfig.aiSuffix}";
       }
 
       if (remainingBudget - formattedMsg.length < 0) {
@@ -243,7 +267,8 @@ class ChatLog {
     }
 
     // reverse the msgBuffer to get the correct ordering for the prompt
-    final budgettedChatlog = "${msgBuffer.reversed.join()}$aiName: ";
+    final budgettedChatlog =
+        "${msgBuffer.reversed.join()}${promptConfig.aiPrefix}$aiName: ";
     final prompt = preamble + budgettedChatlog;
 
     return prompt;

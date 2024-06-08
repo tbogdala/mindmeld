@@ -1,17 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'dart:developer';
 
 import 'chat_log.dart';
 import 'config_models.dart';
-
-class NewChatLogUserData {
-  final String modelFilepath;
-  final String chatlogName;
-  final String promptFormat;
-
-  NewChatLogUserData(this.modelFilepath, this.chatlogName, this.promptFormat);
-}
 
 class NewChatLogPage extends StatefulWidget {
   final ConfigModelFiles configModelFiles;
@@ -28,6 +18,8 @@ class NewChatLogPage extends StatefulWidget {
 
 class _NewChatLogPageState extends State<NewChatLogPage> {
   final logNameController = TextEditingController();
+  final userNameController = TextEditingController();
+  final aiNameController = TextEditingController();
 
   late List<String> promptFormatOptions;
   late String selectedPromptFormatOption;
@@ -38,6 +30,8 @@ class _NewChatLogPageState extends State<NewChatLogPage> {
   @override
   void dispose() {
     logNameController.dispose();
+    userNameController.dispose();
+    aiNameController.dispose();
     super.dispose();
   }
 
@@ -53,6 +47,9 @@ class _NewChatLogPageState extends State<NewChatLogPage> {
     // build the data for the model dropdown to select already imported models
     modelFileOptions = widget.configModelFiles.modelFiles.keys.toList();
     selectedModelFileOption = modelFileOptions.first;
+
+    userNameController.text = "User";
+    aiNameController.text = "Assistant";
   }
 
   @override
@@ -135,16 +132,32 @@ class _NewChatLogPageState extends State<NewChatLogPage> {
                     prefixIcon: Icon(Icons.account_box),
                     labelText: 'New Chatlog Name'),
               ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: userNameController,
+                decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.person), labelText: 'Your Name'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: aiNameController,
+                decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.precision_manufacturing),
+                    labelText: 'AI Name'),
+              ),
               const SizedBox(height: 32),
               Center(
                 child: FilledButton(
                   child: const Text('Create Chatlog'),
                   onPressed: () {
-                    var result = NewChatLogUserData(
+                    var result = ChatLog(
+                        logNameController.text,
+                        userNameController.text,
+                        aiNameController.text,
                         widget.configModelFiles
                             .modelFiles[selectedModelFileOption]!,
-                        logNameController.text,
-                        selectedPromptFormatOption);
+                        modelPromptStyleFromString(selectedPromptFormatOption));
+
                     Navigator.pop(context, result);
                   },
                 ),

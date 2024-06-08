@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
+import 'package:mindmeld/configure_chat_log_page.dart';
 import 'package:woolydart/woolydart.dart';
 import 'dart:developer';
 import 'package:format/format.dart';
@@ -41,16 +42,16 @@ class _ChatLogPageState extends State<ChatLogPage>
     )..addListener(() {
         setState(() {});
       });
-    circularProgresAnimController.repeat(reverse: true);
+    circularProgresAnimController.stop();
 
     super.initState();
   }
 
-  Color getMessageDecorationColor(BuildContext context, bool forUserMessage) {
+  Color getMessageDecorationColor(BuildContext context, bool forAIMessage) {
     if (MediaQuery.of(context).platformBrightness == Brightness.dark) {
-      return (forUserMessage ? Colors.grey.shade800 : Colors.blue.shade800);
+      return (forAIMessage ? Colors.grey.shade800 : Colors.blue.shade800);
     } else {
-      return (forUserMessage ? Colors.grey.shade200 : Colors.blue.shade200);
+      return (forAIMessage ? Colors.grey.shade200 : Colors.blue.shade200);
     }
   }
 
@@ -65,7 +66,7 @@ class _ChatLogPageState extends State<ChatLogPage>
   String formatDurationString(int differenceInSeconds) {
     // Handle cases for seconds, minutes, hours
     if (differenceInSeconds < 60) {
-      return "$differenceInSeconds seconds ago";
+      return "less than a minute ago";
     } else if (differenceInSeconds < 3600) {
       int minutes = differenceInSeconds ~/ 60;
       return "$minutes minutes ago";
@@ -73,6 +74,51 @@ class _ChatLogPageState extends State<ChatLogPage>
       int hours = differenceInSeconds ~/ 3600;
       return "$hours hours ago";
     }
+  }
+
+  void _showModalLongPressMessageBottomSheet(
+      BuildContext context, ChatLogMessage msg) {
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.delete),
+                    label: Text("Delete Message",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    onPressed: () {
+                      setState(() {
+                        widget.chatLog.messages.remove(msg);
+                        widget.chatLog.saveToFile();
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.edit),
+                    label: Text("Edit Message",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    onPressed: () {
+                      log("Pressed Edit button");
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.redo),
+                    label: Text("Regenerate Message",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    onPressed: () {
+                      log("Pressed Regenerate button");
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ));
+        });
   }
 
   Widget buildMessageList(BuildContext context) {
@@ -90,29 +136,33 @@ class _ChatLogPageState extends State<ChatLogPage>
             reverseMessages.elementAt(index); // widget.chatLog.messages[index];
         final msgTimeDiff = now.difference(msg.messageCreatedAt);
         final timeDiffString = formatDurationString(msgTimeDiff.inSeconds);
-        return Container(
-            padding: const EdgeInsets.all(16),
-            child: Align(
-                alignment: (msg.senderName == "AI"
-                    ? Alignment.topLeft
-                    : Alignment.topRight),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: getMessageDecorationColor(
-                              context, msg.senderName == "AI"),
-                        ),
-                        padding: const EdgeInsets.all(16),
-                        child: Text(msg.message)),
-                    (msg.generationSpeedTPS == null
-                        ? Text(format('{})', timeDiffString))
-                        : Text(format('{} ({:,.2n} T/s)', timeDiffString,
-                            msg.generationSpeedTPS!))),
-                  ],
-                )));
+        return GestureDetector(
+          child: Container(
+              // different padding here is what pushes the chat bubbles to either side.
+              padding: (msg.humanSent
+                  ? const EdgeInsets.only(left: 32, top: 8, bottom: 8)
+                  : const EdgeInsets.only(right: 32, top: 8, bottom: 8)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        color:
+                            getMessageDecorationColor(context, !msg.humanSent),
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Text(msg.message)),
+                  (msg.generationSpeedTPS == null
+                      ? Text(format('{}', timeDiffString))
+                      : Text(format('{} ({:,.2n} T/s)', timeDiffString,
+                          msg.generationSpeedTPS!))),
+                ],
+              )),
+          onLongPress: () {
+            _showModalLongPressMessageBottomSheet(context, msg);
+          },
+        );
       },
     );
   }
@@ -144,13 +194,14 @@ class _ChatLogPageState extends State<ChatLogPage>
                     // update the UI with the new chatlog message
                     setState(() {
                       newMessgeController.clear();
-                      widget.chatLog.messages
-                          .add(ChatLogMessage("Human", newMsg, null));
+                      widget.chatLog.messages.add(ChatLogMessage(
+                          widget.chatLog.humanName, newMsg, true, null));
                       messageGenerationInProgress = true;
+                      circularProgresAnimController.repeat(reverse: true);
                     });
 
                     // build the prompt to send off tot he ai
-                    const int tokenBudget = 1024; //TODO: unhardcode this
+                    const int tokenBudget = 2048; //TODO: unhardcode this
                     final promptConfig =
                         widget.chatLog.modelPromptStyle.getPromptConfig();
                     final prompt = widget.chatLog.buildPrompt(tokenBudget);
@@ -169,14 +220,27 @@ class _ChatLogPageState extends State<ChatLogPage>
                         await receivePort.first as PredictReplyResult;
                     log("in the end we got $predictedOutput");
 
+                    for (final anti in promptConfig.stopPhrases) {
+                      if (predictedOutput.message.endsWith(anti)) {
+                        predictedOutput.message = predictedOutput.message
+                            .substring(
+                                0, predictedOutput.message.length - anti.length)
+                            .trim();
+                        break;
+                      }
+                    }
+
                     setState(() {
                       widget.chatLog.messages.add(ChatLogMessage(
-                          "AI",
+                          widget.chatLog.aiName,
                           predictedOutput.message.trim(),
+                          false,
                           predictedOutput.generationSpeedTPS));
                       widget.chatLog
                           .saveToFile()
                           .then((_) => messageGenerationInProgress = false);
+                      circularProgresAnimController.reset();
+                      circularProgresAnimController.stop();
                     });
                   }
                 },
@@ -192,9 +256,22 @@ class _ChatLogPageState extends State<ChatLogPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.chatLog.name),
-      ),
+      appBar: AppBar(title: Text(widget.chatLog.name), actions: [
+        IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () async {
+              await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ConfigureChatLogPage(
+                            chatLog: widget.chatLog,
+                          )));
+
+              // once we've returned from the chatlog configuration page
+              // save the log incase changes were made.
+              await widget.chatLog.saveToFile();
+            }),
+      ]),
       body: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(children: [

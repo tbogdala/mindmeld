@@ -67,3 +67,10 @@ https://github.com/lmstudio-ai/configs
 * think about how to deal with extra messages getting sent while one is being predicted.
 * Provide a text hint as to how to add more models in the onboarding page.
 * BUG: make sure chat logs with duplicate names can't be made
+* Should have copy icon next to chat log settings to copy scenario/desc and then paste icons in the sections.
+  Should confirm the pastes with a bottom sheet so that there's not accidental overrides.
+* Main screen should be a main menu where you can:
+    - chat
+    - manage models
+    - [tbd: group chat, games, etc]
+* Launch icon
