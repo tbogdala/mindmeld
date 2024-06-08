@@ -27,6 +27,9 @@ class _ChatLogPageState extends State<ChatLogPage>
   late AnimationController circularProgresAnimController;
   bool messageGenerationInProgress = false;
 
+  // set this to non-null when a messages is getting edditt
+  ChatLogMessage? messageBeingEdited;
+
   @override
   void dispose() {
     newMessgeController.dispose();
@@ -149,7 +152,11 @@ class _ChatLogPageState extends State<ChatLogPage>
                     label: Text("Edit Message",
                         style: Theme.of(context).textTheme.titleLarge),
                     onPressed: () {
-                      log("Pressed Edit button");
+                      setState(() {
+                        messageBeingEdited = msg;
+                        newMessgeController.text = msg.message;
+                      });
+
                       Navigator.pop(context);
                     },
                   ),
@@ -200,6 +207,15 @@ class _ChatLogPageState extends State<ChatLogPage>
                 children: [
                   Container(
                       decoration: BoxDecoration(
+                        border: (messageBeingEdited != msg
+                            ? null
+                            : const Border(
+                                bottom:
+                                    BorderSide(width: 4, color: Colors.grey),
+                                top: BorderSide(width: 4, color: Colors.grey),
+                                left: BorderSide(width: 4, color: Colors.grey),
+                                right:
+                                    BorderSide(width: 4, color: Colors.grey))),
                         borderRadius: BorderRadius.circular(20),
                         color:
                             _getMessageDecorationColor(context, !msg.humanSent),
@@ -243,21 +259,36 @@ class _ChatLogPageState extends State<ChatLogPage>
               FloatingActionButton(
                 onPressed: () async {
                   final newMsg = newMessgeController.text;
-                  final chatLogMsg = ChatLogMessage(
-                      widget.chatLog.humanName, newMsg, true, null);
-                  if (newMsg.isNotEmpty) {
-                    // update the UI with the new chatlog message
-                    setState(() {
-                      newMessgeController.clear();
-                      widget.chatLog.messages.add(chatLogMsg);
-                    });
 
-                    // run the AI text generation
-                    await _generateAIMessage();
+                  if (messageBeingEdited != null) {
+                    // We're editing a message so simply update the message
+                    // and clear the editing 'flag'.
+                    setState(() {
+                      messageBeingEdited!.message = newMsg;
+                      messageBeingEdited = null;
+                      newMessgeController.clear();
+                    });
+                  } else {
+                    // We're wanting to send a new message, so add it to
+                    // the log and start generating a new message.
+                    final chatLogMsg = ChatLogMessage(
+                        widget.chatLog.humanName, newMsg, true, null);
+                    if (newMsg.isNotEmpty) {
+                      // update the UI with the new chatlog message
+                      setState(() {
+                        newMessgeController.clear();
+                        widget.chatLog.messages.add(chatLogMsg);
+                      });
+
+                      // run the AI text generation
+                      await _generateAIMessage();
+                    }
                   }
                 },
                 backgroundColor: _getPrimaryDecorationColor(context),
-                child: const Icon(Icons.reply, size: 18),
+                child: (messageBeingEdited == null
+                    ? const Icon(Icons.reply, size: 18)
+                    : const Icon(Icons.edit, size: 18)),
               )
           ],
         ),
