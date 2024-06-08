@@ -74,3 +74,5 @@ https://github.com/lmstudio-ai/configs
     - manage models
     - [tbd: group chat, games, etc]
 * Launch icon
+* When app isn't focus, maybe send the user a notification?
+* BUG: backing out of log view while generating doesn't stop generation; will eventually show up in log, but feels awkward.

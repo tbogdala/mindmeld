@@ -47,7 +47,7 @@ class _ChatLogPageState extends State<ChatLogPage>
     super.initState();
   }
 
-  Color getMessageDecorationColor(BuildContext context, bool forAIMessage) {
+  Color _getMessageDecorationColor(BuildContext context, bool forAIMessage) {
     if (MediaQuery.of(context).platformBrightness == Brightness.dark) {
       return (forAIMessage ? Colors.grey.shade800 : Colors.blue.shade800);
     } else {
@@ -55,7 +55,7 @@ class _ChatLogPageState extends State<ChatLogPage>
     }
   }
 
-  Color getPrimaryDecorationColor(BuildContext context) {
+  Color _getPrimaryDecorationColor(BuildContext context) {
     if (MediaQuery.of(context).platformBrightness == Brightness.dark) {
       return Colors.blue.shade800;
     } else {
@@ -63,7 +63,7 @@ class _ChatLogPageState extends State<ChatLogPage>
     }
   }
 
-  String formatDurationString(int differenceInSeconds) {
+  String _formatDurationString(int differenceInSeconds) {
     // Handle cases for seconds, minutes, hours
     if (differenceInSeconds < 60) {
       return "less than a minute ago";
@@ -74,6 +74,52 @@ class _ChatLogPageState extends State<ChatLogPage>
       int hours = differenceInSeconds ~/ 3600;
       return "$hours hours ago";
     }
+  }
+
+  Future<void> _generateAIMessage() async {
+    setState(() {
+      messageGenerationInProgress = true;
+      circularProgresAnimController.repeat(reverse: true);
+    });
+
+    // build the prompt to send off tot he ai
+    const int tokenBudget = 2048; //TODO: unhardcode this
+    final promptConfig = widget.chatLog.modelPromptStyle.getPromptConfig();
+    final prompt = widget.chatLog.buildPrompt(tokenBudget);
+    log("Prompt Built:");
+    log(prompt);
+
+    // run the text inference in an isolate
+    var receivePort = ReceivePort();
+    await Isolate.spawn(predictReply, [
+      receivePort.sendPort,
+      widget.chatLog.modelFilepath,
+      prompt,
+      promptConfig.stopPhrases
+    ]);
+    var predictedOutput = await receivePort.first as PredictReplyResult;
+
+    for (final anti in promptConfig.stopPhrases) {
+      if (predictedOutput.message.endsWith(anti)) {
+        predictedOutput.message = predictedOutput.message
+            .substring(0, predictedOutput.message.length - anti.length)
+            .trim();
+        break;
+      }
+    }
+
+    setState(() {
+      widget.chatLog.messages.add(ChatLogMessage(
+          widget.chatLog.aiName,
+          predictedOutput.message.trim(),
+          false,
+          predictedOutput.generationSpeedTPS));
+      widget.chatLog
+          .saveToFile()
+          .then((_) => messageGenerationInProgress = false);
+      circularProgresAnimController.reset();
+      circularProgresAnimController.stop();
+    });
   }
 
   void _showModalLongPressMessageBottomSheet(
@@ -107,21 +153,28 @@ class _ChatLogPageState extends State<ChatLogPage>
                       Navigator.pop(context);
                     },
                   ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.redo),
-                    label: Text("Regenerate Message",
-                        style: Theme.of(context).textTheme.titleLarge),
-                    onPressed: () {
-                      log("Pressed Regenerate button");
-                      Navigator.pop(context);
-                    },
-                  ),
+                  if (msg == widget.chatLog.messages.last)
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.redo),
+                      label: Text("Regenerate Message",
+                          style: Theme.of(context).textTheme.titleLarge),
+                      onPressed: () async {
+                        setState(() {
+                          widget.chatLog.messages.removeLast();
+                        });
+
+                        // run the AI text generation
+                        _generateAIMessage();
+
+                        Navigator.pop(context);
+                      },
+                    ),
                 ],
               ));
         });
   }
 
-  Widget buildMessageList(BuildContext context) {
+  Widget _buildMessageList(BuildContext context) {
     // we do a double reversal - messages and list - so they come out in the
     // intended order but the listview starts at the bottom (most recent).
     var reverseMessages = widget.chatLog.messages.reversed;
@@ -135,7 +188,7 @@ class _ChatLogPageState extends State<ChatLogPage>
         final msg =
             reverseMessages.elementAt(index); // widget.chatLog.messages[index];
         final msgTimeDiff = now.difference(msg.messageCreatedAt);
-        final timeDiffString = formatDurationString(msgTimeDiff.inSeconds);
+        final timeDiffString = _formatDurationString(msgTimeDiff.inSeconds);
         return GestureDetector(
           child: Container(
               // different padding here is what pushes the chat bubbles to either side.
@@ -149,7 +202,7 @@ class _ChatLogPageState extends State<ChatLogPage>
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         color:
-                            getMessageDecorationColor(context, !msg.humanSent),
+                            _getMessageDecorationColor(context, !msg.humanSent),
                       ),
                       padding: const EdgeInsets.all(16),
                       child: Text(msg.message)),
@@ -167,7 +220,7 @@ class _ChatLogPageState extends State<ChatLogPage>
     );
   }
 
-  Widget buildTextEntry(BuildContext context) {
+  Widget _buildTextEntry(BuildContext context) {
     return Align(
       alignment: Alignment.bottomLeft,
       child: Container(
@@ -190,61 +243,20 @@ class _ChatLogPageState extends State<ChatLogPage>
               FloatingActionButton(
                 onPressed: () async {
                   final newMsg = newMessgeController.text;
+                  final chatLogMsg = ChatLogMessage(
+                      widget.chatLog.humanName, newMsg, true, null);
                   if (newMsg.isNotEmpty) {
                     // update the UI with the new chatlog message
                     setState(() {
                       newMessgeController.clear();
-                      widget.chatLog.messages.add(ChatLogMessage(
-                          widget.chatLog.humanName, newMsg, true, null));
-                      messageGenerationInProgress = true;
-                      circularProgresAnimController.repeat(reverse: true);
+                      widget.chatLog.messages.add(chatLogMsg);
                     });
 
-                    // build the prompt to send off tot he ai
-                    const int tokenBudget = 2048; //TODO: unhardcode this
-                    final promptConfig =
-                        widget.chatLog.modelPromptStyle.getPromptConfig();
-                    final prompt = widget.chatLog.buildPrompt(tokenBudget);
-                    log("Prompt Built:");
-                    log(prompt);
-
-                    // run the text inference in an isolate
-                    var receivePort = ReceivePort();
-                    await Isolate.spawn(predictReply, [
-                      receivePort.sendPort,
-                      widget.chatLog.modelFilepath,
-                      prompt,
-                      promptConfig.stopPhrases
-                    ]);
-                    var predictedOutput =
-                        await receivePort.first as PredictReplyResult;
-                    log("in the end we got $predictedOutput");
-
-                    for (final anti in promptConfig.stopPhrases) {
-                      if (predictedOutput.message.endsWith(anti)) {
-                        predictedOutput.message = predictedOutput.message
-                            .substring(
-                                0, predictedOutput.message.length - anti.length)
-                            .trim();
-                        break;
-                      }
-                    }
-
-                    setState(() {
-                      widget.chatLog.messages.add(ChatLogMessage(
-                          widget.chatLog.aiName,
-                          predictedOutput.message.trim(),
-                          false,
-                          predictedOutput.generationSpeedTPS));
-                      widget.chatLog
-                          .saveToFile()
-                          .then((_) => messageGenerationInProgress = false);
-                      circularProgresAnimController.reset();
-                      circularProgresAnimController.stop();
-                    });
+                    // run the AI text generation
+                    await _generateAIMessage();
                   }
                 },
-                backgroundColor: getPrimaryDecorationColor(context),
+                backgroundColor: _getPrimaryDecorationColor(context),
                 child: const Icon(Icons.reply, size: 18),
               )
           ],
@@ -275,13 +287,13 @@ class _ChatLogPageState extends State<ChatLogPage>
       body: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(children: [
-            Expanded(child: buildMessageList(context)),
+            Expanded(child: _buildMessageList(context)),
             if (messageGenerationInProgress)
               CircularProgressIndicator(
                 value: circularProgresAnimController.value,
                 semanticsLabel: 'generating reply for AI',
               ),
-            buildTextEntry(context),
+            _buildTextEntry(context),
           ])),
     );
   }
