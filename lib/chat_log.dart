@@ -180,6 +180,7 @@ class ChatLogHyperparameters {
 
 @JsonSerializable()
 class ChatLog {
+  int version = 1;
   String name;
   String humanName;
   String? humanDescription;

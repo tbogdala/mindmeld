@@ -9,16 +9,16 @@ import 'config_models.dart';
 import 'new_chat_log_page.dart';
 import 'onboarding_page.dart';
 
-class App extends StatefulWidget {
+class ChatLogSelectPage extends StatefulWidget {
   final String appTitle = 'MindMeld';
 
-  const App({super.key});
+  const ChatLogSelectPage({super.key});
 
   @override
-  State<App> createState() => _AppState();
+  State<ChatLogSelectPage> createState() => _ChatLogSelectPageState();
 }
 
-class _AppState extends State<App> {
+class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
   List<ChatLog> chatLogs = [];
   ConfigModelFiles? configModelFiles;
 
