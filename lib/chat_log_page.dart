@@ -256,41 +256,48 @@ class _ChatLogPageState extends State<ChatLogPage>
             )),
             if (!messageGenerationInProgress) const SizedBox(width: 16),
             if (!messageGenerationInProgress)
-              FloatingActionButton(
-                onPressed: () async {
-                  final newMsg = newMessgeController.text;
+              GestureDetector(
+                  child: FloatingActionButton(
+                    onPressed: () async {
+                      final newMsg = newMessgeController.text;
 
-                  if (messageBeingEdited != null) {
-                    // We're editing a message so simply update the message
-                    // and clear the editing 'flag'.
-                    setState(() {
-                      messageBeingEdited!.message = newMsg;
-                      messageBeingEdited = null;
-                      newMessgeController.clear();
-                    });
-                    await widget.chatLog.saveToFile();
-                  } else {
-                    // We're wanting to send a new message, so add it to
-                    // the log and start generating a new message.
-                    final chatLogMsg = ChatLogMessage(
-                        widget.chatLog.humanName, newMsg, true, null);
-                    if (newMsg.isNotEmpty) {
-                      // update the UI with the new chatlog message
-                      setState(() {
-                        newMessgeController.clear();
-                        widget.chatLog.messages.add(chatLogMsg);
-                      });
+                      if (messageBeingEdited != null) {
+                        // We're editing a message so simply update the message
+                        // and clear the editing 'flag'.
+                        setState(() {
+                          messageBeingEdited!.message = newMsg;
+                          messageBeingEdited = null;
+                          newMessgeController.clear();
+                        });
+                        await widget.chatLog.saveToFile();
+                      } else {
+                        // We're wanting to send a new message, so add it to
+                        // the log and start generating a new message.
+                        if (newMsg.isNotEmpty) {
+                          final chatLogMsg = ChatLogMessage(
+                              widget.chatLog.humanName, newMsg, true, null);
+                          // update the UI with the new chatlog message
+                          setState(() {
+                            newMessgeController.clear();
+                            widget.chatLog.messages.add(chatLogMsg);
+                          });
 
-                      // run the AI text generation
-                      await _generateAIMessage();
-                    }
-                  }
-                },
-                backgroundColor: _getPrimaryDecorationColor(context),
-                child: (messageBeingEdited == null
-                    ? const Icon(Icons.reply, size: 18)
-                    : const Icon(Icons.edit, size: 18)),
-              )
+                          // send our message off to the AI for a reply
+                          await _generateAIMessage();
+                        }
+                      }
+                    },
+                    backgroundColor: _getPrimaryDecorationColor(context),
+                    child: (messageBeingEdited == null
+                        ? const Icon(Icons.reply, size: 18)
+                        : const Icon(Icons.edit, size: 18)),
+                  ),
+                  onLongPress: () async {
+                    // when a long press is detected we generate a new message from
+                    // the AI, regardless of what's going on with the input state
+                    // of the controls or anything else.
+                    await _generateAIMessage();
+                  }),
           ],
         ),
       ),
@@ -358,7 +365,7 @@ void predictReply(List<dynamic> args) {
     var nativeModelFilepath = modelFilepath.toNativeUtf8();
     var loadedModel = lib.wooly_load_model(
         nativeModelFilepath as Pointer<Char>,
-        1024, // ctx
+        0, // ctx size from the model
         -1, // seed
         true, // mlock
         true, // mmap
@@ -376,7 +383,7 @@ void predictReply(List<dynamic> args) {
 
     var nativePrompt = prompt.toNativeUtf8();
     var seed = -1;
-    var threads = 1;
+    var threads = 4;
     var tokens = 128;
     var topK = 40;
     var topP = 1.0;

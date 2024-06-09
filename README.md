@@ -56,14 +56,8 @@ https://github.com/lmstudio-ai/configs
 #### TODO
 
 * Need to break apart the new chat log page to have model setup on it's own page.
-* Model setup should be how models are copied over ('installed') with the file picker
-  and the formatting set. Then in the new chat log page, the configured model can just be
-  chosen from a drop down.
 * Add avatar pictures to the chat log and to be used in the AppBar for the chat log page
-* Timestamp messages in the chat log?
-* Three-dot menu next to messages - or a swipe gesture - for editing/regenerate/continue/delete options
 * Low nBatch ruined something in llama_decode somewhere in the bindings. Batch of 8 limited incoming prompt to 166 characters.
-* flexible prompt formatter, maybe similar to lm studio?
 * think about how to deal with extra messages getting sent while one is being predicted.
 * Provide a text hint as to how to add more models in the onboarding page.
 * BUG: make sure chat logs with duplicate names can't be made
@@ -77,3 +71,5 @@ https://github.com/lmstudio-ai/configs
 * When app isn't focus, maybe send the user a notification?
 * BUG: backing out of log view while generating doesn't stop generation; will eventually show up in log, but feels awkward.
 * Sort chat log list by recent use?
+* Long press of send button should 'impersonate' the AI instead if there's a message in the text box?
+* Continue support!
