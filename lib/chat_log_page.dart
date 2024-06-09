@@ -10,11 +10,14 @@ import 'dart:developer';
 import 'package:format/format.dart';
 
 import 'chat_log.dart';
+import 'config_models.dart';
 
 class ChatLogPage extends StatefulWidget {
   final ChatLog chatLog;
+  final ConfigModelFiles configModelFiles;
 
-  const ChatLogPage({super.key, required this.chatLog});
+  const ChatLogPage(
+      {super.key, required this.chatLog, required this.configModelFiles});
 
   @override
   State<ChatLogPage> createState() => _ChatLogPageState();
@@ -79,30 +82,39 @@ class _ChatLogPageState extends State<ChatLogPage>
     }
   }
 
-  Future<void> _generateAIMessage() async {
+  Future<void> _generateAIMessage(bool continueMsg) async {
     setState(() {
       messageGenerationInProgress = true;
       circularProgresAnimController.repeat(reverse: true);
     });
 
-    // build the prompt to send off tot he ai
+    // get the model filepath for the selected model
+    var modelFilepath =
+        widget.configModelFiles.modelFiles[widget.chatLog.modelName];
+
+    // build the prompt to send off to the ai
     const int tokenBudget = 2048; //TODO: unhardcode this
     final promptConfig = widget.chatLog.modelPromptStyle.getPromptConfig();
-    final prompt = widget.chatLog.buildPrompt(tokenBudget);
+    final prompt = widget.chatLog.buildPrompt(tokenBudget, continueMsg);
     log("Prompt Built:");
     log(prompt);
+
+    // add the human user's name to the stop phrases
+    List<String> stopPhrases = List.from(promptConfig.stopPhrases);
+    stopPhrases.add('${widget.chatLog.humanName}:');
 
     // run the text inference in an isolate
     var receivePort = ReceivePort();
     await Isolate.spawn(predictReply, [
       receivePort.sendPort,
-      widget.chatLog.modelFilepath,
+      modelFilepath,
       prompt,
-      promptConfig.stopPhrases
+      stopPhrases,
+      widget.chatLog.hyperparmeters,
     ]);
     var predictedOutput = await receivePort.first as PredictReplyResult;
 
-    for (final anti in promptConfig.stopPhrases) {
+    for (final anti in stopPhrases) {
       if (predictedOutput.message.endsWith(anti)) {
         predictedOutput.message = predictedOutput.message
             .substring(0, predictedOutput.message.length - anti.length)
@@ -112,16 +124,21 @@ class _ChatLogPageState extends State<ChatLogPage>
     }
 
     setState(() {
-      widget.chatLog.messages.add(ChatLogMessage(
-          widget.chatLog.aiName,
-          predictedOutput.message.trim(),
-          false,
-          predictedOutput.generationSpeedTPS));
-      widget.chatLog
-          .saveToFile()
-          .then((_) => messageGenerationInProgress = false);
-      circularProgresAnimController.reset();
-      circularProgresAnimController.stop();
+      if (!continueMsg) {
+        widget.chatLog.messages.add(ChatLogMessage(
+            widget.chatLog.aiName,
+            predictedOutput.message.trimLeft(),
+            false,
+            predictedOutput.generationSpeedTPS));
+      } else {
+        widget.chatLog.messages.last.message += predictedOutput.message;
+      }
+
+      widget.chatLog.saveToFile().then((_) {
+        messageGenerationInProgress = false;
+        circularProgresAnimController.reset();
+        circularProgresAnimController.stop();
+      });
     });
   }
 
@@ -160,9 +177,21 @@ class _ChatLogPageState extends State<ChatLogPage>
                       Navigator.pop(context);
                     },
                   ),
+                  if (msg == widget.chatLog.messages.last && !msg.humanSent)
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.fast_forward),
+                      label: Text("Continue Message",
+                          style: Theme.of(context).textTheme.titleLarge),
+                      onPressed: () {
+                        // run the AI text generation
+                        _generateAIMessage(true);
+
+                        Navigator.pop(context);
+                      },
+                    ),
                   if (msg == widget.chatLog.messages.last)
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.redo),
+                      icon: const Icon(Icons.restart_alt),
                       label: Text("Regenerate Message",
                           style: Theme.of(context).textTheme.titleLarge),
                       onPressed: () async {
@@ -171,7 +200,7 @@ class _ChatLogPageState extends State<ChatLogPage>
                         });
 
                         // run the AI text generation
-                        _generateAIMessage();
+                        _generateAIMessage(false);
 
                         Navigator.pop(context);
                       },
@@ -283,7 +312,7 @@ class _ChatLogPageState extends State<ChatLogPage>
                           });
 
                           // send our message off to the AI for a reply
-                          await _generateAIMessage();
+                          await _generateAIMessage(false);
                         }
                       }
                     },
@@ -296,7 +325,7 @@ class _ChatLogPageState extends State<ChatLogPage>
                     // when a long press is detected we generate a new message from
                     // the AI, regardless of what's going on with the input state
                     // of the controls or anything else.
-                    await _generateAIMessage();
+                    await _generateAIMessage(false);
                   }),
           ],
         ),
@@ -352,6 +381,7 @@ class PredictReplyResult {
 //  [1] modelFilepath
 //  [2] promptString
 //  [3] antipromptStrings
+//  [4] hyperparameters
 void predictReply(List<dynamic> args) {
   var sendPort = args[0] as SendPort;
   try {
@@ -361,12 +391,15 @@ void predictReply(List<dynamic> args) {
     log("Library loaded through DynamicLibrary: $dylibPath");
 
     var modelFilepath = args[1] as String;
-    log("Attempting to load model: $modelFilepath");
     var nativeModelFilepath = modelFilepath.toNativeUtf8();
+    log("Attempting to load model: $modelFilepath");
+
+    var hyperparams = args[4] as ChatLogHyperparameters;
+
     var loadedModel = lib.wooly_load_model(
         nativeModelFilepath as Pointer<Char>,
         0, // ctx size from the model
-        -1, // seed
+        hyperparams.seed, // seed
         true, // mlock
         true, // mmap
         false, // embeddings
@@ -382,28 +415,28 @@ void predictReply(List<dynamic> args) {
     var prompt = args[2] as String;
 
     var nativePrompt = prompt.toNativeUtf8();
-    var seed = -1;
+    var seed = hyperparams.seed;
     var threads = 4;
-    var tokens = 128;
-    var topK = 40;
-    var topP = 1.0;
-    var minP = 0.08;
-    var temp = 1.1;
-    var repeatPenalty = 1.1;
-    var repeatLastN = 64;
+    var tokens = hyperparams.tokens;
+    var topK = hyperparams.topK;
+    var topP = hyperparams.topP;
+    var minP = hyperparams.minP;
+    var temp = hyperparams.temp;
+    var repeatPenalty = hyperparams.repeatPenalty;
+    var repeatLastN = hyperparams.repeatLastN;
     var ignoreEos = false;
     var nBatch = 128;
     var nKeep = 128;
     var antiprompt = emptyString as Pointer<Pointer<Char>>;
     var antipromptCount = 0; //antipromptStrings.length;
-    var tfsZ = 1.0;
-    var typicalP = 1.0;
-    var frequencyPenalty = 0.0;
-    var presencePenalty = 0.0;
-    var mirostat = 0;
-    var mirostatEta = 0.1;
-    var mirostatTau = 5.0;
-    var penalizeNl = true; // turning penalize newline on!
+    var tfsZ = hyperparams.tfsZ;
+    var typicalP = hyperparams.typicalP;
+    var frequencyPenalty = hyperparams.frequencyPenalty;
+    var presencePenalty = hyperparams.presencePenalty;
+    var mirostat = hyperparams.mirostatType;
+    var mirostatEta = hyperparams.mirostatEta;
+    var mirostatTau = hyperparams.mirostatTau;
+    var penalizeNl = false;
     var logitBias = emptyString;
     var sessionFile = emptyString;
     var promptCacheInMemory = false;
@@ -421,6 +454,10 @@ void predictReply(List<dynamic> args) {
     var antipromptStrings = args[3] as List<String>;
     log('A total of ${antipromptStrings.length} antiprompt strings: ${antipromptStrings.join(",")}');
 
+    // keep track of the native strings so we can deallocate them.
+    List<Pointer<Char>> antipromptPointers = [];
+
+    // okay now actually create the antiprompt native strings if we have them.
     if (antipromptStrings.isNotEmpty) {
       log("Making antiprompt strings native...");
 
@@ -434,11 +471,14 @@ void predictReply(List<dynamic> args) {
         Pointer<Char> native =
             antipromptStrings[ai].toNativeUtf8() as Pointer<Char>;
         antiPointers[ai] = native;
+        antipromptPointers.add(native);
       }
 
       antiprompt = antiPointers;
-      antipromptCount = antipromptStrings.length;
+      antipromptCount = antipromptPointers.length;
     }
+
+    log("Using a total of $antipromptCount antiprompts...");
 
     var params = lib.wooly_allocate_params(
         nativePrompt as Pointer<Char>,
@@ -497,10 +537,20 @@ void predictReply(List<dynamic> args) {
         (predictResult.t_end_ms - predictResult.t_start_ms),
         generationSpeed));
 
+    // free all the allocations made for the FFI calls
     malloc.free(nativeModelFilepath);
     malloc.free(emptyString);
     malloc.free(nativePrompt);
     malloc.free(outputText);
+    if (antipromptPointers.isNotEmpty) {
+      for (int ai = 0; ai < antipromptPointers.length; ai++) {
+        malloc.free(antipromptPointers[ai]);
+      }
+      malloc.free(antiprompt);
+    }
+
+    // for now, we free the model too
+    lib.wooly_free_model(loadedModel.ctx, loadedModel.model);
 
     Isolate.exit(sendPort, PredictReplyResult(outputString, generationSpeed));
   } catch (e) {

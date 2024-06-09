@@ -127,8 +127,10 @@ class _AppState extends State<App> {
                           Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) =>
-                                      ChatLogPage(chatLog: thisLog)));
+                                  builder: (context) => ChatLogPage(
+                                        chatLog: thisLog,
+                                        configModelFiles: configModelFiles!,
+                                      )));
                         },
                       ));
                     },

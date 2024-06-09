@@ -72,4 +72,5 @@ https://github.com/lmstudio-ai/configs
 * BUG: backing out of log view while generating doesn't stop generation; will eventually show up in log, but feels awkward.
 * Sort chat log list by recent use?
 * Long press of send button should 'impersonate' the AI instead if there's a message in the text box?
-* Continue support!
+* Have a help icon for ChatLog Configuration to explain settings verbosely.
+* Gotta version info the config files and chat logs

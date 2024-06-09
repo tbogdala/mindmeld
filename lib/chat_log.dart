@@ -150,6 +150,35 @@ class ChatLogMessage {
 }
 
 @JsonSerializable()
+class ChatLogHyperparameters {
+  int seed = -1;
+  int tokens = 128;
+  int topK = 40;
+  double topP = 0.9;
+  double minP = 0.05;
+  double temp = 0.8;
+  double repeatPenalty = 1.1;
+  int repeatLastN = 64;
+  double tfsZ = 1.0;
+  double typicalP = 1.0;
+  double frequencyPenalty = 0.0;
+  double presencePenalty = 0.0;
+  int mirostatType = 0;
+  double mirostatEta = 0.1;
+  double mirostatTau = 5.0;
+
+  ChatLogHyperparameters();
+
+  factory ChatLogHyperparameters.fromJson(Map<String, dynamic> json) {
+    return _$ChatLogHyperparmetersFromJson(json);
+  }
+
+  Map<String, dynamic> toJson() {
+    return _$ChatLogHyperparmetersToJson(this);
+  }
+}
+
+@JsonSerializable()
 class ChatLog {
   String name;
   String humanName;
@@ -158,11 +187,12 @@ class ChatLog {
   String? aiDescription;
   String? aiPersonality;
   String? context;
-  String modelFilepath;
+  String modelName;
   ModelPromptStyle modelPromptStyle;
+  ChatLogHyperparameters hyperparmeters = ChatLogHyperparameters();
   List<ChatLogMessage> messages = [];
 
-  ChatLog(this.name, this.humanName, this.aiName, this.modelFilepath,
+  ChatLog(this.name, this.humanName, this.aiName, this.modelName,
       this.modelPromptStyle);
 
   static Future<String> getLogsFolder() async {
@@ -227,9 +257,9 @@ class ChatLog {
     return jsonEncode(_$ChatLogToJson(this));
   }
 
-  String buildPrompt(int tokenBudget) {
+  String buildPrompt(int tokenBudget, bool continueMsg) {
     // ballpark esimating for building up a prompt
-    const charsPerToken = 3.5;
+    const charsPerToken = 3.5; // conservative...
     final estCharBudget = tokenBudget * charsPerToken;
 
     var promptConfig = modelPromptStyle.getPromptConfig();
@@ -251,8 +281,13 @@ class ChatLog {
         formattedMsg =
             "${promptConfig.userPrefix}$humanName: ${m.message}${promptConfig.userSuffix}";
       } else {
-        formattedMsg =
-            "${promptConfig.aiPrefix}$aiName: ${m.message}${promptConfig.aiSuffix}";
+        formattedMsg = "${promptConfig.aiPrefix}$aiName: ${m.message}";
+        // if we're trying to continue the chatlog, then for the first message we
+        // encounter here, make sure not to include the suffix because it's been
+        // deemed incomplete by the user and we want _moar_ ...
+        if (msgBuffer.isNotEmpty) {
+          formattedMsg += promptConfig.aiSuffix;
+        }
       }
 
       if (remainingBudget - formattedMsg.length < 0) {
@@ -267,8 +302,14 @@ class ChatLog {
     }
 
     // reverse the msgBuffer to get the correct ordering for the prompt
-    final budgettedChatlog =
-        "${msgBuffer.reversed.join()}${promptConfig.aiPrefix}$aiName: ";
+    var budgettedChatlog = msgBuffer.reversed.join();
+
+    // if we're not continuing the last message, add the prompt in to start
+    // a new message prediction from the ai.
+    if (!continueMsg) {
+      budgettedChatlog += "${promptConfig.aiPrefix}$aiName: ";
+    }
+
     final prompt = preamble + budgettedChatlog;
 
     return prompt;

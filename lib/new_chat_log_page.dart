@@ -154,8 +154,7 @@ class _NewChatLogPageState extends State<NewChatLogPage> {
                         logNameController.text,
                         userNameController.text,
                         aiNameController.text,
-                        widget.configModelFiles
-                            .modelFiles[selectedModelFileOption]!,
+                        selectedModelFileOption,
                         modelPromptStyleFromString(selectedPromptFormatOption));
 
                     Navigator.pop(context, result);
