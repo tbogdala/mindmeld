@@ -400,7 +400,7 @@ void predictReply(List<dynamic> args) {
         nativeModelFilepath as Pointer<Char>,
         0, // ctx size from the model
         hyperparams.seed, // seed
-        true, // mlock
+        false, // mlock
         true, // mmap
         false, // embeddings
         100, // gpu layers
@@ -416,7 +416,7 @@ void predictReply(List<dynamic> args) {
 
     var nativePrompt = prompt.toNativeUtf8();
     var seed = hyperparams.seed;
-    var threads = 4;
+    var threads = 1;
     var tokens = hyperparams.tokens;
     var topK = hyperparams.topK;
     var topP = hyperparams.topP;
@@ -440,7 +440,7 @@ void predictReply(List<dynamic> args) {
     var logitBias = emptyString;
     var sessionFile = emptyString;
     var promptCacheInMemory = false;
-    var mlock = true;
+    var mlock = false;
     var mmap = true;
     var maingpu = 0;
     var tensorsplit = emptyString;
