@@ -1,6 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as p;
 import 'dart:developer';
 
 import 'config_models.dart';
@@ -63,12 +65,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
               if (result != null) {
                 // get the selected filepath
                 final selectedModelFilepath = result.files.first.path!;
-                final selectedModelFilename =
-                    basenameWithoutExtension(selectedModelFilepath);
+                final selectedModelFilename = p.basename(selectedModelFilepath);
 
-                // build a new models configuration file
+                // copy the file to the application's documents
+                await ConfigModelFiles.ensureModelsFolderExists();
+                final modelFolderpath =
+                    await ConfigModelFiles.getModelsFolderpath();
+                final copyModelFilepath =
+                    p.join(modelFolderpath, selectedModelFilename);
+                var originalFile = File(selectedModelFilepath);
+                await originalFile.copy(copyModelFilepath);
+                log("Copy source: $selectedModelFilepath");
+                log("Copy deset : $copyModelFilepath");
+                await FilePicker.platform.clearTemporaryFiles();
+                log("Temporary files have been cleared");
+
+                // build a new models configuration file. we no longer use the full
+                // filepath for the file and instead just use the relative one based
+                // on filename and our known models folder.
                 final configModelFiles = ConfigModelFiles(
-                    modelFiles: {selectedModelFilename: selectedModelFilepath});
+                    modelFiles: {selectedModelFilename: selectedModelFilename});
 
                 log("JSON for ModelFiles: ${ConfigModelFiles.getFilepath()}");
                 final configModelFilesJson = configModelFiles.toJson();
@@ -77,7 +93,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 // send the new data file over the callback.
                 widget.onNewConfigModelFiles(configModelFiles);
               }
-            } catch (_) {}
+            } catch (e) {
+              log("Got an error while trying to copy the new model file into the application's document folder: $e");
+            }
           },
         ),
         const SizedBox(height: 32),

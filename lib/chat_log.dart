@@ -170,11 +170,11 @@ class ChatLogHyperparameters {
   ChatLogHyperparameters();
 
   factory ChatLogHyperparameters.fromJson(Map<String, dynamic> json) {
-    return _$ChatLogHyperparmetersFromJson(json);
+    return _$ChatLogHyperparametersFromJson(json);
   }
 
   Map<String, dynamic> toJson() {
-    return _$ChatLogHyperparmetersToJson(this);
+    return _$ChatLogHyperparametersToJson(this);
   }
 }
 

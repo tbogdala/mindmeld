@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:mindmeld/configure_chat_log_page.dart';
+import 'package:path/path.dart';
 import 'package:woolydart/woolydart.dart';
 import 'dart:developer';
 import 'package:format/format.dart';
@@ -88,9 +90,10 @@ class _ChatLogPageState extends State<ChatLogPage>
       circularProgresAnimController.repeat(reverse: true);
     });
 
-    // get the model filepath for the selected model
-    var modelFilepath =
-        widget.configModelFiles.modelFiles[widget.chatLog.modelName];
+    // get the model filepath for the selected model. right now this is a
+    // relative path, so we have to combine it with our documents folder
+    var modelFilepath = join(await ConfigModelFiles.getModelsFolderpath(),
+        widget.configModelFiles.modelFiles[widget.chatLog.modelName]);
 
     // build the prompt to send off to the ai
     const int tokenBudget = 2048; //TODO: unhardcode this
@@ -385,13 +388,15 @@ class PredictReplyResult {
 void predictReply(List<dynamic> args) {
   var sendPort = args[0] as SendPort;
   try {
-    const dylibPath = "libllama.so"; //android
-    final lib = woolydart(DynamicLibrary.open(dylibPath));
-    var emptyString = "".toNativeUtf8() as Pointer<Char>;
-    log("Library loaded through DynamicLibrary: $dylibPath");
+    final lib = Platform.isAndroid
+        ? woolydart(DynamicLibrary.open("libllama.so"))
+        : //woolydart(DynamicLibrary.open("libllama"));
+        woolydart(DynamicLibrary.process());
+    log("Library loaded through DynamicLibrary.");
 
     var modelFilepath = args[1] as String;
     var nativeModelFilepath = modelFilepath.toNativeUtf8();
+    var emptyString = "".toNativeUtf8() as Pointer<Char>;
     log("Attempting to load model: $modelFilepath");
 
     var hyperparams = args[4] as ChatLogHyperparameters;
@@ -416,7 +421,7 @@ void predictReply(List<dynamic> args) {
 
     var nativePrompt = prompt.toNativeUtf8();
     var seed = hyperparams.seed;
-    var threads = 1;
+    var threads = 4;
     var tokens = hyperparams.tokens;
     var topK = hyperparams.topK;
     var topP = hyperparams.topP;
@@ -549,6 +554,7 @@ void predictReply(List<dynamic> args) {
       malloc.free(antiprompt);
     }
 
+    // FIXME: this breaks on IOS simulator
     // for now, we free the model too
     lib.wooly_free_model(loadedModel.ctx, loadedModel.model);
 

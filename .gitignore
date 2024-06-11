@@ -48,3 +48,5 @@ android/app/.cxx
 
 # Temp ban on this until we submodule it
 packages/woolydart
+ios/Frameworks/libllama.dylib
+ios/Frameworks/libllama.framework/libllama

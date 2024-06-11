@@ -50,4 +50,21 @@ class ConfigModelFiles {
     }
     return null;
   }
+
+  static Future<String> getModelsFolderpath() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return '${directory.path}/models';
+  }
+
+  static Future<void> ensureModelsFolderExists() async {
+    var modelsDir = await getModelsFolderpath();
+    try {
+      var d = Directory(modelsDir);
+      await d.create(recursive: true);
+      log("Models folder was ensured.");
+    } catch (e) {
+      log("Failed to ensure models folder exists at $modelsDir");
+      log("Error: $e");
+    }
+  }
 }

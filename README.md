@@ -26,19 +26,40 @@
 
 *   `dart run build_runner build` to update the json serializable code.
 
+Building the necessary library components for the iOS simulator app.
+
 ```bash
 cd packages/woolydart/src/llama.cpp
 mkdir build-ios
 cd build-ios
-cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=../../../../ios-cmake/ios.toolchain.cmake -DPLATFORM=OS64
+cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DPLATFORM=SIMULATORARM64
+make build_info
 cmake --build . --config Release
-cd ../../../../..
+cd ~/Stash/codes/mindmeld
+#rm -rf ios/Frameworks
+#mkdir -p ios/Frameworks
+#cp packages/woolydart/src/llama.cpp/build-ios/libllama.dylib ios/Frameworks/libllama.dylib
+#dart run build_runner build --delete-conflicting-outputs # maybe needed? still can't load libllama
 mkdir -p ios/Frameworks/libllama.framework
 lipo -create packages/woolydart/src/llama.cpp/build-ios/libllama.dylib -output ios/Frameworks/libllama.framework/libllama
 install_name_tool -id @rpath/libllama.framework/libllama ios/Frameworks/libllama.framework/libllama
 ```
 
-    Looks like ios-cmake will be needed, but I've removed it from the `packages` folder for now.
+Actually building for real devices means rebuilding the binary:
+
+```bash
+cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DPLATFORM=OS64
+make build_info
+```
+
+Steps to get iOS going
+* `vtool -show ios/Frameworks/libllama.framework/libllama ios/Frameworks/libllama.framework/libllama` shows minos version needed
+* right click 'ios' in vs code, open in Xcode
+* Select Runner in project navigator view on the left
+* In 'build settings' change minimum deployments to 14.0 (There might have been one more place I changed that.)
+* Scroll down to 'Frameworks, Libraries, and Embedded Content and click +
+* Hit the 'add other..' button select 'add files...' browse to the 'libllama.framework' folder and click the 'open' button to add the framework.
+* Add 'Info.plist' file, edited by hand.
 
 #### Models to explore:
 

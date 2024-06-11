@@ -23,7 +23,7 @@ Map<String, dynamic> _$ChatLogMessageToJson(ChatLogMessage instance) =>
       'generationSpeedTPS': instance.generationSpeedTPS,
     };
 
-ChatLogHyperparameters _$ChatLogHyperparmetersFromJson(
+ChatLogHyperparameters _$ChatLogHyperparametersFromJson(
         Map<String, dynamic> json) =>
     ChatLogHyperparameters()
       ..seed = (json['seed'] as num).toInt()
@@ -42,7 +42,7 @@ ChatLogHyperparameters _$ChatLogHyperparmetersFromJson(
       ..mirostatEta = (json['mirostatEta'] as num).toDouble()
       ..mirostatTau = (json['mirostatTau'] as num).toDouble();
 
-Map<String, dynamic> _$ChatLogHyperparmetersToJson(
+Map<String, dynamic> _$ChatLogHyperparametersToJson(
         ChatLogHyperparameters instance) =>
     <String, dynamic>{
       'seed': instance.seed,
@@ -69,6 +69,7 @@ ChatLog _$ChatLogFromJson(Map<String, dynamic> json) => ChatLog(
       json['modelName'] as String,
       $enumDecode(_$ModelPromptStyleEnumMap, json['modelPromptStyle']),
     )
+      ..version = (json['version'] as num).toInt()
       ..humanDescription = json['humanDescription'] as String?
       ..aiDescription = json['aiDescription'] as String?
       ..aiPersonality = json['aiPersonality'] as String?
@@ -80,6 +81,7 @@ ChatLog _$ChatLogFromJson(Map<String, dynamic> json) => ChatLog(
           .toList();
 
 Map<String, dynamic> _$ChatLogToJson(ChatLog instance) => <String, dynamic>{
+      'version': instance.version,
       'name': instance.name,
       'humanName': instance.humanName,
       'humanDescription': instance.humanDescription,
