@@ -61,6 +61,11 @@ Steps to get iOS going
 * Hit the 'add other..' button select 'add files...' browse to the 'libllama.framework' folder and click the 'open' button to add the framework.
 * Add 'Info.plist' file, edited by hand.
 
+* Upped minimum deployments to iOS 16 with a target of iOS 17.
+* Added reference to Accelerate and Metal frameworks.
+* -DLLAMA_METAL_EMBED_LIBRARY=ON
+
+
 #### Models to explore:
 
 https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF   (tinychat)

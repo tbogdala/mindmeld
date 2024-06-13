@@ -6,7 +6,15 @@ import 'dart:developer';
 
 part 'chat_log.g.dart';
 
-enum ModelPromptStyle { alpaca, chatml, phi3, tinychat, vicuna, zephyr }
+enum ModelPromptStyle {
+  alpaca,
+  chatml,
+  llama3,
+  phi3,
+  tinyllama,
+  vicuna,
+  zephyr
+}
 
 extension ModelPromptStyleExtension on ModelPromptStyle {
   String nameAsString() => name;
@@ -17,10 +25,12 @@ extension ModelPromptStyleExtension on ModelPromptStyle {
         return ModelPromptConfig.alpaca();
       case ModelPromptStyle.chatml:
         return ModelPromptConfig.chatML();
+      case ModelPromptStyle.llama3:
+        return ModelPromptConfig.llama3();
       case ModelPromptStyle.phi3:
         return ModelPromptConfig.phi3();
-      case ModelPromptStyle.tinychat:
-        return ModelPromptConfig.tinychat();
+      case ModelPromptStyle.tinyllama:
+        return ModelPromptConfig.tinyllama();
       case ModelPromptStyle.vicuna:
         return ModelPromptConfig.vicuna();
       case ModelPromptStyle.zephyr:
@@ -76,6 +86,19 @@ class ModelPromptConfig {
     ];
   }
 
+  ModelPromptConfig.llama3() {
+    name = "Llama3";
+    system =
+        "You are a helpful, smart, kind, and efficient AI assistant. You always fulfill the user's requests to the best of your ability.";
+    preSystemPrefix = "<|start_header_id|>system<|end_header_id|>\n\n";
+    preSystemSuffix = "<|eot_id|>";
+    userPrefix = "<|start_header_id|>user<|end_header_id|>\n\n";
+    userSuffix = "<|eot_id|>";
+    aiPrefix = "<|start_header_id|>assistant<|end_header_id|>\n\n";
+    aiSuffix = "<|eot_id|>";
+    stopPhrases = ["<|start_header_id|>", "<|eot_id|>"];
+  }
+
   ModelPromptConfig.phi3() {
     name = "Phi3";
     system = "";
@@ -88,8 +111,8 @@ class ModelPromptConfig {
     stopPhrases = ["<|end|>", "<|user|>"];
   }
 
-  ModelPromptConfig.tinychat() {
-    name = "TinyChat-Zephyr";
+  ModelPromptConfig.tinyllama() {
+    name = "TinyLlama-Chat";
     system = "";
     preSystemPrefix = "<|system|>\n";
     preSystemSuffix = "\n";
@@ -265,9 +288,15 @@ class ChatLog {
 
     var promptConfig = modelPromptStyle.getPromptConfig();
 
+    String humanDesc = humanDescription ?? "";
+    String botDesc = aiDescription ?? "";
+    String botPer = aiPersonality ?? "";
+    String ctxDesc = context ??
+        "$humanName and $aiName are having a conversation over text messaging.";
+
     // bulid the whole system preamble
     final system =
-        "${promptConfig.system}$context\n\n$humanName's Description:\n$humanDescription\n\n$aiName's Description:\n$aiDescription\n$aiName's Personality: $aiPersonality\n";
+        "${promptConfig.system}$ctxDesc\n\n$humanName's Description:\n$humanDesc\n\n$aiName's Description:\n$botDesc\n$aiName's Personality: $botPer\n";
 
     final String preamble =
         promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;

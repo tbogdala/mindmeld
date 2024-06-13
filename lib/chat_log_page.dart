@@ -403,13 +403,13 @@ void predictReply(List<dynamic> args) {
 
     var loadedModel = lib.wooly_load_model(
         nativeModelFilepath as Pointer<Char>,
-        0, // ctx size from the model
+        2048, // ctx size from the model
         hyperparams.seed, // seed
         false, // mlock
         true, // mmap
         false, // embeddings
         100, // gpu layers
-        128, // batch
+        256, // batch
         0, // maingpu
         emptyString, //tensorsplit
         0.0, // rope freq
@@ -421,7 +421,7 @@ void predictReply(List<dynamic> args) {
 
     var nativePrompt = prompt.toNativeUtf8();
     var seed = hyperparams.seed;
-    var threads = 4;
+    var threads = 8;
     var tokens = hyperparams.tokens;
     var topK = hyperparams.topK;
     var topP = hyperparams.topP;
@@ -430,7 +430,7 @@ void predictReply(List<dynamic> args) {
     var repeatPenalty = hyperparams.repeatPenalty;
     var repeatLastN = hyperparams.repeatLastN;
     var ignoreEos = false;
-    var nBatch = 128;
+    var nBatch = 256;
     var nKeep = 128;
     var antiprompt = emptyString as Pointer<Pointer<Char>>;
     var antipromptCount = 0; //antipromptStrings.length;
@@ -554,7 +554,6 @@ void predictReply(List<dynamic> args) {
       malloc.free(antiprompt);
     }
 
-    // FIXME: this breaks on IOS simulator
     // for now, we free the model too
     lib.wooly_free_model(loadedModel.ctx, loadedModel.model);
 
