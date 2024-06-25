@@ -24,15 +24,19 @@
 
 *   iOS builds need to have the binaries built manually first.
 
-*   `dart run build_runner build` to update the json serializable code.
+*   JSON serialization code gets updated with: `dart run build_runner build`.
 
+*   Launcher icons get updated with: `flutter pub run flutter_launcher_icons`.
+    Docs: https://pub.dev/packages/flutter_launcher_icons
+
+    
 Building the necessary library components for the iOS simulator app.
 
 ```bash
 cd packages/woolydart/src/llama.cpp
 mkdir build-ios
 cd build-ios
-cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DPLATFORM=SIMULATORARM64
+cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DLLAMA_METAL_EMBED_LIBRARY=ON  -DPLATFORM=SIMULATORARM64
 make build_info
 cmake --build . --config Release
 cd ~/Stash/codes/mindmeld
@@ -48,7 +52,7 @@ install_name_tool -id @rpath/libllama.framework/libllama ios/Frameworks/libllama
 Actually building for real devices means rebuilding the binary:
 
 ```bash
-cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DPLATFORM=OS64
+cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DLLAMA_METAL_EMBED_LIBRARY=ON -DPLATFORM=OS64 
 make build_info
 ```
 
@@ -65,6 +69,7 @@ Steps to get iOS going
 * Added reference to Accelerate and Metal frameworks.
 * -DLLAMA_METAL_EMBED_LIBRARY=ON
 
+Can verify what's exported with `nm -gU ios/Frameworks/libllama.framework/libllama`.
 
 #### Models to explore:
 

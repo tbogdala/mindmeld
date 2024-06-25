@@ -96,7 +96,8 @@ class _ChatLogPageState extends State<ChatLogPage>
         widget.configModelFiles.modelFiles[widget.chatLog.modelName]);
 
     // build the prompt to send off to the ai
-    const int tokenBudget = 2048; //TODO: unhardcode this
+    int tokenBudget =
+        2048 - widget.chatLog.hyperparmeters.tokens; //TODO: unhardcode this
     final promptConfig = widget.chatLog.modelPromptStyle.getPromptConfig();
     final prompt = widget.chatLog.buildPrompt(tokenBudget, continueMsg);
     log("Prompt Built:");
@@ -388,176 +389,79 @@ class PredictReplyResult {
 void predictReply(List<dynamic> args) {
   var sendPort = args[0] as SendPort;
   try {
-    final lib = Platform.isAndroid
-        ? woolydart(DynamicLibrary.open("libllama.so"))
-        : //woolydart(DynamicLibrary.open("libllama"));
-        woolydart(DynamicLibrary.process());
+    // an empty string for iOS to use the current process instead of a library file.
+    final lib = Platform.isAndroid ? "libllama.so" : "";
     log("Library loaded through DynamicLibrary.");
-
-    var modelFilepath = args[1] as String;
-    var nativeModelFilepath = modelFilepath.toNativeUtf8();
-    var emptyString = "".toNativeUtf8() as Pointer<Char>;
-    log("Attempting to load model: $modelFilepath");
+    var llamaModel = LlamaModel(lib);
 
     var hyperparams = args[4] as ChatLogHyperparameters;
+    final modelParams = llamaModel.getDefaultModelParams();
+    modelParams.n_gpu_layers = 100;
+    final contextParams = llamaModel.getDefaultContextParams()
+      ..seed = hyperparams.seed
+      ..n_threads = 8
+      ..n_ctx = 2048;
 
-    var loadedModel = lib.wooly_load_model(
-        nativeModelFilepath as Pointer<Char>,
-        2048, // ctx size from the model
-        hyperparams.seed, // seed
-        false, // mlock
-        true, // mmap
-        false, // embeddings
-        100, // gpu layers
-        256, // batch
-        0, // maingpu
-        emptyString, //tensorsplit
-        0.0, // rope freq
-        0.0); // rope scale
-    log("Woolydart: wooly_load_model() returned.");
+    var modelFilepath = args[1] as String;
+    log("Attempting to load model: $modelFilepath");
 
-    log("Allocating prompt string.");
-    var prompt = args[2] as String;
-
-    var nativePrompt = prompt.toNativeUtf8();
-    var seed = hyperparams.seed;
-    var threads = 8;
-    var tokens = hyperparams.tokens;
-    var topK = hyperparams.topK;
-    var topP = hyperparams.topP;
-    var minP = hyperparams.minP;
-    var temp = hyperparams.temp;
-    var repeatPenalty = hyperparams.repeatPenalty;
-    var repeatLastN = hyperparams.repeatLastN;
-    var ignoreEos = false;
-    var nBatch = 256;
-    var nKeep = 128;
-    var antiprompt = emptyString as Pointer<Pointer<Char>>;
-    var antipromptCount = 0; //antipromptStrings.length;
-    var tfsZ = hyperparams.tfsZ;
-    var typicalP = hyperparams.typicalP;
-    var frequencyPenalty = hyperparams.frequencyPenalty;
-    var presencePenalty = hyperparams.presencePenalty;
-    var mirostat = hyperparams.mirostatType;
-    var mirostatEta = hyperparams.mirostatEta;
-    var mirostatTau = hyperparams.mirostatTau;
-    var penalizeNl = false;
-    var logitBias = emptyString;
-    var sessionFile = emptyString;
-    var promptCacheInMemory = false;
-    var mlock = false;
-    var mmap = true;
-    var maingpu = 0;
-    var tensorsplit = emptyString;
-    var filePromptCacheRo = false;
-    var ropeFreqBase = 0.0;
-    var ropeFreqScale = 0.0;
-    var grammar = emptyString;
-
-    // if the last token in the prompt being generated is also an antiprompt string
-    // that will result in an empty prediction
-    var antipromptStrings = args[3] as List<String>;
-    log('A total of ${antipromptStrings.length} antiprompt strings: ${antipromptStrings.join(",")}');
-
-    // keep track of the native strings so we can deallocate them.
-    List<Pointer<Char>> antipromptPointers = [];
-
-    // okay now actually create the antiprompt native strings if we have them.
-    if (antipromptStrings.isNotEmpty) {
-      log("Making antiprompt strings native...");
-
-      // allocate all the array of pointers.
-      final Pointer<Pointer<Char>> antiPointers =
-          calloc.allocate(antipromptStrings.length * sizeOf<Pointer<Char>>());
-
-      // allocate each of the native strings
-      for (int ai = 0; ai < antipromptStrings.length; ai++) {
-        log("Allocating antipromtp #$ai");
-        Pointer<Char> native =
-            antipromptStrings[ai].toNativeUtf8() as Pointer<Char>;
-        antiPointers[ai] = native;
-        antipromptPointers.add(native);
-      }
-
-      antiprompt = antiPointers;
-      antipromptCount = antipromptPointers.length;
+    final bool loadedResult =
+        llamaModel.loadModel(modelFilepath, modelParams, contextParams, true);
+    if (loadedResult == false) {
+      Isolate.exit(sendPort,
+          PredictReplyResult('<Error: Failed to load the GGUF model.>', 0.0));
     }
 
-    log("Using a total of $antipromptCount antiprompts...");
+    final params = llamaModel.getTextGenParams()
+      ..seed = hyperparams.seed
+      ..n_threads = 8
+      ..n_predict = hyperparams.tokens
+      ..top_k = hyperparams.topK
+      ..top_p = hyperparams.topP
+      ..min_p = hyperparams.minP
+      ..tfs_z = hyperparams.tfsZ
+      ..typical_p = hyperparams.typicalP
+      ..penalty_repeat = hyperparams.repeatPenalty
+      ..penalty_last_n = hyperparams.repeatLastN
+      ..ignore_eos = false
+      ..flash_attn = true
+      ..n_batch = 128
+      ..prompt_cache_all = false;
 
-    var params = lib.wooly_allocate_params(
-        nativePrompt as Pointer<Char>,
-        seed,
-        threads,
-        tokens,
-        topK,
-        topP,
-        minP,
-        temp,
-        repeatPenalty,
-        repeatLastN,
-        ignoreEos,
-        nBatch,
-        nKeep,
-        antiprompt,
-        antipromptCount,
-        tfsZ,
-        typicalP,
-        frequencyPenalty,
-        presencePenalty,
-        mirostat,
-        mirostatEta,
-        mirostatTau,
-        penalizeNl,
-        logitBias,
-        sessionFile,
-        promptCacheInMemory,
-        mlock,
-        mmap,
-        maingpu,
-        tensorsplit,
-        filePromptCacheRo,
-        ropeFreqBase,
-        ropeFreqScale,
-        grammar);
-    log("Woolydart: allocated params.");
+    final prompt = args[2] as String;
+    params.setPrompt(prompt);
 
-    // allocate the buffer for the predicted text.
-    final outputText = calloc.allocate((tokens + 1) * 4) as Pointer<Char>;
-    log("Woolydart: allocated result buffer; starting prediction");
+    var antipromptStrings = args[3] as List<String>;
+    params.setAntiprompts(antipromptStrings);
+    log('A total of ${antipromptStrings.length} antiprompt strings: ${antipromptStrings.join(",")}');
 
-    var predictResult = lib.wooly_predict(
-        params, loadedModel.ctx, loadedModel.model, false, outputText, nullptr);
-
-    log("Woolydart: successlful predict, maybe?");
-    final outputString = (outputText as Pointer<Utf8>).toDartString();
-    log('Generated text:\n$outputString');
-
+    final (predictResult, outputString) =
+        llamaModel.predictText(params, nullptr);
+    if (predictResult.result != 0) {
+      Isolate.exit(
+          sendPort,
+          PredictReplyResult(
+              '<Error: LlamaModel.predictText() returned ${predictResult.result}>',
+              0.0));
+    }
     var generationSpeed = 1e3 /
         (predictResult.t_end_ms - predictResult.t_start_ms) *
         predictResult.n_eval;
+
+    log('Generated text:\n$outputString');
     log(format(
         '\nTiming Data: {} tokens total in {:.2} ms ; {:.2} T/s\n',
         predictResult.n_eval,
         (predictResult.t_end_ms - predictResult.t_start_ms),
         generationSpeed));
 
-    // free all the allocations made for the FFI calls
-    malloc.free(nativeModelFilepath);
-    malloc.free(emptyString);
-    malloc.free(nativePrompt);
-    malloc.free(outputText);
-    if (antipromptPointers.isNotEmpty) {
-      for (int ai = 0; ai < antipromptPointers.length; ai++) {
-        malloc.free(antipromptPointers[ai]);
-      }
-      malloc.free(antiprompt);
-    }
+    params.dispose();
+    llamaModel.freeModel();
 
-    // for now, we free the model too
-    lib.wooly_free_model(loadedModel.ctx, loadedModel.model);
-
-    Isolate.exit(sendPort, PredictReplyResult(outputString, generationSpeed));
+    Isolate.exit(
+        sendPort,
+        PredictReplyResult(outputString ?? "<Error: No response generated.>",
+            generationSpeed));
   } catch (e) {
     var errormsg = e.toString();
     log("Caught exception trying to load model: $errormsg");
