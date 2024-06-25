@@ -29,7 +29,10 @@
 *   Launcher icons get updated with: `flutter pub run flutter_launcher_icons`.
     Docs: https://pub.dev/packages/flutter_launcher_icons
 
-    
+*   Splash screen gets updated with: `dart run flutter_native_splash:create`.
+    Docs: https://github.com/jonbhanson/flutter_native_splash
+
+
 Building the necessary library components for the iOS simulator app.
 
 ```bash
