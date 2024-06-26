@@ -4,7 +4,6 @@ import 'dart:isolate';
 import 'package:flutter/material.dart';
 
 import 'dart:ffi';
-import 'package:ffi/ffi.dart';
 import 'package:mindmeld/configure_chat_log_page.dart';
 import 'package:path/path.dart';
 import 'package:woolydart/woolydart.dart';
@@ -395,11 +394,12 @@ void predictReply(List<dynamic> args) {
     var llamaModel = LlamaModel(lib);
 
     var hyperparams = args[4] as ChatLogHyperparameters;
-    final modelParams = llamaModel.getDefaultModelParams();
-    modelParams.n_gpu_layers = 100;
+    final modelParams = llamaModel.getDefaultModelParams()
+      ..n_gpu_layers = 100
+      ..use_mmap = false;
     final contextParams = llamaModel.getDefaultContextParams()
       ..seed = hyperparams.seed
-      ..n_threads = 8
+      ..n_threads = 2
       ..n_ctx = 2048;
 
     var modelFilepath = args[1] as String;
@@ -414,7 +414,7 @@ void predictReply(List<dynamic> args) {
 
     final params = llamaModel.getTextGenParams()
       ..seed = hyperparams.seed
-      ..n_threads = 8
+      ..n_threads = 2
       ..n_predict = hyperparams.tokens
       ..top_k = hyperparams.topK
       ..top_p = hyperparams.topP
@@ -424,8 +424,8 @@ void predictReply(List<dynamic> args) {
       ..penalty_repeat = hyperparams.repeatPenalty
       ..penalty_last_n = hyperparams.repeatLastN
       ..ignore_eos = false
-      ..flash_attn = true
-      ..n_batch = 128
+      ..flash_attn = false
+      ..n_batch = 16
       ..prompt_cache_all = false;
 
     final prompt = args[2] as String;
@@ -464,7 +464,7 @@ void predictReply(List<dynamic> args) {
             generationSpeed));
   } catch (e) {
     var errormsg = e.toString();
-    log("Caught exception trying to load model: $errormsg");
-    Isolate.exit(sendPort, 'exception caught');
+    log("Caught exception trying to predict reply: $errormsg");
+    Isolate.exit(sendPort, PredictReplyResult('<Error: $errormsg>', 0.0));
   }
 }

@@ -1,4 +1,4 @@
-package com.example.woolydart_example
+package com.animalmachine.mindmeld
 
 import io.flutter.embedding.android.FlutterActivity
 
