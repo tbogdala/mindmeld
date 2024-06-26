@@ -424,9 +424,8 @@ void predictReply(List<dynamic> args) {
       ..penalty_repeat = hyperparams.repeatPenalty
       ..penalty_last_n = hyperparams.repeatLastN
       ..ignore_eos = false
-      ..flash_attn = false
-      ..n_batch = 16
-      ..prompt_cache_all = false;
+      ..flash_attn = true
+      ..n_batch = 128;
 
     final prompt = args[2] as String;
     params.setPrompt(prompt);
