@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
@@ -16,6 +17,25 @@ extension AutoDLModelsExtension on AutoDLModels {
         return "TinyLlama-1.1B-Chat-v1.0";
     }
   }
+
+  String getModelURL() {
+    switch (this) {
+      default:
+        return "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf";
+    }
+  }
+
+  String getModelFilename() {
+    switch (this) {
+      default:
+        return "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf";
+    }
+  }
+}
+
+AutoDLModels autoDLModelFromString(String stringValue) {
+  return AutoDLModels.values
+      .firstWhere((style) => style.nameAsString() == stringValue);
 }
 
 class OnboardingPage extends StatefulWidget {
@@ -32,6 +52,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
   late List<String> autoDLOptions;
 
   bool copyingSelectedModel = false;
+  bool downloadingModel = false;
+  double downloadModelProgress = 0.0;
 
   @override
   void dispose() {
@@ -54,6 +76,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
             child: Text(
                 'Copying model file into the application. This should only take a few seconds...'),
           ));
+    } else if (downloadingModel) {
+      return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                const Text(
+                    'Downloading the selected model file into the application.',
+                    style: TextStyle(fontSize: 20)),
+                LinearProgressIndicator(
+                  value: downloadModelProgress,
+                  semanticsLabel: 'download progress',
+                )
+              ]));
     } else {
       return Padding(
         padding: const EdgeInsets.all(16),
@@ -122,7 +158,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           const Divider(),
           const SizedBox(height: 32),
           const Text(
-              "If you don't know what file to download, MindMeld can download one of these automatically for you instead."),
+              "If you don't know what file to download, MindMeld can download one of these automatically for you instead. These will be large files and you may want to make sure to have a WiFi connection!"),
           const SizedBox(height: 16),
           DropdownMenu(
             initialSelection: selectedAutoDLOption,
@@ -139,7 +175,55 @@ class _OnboardingPageState extends State<OnboardingPage> {
           const SizedBox(height: 16),
           FilledButton(
             child: const Text('Automatically Download Model'),
-            onPressed: () async {},
+            onPressed: () async {
+              setState(() {
+                downloadingModel = true;
+                downloadModelProgress = 0.0;
+              });
+              // download the model from the internet
+              try {
+                var selectedAutoOpt =
+                    autoDLModelFromString(selectedAutoDLOption);
+
+                final dlTask = DownloadTask(
+                  url: selectedAutoOpt.getModelURL(),
+                  filename: selectedAutoOpt.getModelFilename(),
+                  directory: 'models',
+                  updates: Updates.progress,
+                );
+
+                final result = await FileDownloader().download(
+                  dlTask,
+                  onProgress: (progress) {
+                    setState(() {
+                      downloadModelProgress = progress;
+                    });
+                    log("Download progress: $downloadModelProgress");
+                  },
+                );
+                log('download finished! (${result.status})');
+
+                // TODO: This segment is copied from above; refactor
+                // build a new models configuration file. we no longer use the full
+                // filepath for the file and instead just use the relative one based
+                // on filename and our known models folder.
+                final configModelFiles = ConfigModelFiles(modelFiles: {
+                  selectedAutoOpt.getModelFilename():
+                      selectedAutoOpt.getModelFilename()
+                });
+
+                log("JSON for ModelFiles: ${ConfigModelFiles.getFilepath()}");
+                final configModelFilesJson = configModelFiles.toJson();
+                log(configModelFilesJson);
+
+                // send the new data file over the callback.
+                widget.onNewConfigModelFiles(configModelFiles);
+              } finally {
+                setState(() {
+                  downloadingModel = false;
+                });
+              }
+            },
           ),
         ]),
       );
