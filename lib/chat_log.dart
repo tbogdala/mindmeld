@@ -6,10 +6,12 @@ import 'dart:developer';
 
 part 'chat_log.g.dart';
 
+// NOTE: REGENERATE JSON SERIALIZATION WHEN ADDING VALUES TO THIS!
 enum ModelPromptStyle {
   alpaca,
   chatml,
   llama3,
+  opusV12,
   phi3,
   tinyllama,
   vicuna,
@@ -27,6 +29,8 @@ extension ModelPromptStyleExtension on ModelPromptStyle {
         return ModelPromptConfig.chatML();
       case ModelPromptStyle.llama3:
         return ModelPromptConfig.llama3();
+      case ModelPromptStyle.opusV12:
+        return ModelPromptConfig.OpusV12();
       case ModelPromptStyle.phi3:
         return ModelPromptConfig.phi3();
       case ModelPromptStyle.tinyllama:
@@ -61,7 +65,7 @@ class ModelPromptConfig {
   ModelPromptConfig.alpaca() {
     name = "Alpaca";
     system =
-        "Below is an instruction that describes a task. Write a response that appropriately completes the request.";
+        "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n";
     preSystemPrefix = "";
     preSystemSuffix = "";
     userPrefix = "\n### Instruction:\n";
@@ -73,7 +77,7 @@ class ModelPromptConfig {
 
   ModelPromptConfig.chatML() {
     name = "ChatML";
-    system = "Perform the task to the best of your ability.";
+    system = "Perform the task to the best of your ability.\n";
     preSystemPrefix = "<|im_start|>system\n";
     preSystemSuffix = "<|im_end|>\n";
     userPrefix = "<|im_start|>user\n";
@@ -89,13 +93,26 @@ class ModelPromptConfig {
   ModelPromptConfig.llama3() {
     name = "Llama3";
     system =
-        "You are a helpful, smart, kind, and efficient AI assistant. You always fulfill the user's requests to the best of your ability.";
+        "You are a helpful, smart, kind, and efficient AI assistant. You always fulfill the user's requests to the best of your ability.\n";
     preSystemPrefix = "<|start_header_id|>system<|end_header_id|>\n\n";
     preSystemSuffix = "<|eot_id|>";
     userPrefix = "<|start_header_id|>user<|end_header_id|>\n\n";
     userSuffix = "<|eot_id|>";
     aiPrefix = "<|start_header_id|>assistant<|end_header_id|>\n\n";
     aiSuffix = "<|eot_id|>";
+    stopPhrases = ["<|start_header_id|>", "<|eot_id|>"];
+  }
+
+  ModelPromptConfig.OpusV12() {
+    name = "Llama3";
+    system =
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play based on the information below.\n\n";
+    preSystemPrefix = "<|start_header_id|>system<|end_header_id|>\n\n";
+    preSystemSuffix = "\n<|eot_id|>\n";
+    userPrefix = "<|start_header_id|>user<|end_header_id|>\n\n";
+    userSuffix = "<|eot_id|>\n";
+    aiPrefix = "<|start_header_id|>writer<|end_header_id|>\n\n";
+    aiSuffix = "<|eot_id|>\n";
     stopPhrases = ["<|start_header_id|>", "<|eot_id|>"];
   }
 
@@ -126,7 +143,7 @@ class ModelPromptConfig {
   ModelPromptConfig.vicuna() {
     name = "Vicuna";
     system =
-        "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions.";
+        "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions.\n";
     preSystemPrefix = "";
     preSystemSuffix = "\n\n";
     userPrefix = "USER: ";
@@ -296,7 +313,7 @@ class ChatLog {
 
     // bulid the whole system preamble
     final system =
-        "${promptConfig.system}$ctxDesc\n\n$humanName's Description:\n$humanDesc\n\n$aiName's Description:\n$botDesc\n$aiName's Personality: $botPer\n";
+        "${promptConfig.system}## Overall plot description:\n\n$ctxDesc\n\n## Characters:\n\n### $humanName\n\n$humanDesc\n\n### $aiName\n\n$botDesc\n$aiName's Personality: $botPer\n";
 
     final String preamble =
         promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;

@@ -399,7 +399,7 @@ void predictReply(List<dynamic> args) {
       ..use_mmap = false;
     final contextParams = llamaModel.getDefaultContextParams()
       ..seed = hyperparams.seed
-      ..n_threads = 2
+      ..n_threads = 6
       ..n_ctx = 2048;
 
     var modelFilepath = args[1] as String;
@@ -414,7 +414,7 @@ void predictReply(List<dynamic> args) {
 
     final params = llamaModel.getTextGenParams()
       ..seed = hyperparams.seed
-      ..n_threads = 2
+      ..n_threads = 6
       ..n_predict = hyperparams.tokens
       ..top_k = hyperparams.topK
       ..top_p = hyperparams.topP

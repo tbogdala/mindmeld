@@ -8,27 +8,33 @@ import 'dart:developer';
 
 import 'config_models.dart';
 
-enum AutoDLModels { tinyllama }
+enum AutoDLModels { opusV12Llama3_8B, tinyllama }
 
 extension AutoDLModelsExtension on AutoDLModels {
   String nameAsString() {
     switch (this) {
+      case AutoDLModels.opusV12Llama3_8B:
+        return 'Opus-v1.2-llama-3-8b';
       default:
-        return "TinyLlama-1.1B-Chat-v1.0";
+        return 'TinyLlama-1.1B-Chat-v1.0';
     }
   }
 
   String getModelURL() {
     switch (this) {
+      case AutoDLModels.opusV12Llama3_8B:
+        return 'https://huggingface.co/mradermacher/opus-v1.2-llama-3-8b-instruct-run3.5-epoch2.5-GGUF/resolve/main/opus-v1.2-llama-3-8b-instruct-run3.5-epoch2.5.IQ4_XS.gguf';
       default:
-        return "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf";
+        return 'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf';
     }
   }
 
   String getModelFilename() {
     switch (this) {
+      case AutoDLModels.opusV12Llama3_8B:
+        return 'opus-v1.2-llama-3-8b-instruct-run3.5-epoch2.5.IQ4_XS.gguf';
       default:
-        return "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf";
+        return 'tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf';
     }
   }
 }

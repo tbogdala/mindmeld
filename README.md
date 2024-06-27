@@ -39,7 +39,7 @@ Building the necessary library components for the iOS simulator app.
 cd packages/woolydart/src/llama.cpp
 mkdir build-ios
 cd build-ios
-cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DLLAMA_METAL_EMBED_LIBRARY=ON  -DPLATFORM=SIMULATORARM64
+cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DLLAMA_METAL_EMBED_LIBRARY=OFF  -DPLATFORM=SIMULATORARM64
 make build_info
 cmake --build . --config Release
 cd ~/Stash/codes/mindmeld
