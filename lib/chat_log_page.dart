@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -31,13 +32,16 @@ class _ChatLogPageState extends State<ChatLogPage>
   late AnimationController circularProgresAnimController;
   bool messageGenerationInProgress = false;
 
-  // set this to non-null when a messages is getting edditt
+  // set this to non-null when a messages is getting edited
   ChatLogMessage? messageBeingEdited;
+
+  PredictionWorker? prognosticator;
 
   @override
   void dispose() {
     newMessgeController.dispose();
     circularProgresAnimController.dispose();
+    prognosticator?.killWorker();
     super.dispose();
   }
 
@@ -50,6 +54,13 @@ class _ChatLogPageState extends State<ChatLogPage>
         setState(() {});
       });
     circularProgresAnimController.stop();
+
+    PredictionWorker.spawn().then(
+      (value) {
+        log("PredictionWorker spawned.");
+        prognosticator = value;
+      },
+    );
 
     super.initState();
   }
@@ -107,15 +118,13 @@ class _ChatLogPageState extends State<ChatLogPage>
     stopPhrases.add('${widget.chatLog.humanName}:');
 
     // run the text inference in an isolate
-    var receivePort = ReceivePort();
-    await Isolate.spawn(predictReply, [
-      receivePort.sendPort,
-      modelFilepath,
-      prompt,
-      stopPhrases,
-      widget.chatLog.hyperparmeters,
-    ]);
-    var predictedOutput = await receivePort.first as PredictReplyResult;
+    if (prognosticator == null) {
+      log("prognosticator was not initialized yet, skipping _generateAIMessage...");
+      return;
+    }
+    PredictReplyRequest request = PredictReplyRequest(
+        modelFilepath, prompt, stopPhrases, widget.chatLog.hyperparmeters);
+    var predictedOutput = await prognosticator!.predictText(request);
 
     for (final anti in stopPhrases) {
       if (predictedOutput.message.endsWith(anti)) {
@@ -373,97 +382,158 @@ class _ChatLogPageState extends State<ChatLogPage>
 // **********************************************************************
 
 class PredictReplyResult {
+  bool success;
   String message;
   double generationSpeedTPS;
 
-  PredictReplyResult(this.message, this.generationSpeedTPS);
+  PredictReplyResult(this.success, this.message, this.generationSpeedTPS);
 }
 
-// predictReply parameters:
-//  [0] sendPort
-//  [1] modelFilepath
-//  [2] promptString
-//  [3] antipromptStrings
-//  [4] hyperparameters
-void predictReply(List<dynamic> args) {
-  var sendPort = args[0] as SendPort;
-  try {
+class PredictReplyRequest {
+  String modelFilepath;
+  String promptString;
+  List<String> antipromptStrings;
+  ChatLogHyperparameters hyperparameters;
+
+  PredictReplyRequest(this.modelFilepath, this.promptString,
+      this.antipromptStrings, this.hyperparameters);
+}
+
+// TODO: Things that need impl: * change model, * close model
+class PredictionWorker {
+  late Isolate _workerIsolate;
+  late ReceivePort _fromIsoPort;
+  SendPort? _toIsoPort;
+  Completer<void> _isoReady = Completer.sync();
+  Completer<PredictReplyResult> _isoResponse = Completer();
+
+  static Future<PredictionWorker> spawn() async {
+    PredictionWorker obj = PredictionWorker();
+    obj._fromIsoPort = ReceivePort();
+    obj._fromIsoPort.listen(obj._handleResponsesFromIsolate);
+    obj._workerIsolate =
+        await Isolate.spawn(_isolateWorker, obj._fromIsoPort.sendPort);
+    return obj;
+  }
+
+  void killWorker() {
+    _workerIsolate.kill(priority: Isolate.immediate);
+    _fromIsoPort.close();
+    _toIsoPort = null;
+    _isoReady = Completer.sync();
+    _isoResponse = Completer();
+  }
+
+  Future<PredictReplyResult> predictText(PredictReplyRequest request) async {
+    await _isoReady.future;
+    _isoResponse = Completer();
+    _toIsoPort!.send(request);
+    return _isoResponse.future;
+  }
+
+  void _handleResponsesFromIsolate(dynamic message) {
+    if (message is SendPort) {
+      _toIsoPort = message;
+      _isoReady.complete();
+    } else if (message is PredictReplyResult) {
+      _isoResponse.complete(message);
+    } else {
+      log("PredictionWorker._handleResponseFromIsolate() got an unknown message: $message");
+    }
+  }
+
+  static void _isolateWorker(SendPort port) {
+    // send the communication's port back right away
+    final workerReceivePort = ReceivePort();
+    port.send(workerReceivePort.sendPort);
+
     // an empty string for iOS to use the current process instead of a library file.
     final lib = Platform.isAndroid ? "libllama.so" : "";
     log("Library loaded through DynamicLibrary.");
     var llamaModel = LlamaModel(lib);
 
-    var hyperparams = args[4] as ChatLogHyperparameters;
-    final modelParams = llamaModel.getDefaultModelParams()
-      ..n_gpu_layers = 100
-      ..use_mmap = false;
-    final contextParams = llamaModel.getDefaultContextParams()
-      ..seed = hyperparams.seed
-      ..n_threads = 6
-      ..n_ctx = 2048;
+    workerReceivePort.listen((dynamic message) async {
+      if (message is PredictReplyRequest) {
+        final result = _predictReply(llamaModel, message);
+        port.send(result);
+      }
+    });
+  }
 
-    var modelFilepath = args[1] as String;
-    log("Attempting to load model: $modelFilepath");
+  static PredictReplyResult _predictReply(
+      LlamaModel llamaModel, PredictReplyRequest args) {
+    late gpt_params_simple params;
+    try {
+      if (!llamaModel.isModelLoaded()) {
+        final modelParams = llamaModel.getDefaultModelParams()
+          ..n_gpu_layers = 100
+          ..use_mmap = false;
+        final contextParams = llamaModel.getDefaultContextParams()
+          ..seed = args.hyperparameters.seed
+          ..n_threads = 6
+          ..n_ctx = 2048;
 
-    final bool loadedResult =
-        llamaModel.loadModel(modelFilepath, modelParams, contextParams, true);
-    if (loadedResult == false) {
-      Isolate.exit(sendPort,
-          PredictReplyResult('<Error: Failed to load the GGUF model.>', 0.0));
+        log("Attempting to load model: ${args.modelFilepath}");
+
+        final bool loadedResult = llamaModel.loadModel(
+            args.modelFilepath, modelParams, contextParams, true);
+        if (loadedResult == false) {
+          return PredictReplyResult(
+              false, '<Error: Failed to load the GGUF model.>', 0.0);
+        }
+      }
+
+      params = llamaModel.getTextGenParams()
+        ..seed = args.hyperparameters.seed
+        ..n_threads = 6
+        ..n_predict = args.hyperparameters.tokens
+        ..top_k = args.hyperparameters.topK
+        ..top_p = args.hyperparameters.topP
+        ..min_p = args.hyperparameters.minP
+        ..tfs_z = args.hyperparameters.tfsZ
+        ..typical_p = args.hyperparameters.typicalP
+        ..penalty_repeat = args.hyperparameters.repeatPenalty
+        ..penalty_last_n = args.hyperparameters.repeatLastN
+        ..ignore_eos = false
+        ..flash_attn = true
+        ..prompt_cache_all = true
+        ..n_batch = 128;
+      params.setPrompt(args.promptString);
+      params.setAntiprompts(args.antipromptStrings);
+      log('A total of ${args.antipromptStrings.length} antiprompt strings: ${args.antipromptStrings.join(",")}');
+
+      final (predictResult, outputString) =
+          llamaModel.predictText(params, nullptr);
+      if (predictResult.result != 0) {
+        return PredictReplyResult(
+            false,
+            '<Error: LlamaModel.predictText() returned ${predictResult.result}>',
+            0.0);
+      }
+      var generationSpeed = 1e3 /
+          (predictResult.t_end_ms - predictResult.t_start_ms) *
+          predictResult.n_eval;
+
+      log('Generated text:\n$outputString');
+      log(format(
+          '\nTiming Data: {} tokens total in {:.2f} ms ({:.2f} T/s) ; {} prompt tokens in {:.2f} ms ({:.2f} T/s)\n\n',
+          predictResult.n_eval,
+          (predictResult.t_end_ms - predictResult.t_start_ms),
+          1e3 /
+              (predictResult.t_end_ms - predictResult.t_start_ms) *
+              predictResult.n_eval,
+          predictResult.n_p_eval,
+          predictResult.t_p_eval_ms,
+          1e3 / predictResult.t_p_eval_ms * predictResult.n_p_eval));
+
+      return PredictReplyResult((outputString != null ? true : false),
+          outputString ?? "<Error: No response generated.>", generationSpeed);
+    } catch (e) {
+      var errormsg = e.toString();
+      log("Caught exception trying to predict reply: $errormsg");
+      return PredictReplyResult(false, '<Error: $errormsg>', 0.0);
+    } finally {
+      params.dispose();
     }
-
-    final params = llamaModel.getTextGenParams()
-      ..seed = hyperparams.seed
-      ..n_threads = 6
-      ..n_predict = hyperparams.tokens
-      ..top_k = hyperparams.topK
-      ..top_p = hyperparams.topP
-      ..min_p = hyperparams.minP
-      ..tfs_z = hyperparams.tfsZ
-      ..typical_p = hyperparams.typicalP
-      ..penalty_repeat = hyperparams.repeatPenalty
-      ..penalty_last_n = hyperparams.repeatLastN
-      ..ignore_eos = false
-      ..flash_attn = true
-      ..n_batch = 128;
-
-    final prompt = args[2] as String;
-    params.setPrompt(prompt);
-
-    var antipromptStrings = args[3] as List<String>;
-    params.setAntiprompts(antipromptStrings);
-    log('A total of ${antipromptStrings.length} antiprompt strings: ${antipromptStrings.join(",")}');
-
-    final (predictResult, outputString) =
-        llamaModel.predictText(params, nullptr);
-    if (predictResult.result != 0) {
-      Isolate.exit(
-          sendPort,
-          PredictReplyResult(
-              '<Error: LlamaModel.predictText() returned ${predictResult.result}>',
-              0.0));
-    }
-    var generationSpeed = 1e3 /
-        (predictResult.t_end_ms - predictResult.t_start_ms) *
-        predictResult.n_eval;
-
-    log('Generated text:\n$outputString');
-    log(format(
-        '\nTiming Data: {} tokens total in {:.2} ms ; {:.2} T/s\n',
-        predictResult.n_eval,
-        (predictResult.t_end_ms - predictResult.t_start_ms),
-        generationSpeed));
-
-    params.dispose();
-    llamaModel.freeModel();
-
-    Isolate.exit(
-        sendPort,
-        PredictReplyResult(outputString ?? "<Error: No response generated.>",
-            generationSpeed));
-  } catch (e) {
-    var errormsg = e.toString();
-    log("Caught exception trying to predict reply: $errormsg");
-    Isolate.exit(sendPort, PredictReplyResult('<Error: $errormsg>', 0.0));
   }
 }

@@ -32,6 +32,9 @@
 *   Splash screen gets updated with: `dart run flutter_native_splash:create`.
     Docs: https://github.com/jonbhanson/flutter_native_splash
 
+*   Think downloading a single file would be easy with a framework like Flutter?
+    Nope! This package got the job done for me: https://github.com/781flyingdutchman/background_downloader
+
 
 Building the necessary library components for the iOS simulator app.
 
@@ -92,7 +95,6 @@ https://github.com/lmstudio-ai/configs
 * Need to break apart the new chat log page to have model setup on it's own page.
 * Add avatar pictures to the chat log and to be used in the AppBar for the chat log page
 * Low nBatch ruined something in llama_decode somewhere in the bindings. Batch of 8 limited incoming prompt to 166 characters.
-* think about how to deal with extra messages getting sent while one is being predicted.
 * Provide a text hint as to how to add more models in the onboarding page.
 * BUG: make sure chat logs with duplicate names can't be made
 * Should have copy icon next to chat log settings to copy scenario/desc and then paste icons in the sections.
@@ -101,10 +103,7 @@ https://github.com/lmstudio-ai/configs
     - chat
     - manage models
     - [tbd: group chat, games, etc]
-* Launch icon
 * When app isn't focus, maybe send the user a notification?
-* BUG: backing out of log view while generating doesn't stop generation; will eventually show up in log, but feels awkward.
-* Sort chat log list by recent use?
 * Long press of send button should 'impersonate' the AI instead if there's a message in the text box?
 * Have a help icon for ChatLog Configuration to explain settings verbosely.
 * Gotta version info the config files and chat logs
