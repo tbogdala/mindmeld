@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:mindmeld/config_models.dart';
+import 'package:mindmeld/model_import_page.dart';
 
 import 'chat_log.dart';
 
 class ConfigureChatLogPage extends StatefulWidget {
   final ChatLog chatLog;
+  final ConfigModelFiles configModelFiles;
 
-  const ConfigureChatLogPage({super.key, required this.chatLog});
+  const ConfigureChatLogPage(
+      {super.key, required this.chatLog, required this.configModelFiles});
 
   @override
   State<ConfigureChatLogPage> createState() => _ConfigureChatLogPageState();
@@ -32,6 +36,13 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
   final hpPresencePenController = TextEditingController();
   final hpSeedController = TextEditingController();
 
+  late List<String> modelFileOptions;
+  late List<String> promptFormatOptions;
+  final modelGpuLayersController = TextEditingController();
+  final modelContextSizeController = TextEditingController();
+  final modelThreadCountController = TextEditingController();
+  final modelBatchSizeController = TextEditingController();
+
   var currentPageIndex = 0;
 
   @override
@@ -55,6 +66,11 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
     hpFreqPenController.dispose();
     hpPresencePenController.dispose();
     hpSeedController.dispose();
+
+    modelGpuLayersController.dispose();
+    modelContextSizeController.dispose();
+    modelThreadCountController.dispose();
+    modelBatchSizeController.dispose();
 
     super.dispose();
   }
@@ -86,7 +102,184 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
     hpPresencePenController.text =
         widget.chatLog.hyperparmeters.presencePenalty.toString();
     hpSeedController.text = widget.chatLog.hyperparmeters.seed.toString();
+
+    // build the data for the model dropdown to select already imported models
+    modelFileOptions = widget.configModelFiles.modelFiles.keys.toList();
+    promptFormatOptions =
+        ModelPromptStyle.values.map((v) => v.nameAsString()).toList();
+
+    var currentModelConfig =
+        widget.configModelFiles.modelFiles[widget.chatLog.modelName]!;
+    modelGpuLayersController.text = currentModelConfig.gpuLayers.toString();
+    if (currentModelConfig.contextSize != null) {
+      modelContextSizeController.text =
+          currentModelConfig.contextSize.toString();
+    }
+    if (currentModelConfig.threadCount != null) {
+      modelThreadCountController.text =
+          currentModelConfig.threadCount.toString();
+    }
+    if (currentModelConfig.batchSize != null) {
+      modelBatchSizeController.text = currentModelConfig.batchSize.toString();
+    }
+
     super.initState();
+  }
+
+  Widget _buildModelPage(BuildContext context) {
+    return Padding(
+        padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+              ListTile(
+                  leading: const Icon(Icons.psychology),
+                  title: Row(children: [
+                    const Text('Model:'),
+                    const SizedBox(width: 16),
+                    DropdownMenu(
+                      initialSelection: widget.chatLog.modelName,
+                      dropdownMenuEntries: modelFileOptions
+                          .map((option) =>
+                              DropdownMenuEntry(value: option, label: option))
+                          .toList(),
+                      onSelected: (value) {
+                        setState(() {
+                          widget.chatLog.modelName = value as String;
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 16),
+                    FilledButton(
+                      child: const Icon(Icons.add),
+                      onPressed: () async {
+                        // move to model import page
+                        await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ModelImportPage(
+                                        onNewConfigModelFiles:
+                                            (newConfigModelFiles) {
+                                      setState(() {
+                                        // update our own modelFiles with the new data
+                                        var key = newConfigModelFiles
+                                            .modelFiles.keys.first;
+                                        var value = newConfigModelFiles
+                                            .modelFiles[key]!;
+                                        widget.configModelFiles
+                                            .modelFiles[key] = value;
+
+                                        // build the data for the model dropdown to select already imported models
+                                        modelFileOptions = widget
+                                            .configModelFiles.modelFiles.keys
+                                            .toList();
+
+                                        // update the chatlog to use it
+                                        widget.chatLog.modelName = key;
+
+                                        // finally, save out the new config file
+                                        widget.configModelFiles
+                                            .saveJsonToConfigFile()
+                                            .then((_) {
+                                          Navigator.pop(context);
+                                        });
+                                      });
+                                    })));
+                      },
+                    ),
+                  ])),
+              ListTile(
+                leading: const Icon(Icons.engineering),
+                title: Row(children: [
+                  const Text('Prompt Style:'),
+                  const SizedBox(width: 16),
+                  DropdownMenu(
+                    initialSelection:
+                        widget.chatLog.modelPromptStyle.nameAsString(),
+                    dropdownMenuEntries: promptFormatOptions
+                        .map((option) =>
+                            DropdownMenuEntry(value: option, label: option))
+                        .toList(),
+                    onSelected: (value) {
+                      setState(() {
+                        widget.chatLog.modelPromptStyle =
+                            modelPromptStyleFromString(value!);
+                      });
+                    },
+                  ),
+                ]),
+              ),
+              const SizedBox(height: 8),
+              const Divider(),
+              const SizedBox(height: 8),
+              ListTile(
+                  leading: const Icon(Icons.list),
+                  title: TextField(
+                    controller: modelGpuLayersController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: "GPU Layers",
+                    ),
+                    onChanged: (text) {
+                      var currentModelConfig = widget.configModelFiles
+                          .modelFiles[widget.chatLog.modelName]!;
+                      currentModelConfig.gpuLayers = int.tryParse(text) ?? 0;
+                    },
+                  )),
+              const SizedBox(height: 8),
+              ListTile(
+                  leading: const Icon(Icons.list),
+                  title: TextField(
+                    controller: modelContextSizeController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: "Context Size",
+                    ),
+                    onChanged: (text) {
+                      var currentModelConfig = widget.configModelFiles
+                          .modelFiles[widget.chatLog.modelName]!;
+                      currentModelConfig.contextSize =
+                          text.isEmpty ? null : int.tryParse(text);
+                    },
+                  )),
+              const SizedBox(height: 8),
+              ListTile(
+                  leading: const Icon(Icons.list),
+                  title: TextField(
+                    controller: modelThreadCountController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: "Thread Count",
+                    ),
+                    onChanged: (text) {
+                      var currentModelConfig = widget.configModelFiles
+                          .modelFiles[widget.chatLog.modelName]!;
+                      currentModelConfig.threadCount =
+                          text.isEmpty ? null : int.tryParse(text);
+                    },
+                  )),
+              const SizedBox(height: 8),
+              ListTile(
+                  leading: const Icon(Icons.list),
+                  title: TextField(
+                    controller: modelBatchSizeController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: "Batch Size",
+                    ),
+                    onChanged: (text) {
+                      var currentModelConfig = widget.configModelFiles
+                          .modelFiles[widget.chatLog.modelName]!;
+                      currentModelConfig.batchSize =
+                          text.isEmpty ? null : int.tryParse(text);
+                    },
+                  )),
+
+              // bool promptCache;
+              // bool ignoreEos;
+              // bool flashAttention;
+            ])));
   }
 
   Widget _buildCharactersPage(BuildContext context) {
@@ -343,7 +536,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: const Text('ChatLog Configuration')),
+        appBar: AppBar(title: const Text('Chat Configuration')),
         bottomNavigationBar: NavigationBar(
           onDestinationSelected: (int index) {
             setState(() {
@@ -362,11 +555,17 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
               icon: Icon(Icons.tune_outlined),
               label: 'Parameters',
             ),
+            NavigationDestination(
+              selectedIcon: Icon(Icons.psychology),
+              icon: Icon(Icons.psychology_outlined),
+              label: 'Model',
+            ),
           ],
         ),
         body: <Widget>[
           _buildCharactersPage(context),
-          _buildParametersPage(context)
+          _buildParametersPage(context),
+          _buildModelPage(context),
         ][currentPageIndex]);
   }
 }

@@ -102,12 +102,14 @@ class _ChatLogPageState extends State<ChatLogPage>
 
     // get the model filepath for the selected model. right now this is a
     // relative path, so we have to combine it with our documents folder
-    var modelFilepath = join(await ConfigModelFiles.getModelsFolderpath(),
-        widget.configModelFiles.modelFiles[widget.chatLog.modelName]);
+    var modelFilepath = join(
+        await ConfigModelFiles.getModelsFolderpath(), widget.chatLog.modelName);
+    var currentModelConfig =
+        widget.configModelFiles.modelFiles[widget.chatLog.modelName]!;
 
     // build the prompt to send off to the ai
-    int tokenBudget =
-        2048 - widget.chatLog.hyperparmeters.tokens; //TODO: unhardcode this
+    int tokenBudget = (currentModelConfig.contextSize ?? 2048) -
+        widget.chatLog.hyperparmeters.tokens;
     final promptConfig = widget.chatLog.modelPromptStyle.getPromptConfig();
     final prompt = widget.chatLog.buildPrompt(tokenBudget, continueMsg);
     log("Prompt Built:");
@@ -122,8 +124,8 @@ class _ChatLogPageState extends State<ChatLogPage>
       log("prognosticator was not initialized yet, skipping _generateAIMessage...");
       return;
     }
-    PredictReplyRequest request = PredictReplyRequest(
-        modelFilepath, prompt, stopPhrases, widget.chatLog.hyperparmeters);
+    PredictReplyRequest request = PredictReplyRequest(modelFilepath,
+        currentModelConfig, prompt, stopPhrases, widget.chatLog.hyperparmeters);
     var predictedOutput = await prognosticator!.predictText(request);
 
     for (final anti in stopPhrases) {
@@ -357,11 +359,15 @@ class _ChatLogPageState extends State<ChatLogPage>
                   MaterialPageRoute(
                       builder: (context) => ConfigureChatLogPage(
                             chatLog: widget.chatLog,
+                            configModelFiles: widget.configModelFiles,
                           )));
 
               // once we've returned from the chatlog configuration page
               // save the log incase changes were made.
               await widget.chatLog.saveToFile();
+
+              // same with the models configuration file
+              await widget.configModelFiles.saveJsonToConfigFile();
             }),
       ]),
       body: Padding(
@@ -391,11 +397,12 @@ class PredictReplyResult {
 
 class PredictReplyRequest {
   String modelFilepath;
+  ConfigModelSettings modelSettings;
   String promptString;
   List<String> antipromptStrings;
   ChatLogHyperparameters hyperparameters;
 
-  PredictReplyRequest(this.modelFilepath, this.promptString,
+  PredictReplyRequest(this.modelFilepath, this.modelSettings, this.promptString,
       this.antipromptStrings, this.hyperparameters);
 }
 
@@ -466,12 +473,12 @@ class PredictionWorker {
     try {
       if (!llamaModel.isModelLoaded()) {
         final modelParams = llamaModel.getDefaultModelParams()
-          ..n_gpu_layers = 100
+          ..n_gpu_layers = args.modelSettings.gpuLayers
           ..use_mmap = false;
         final contextParams = llamaModel.getDefaultContextParams()
           ..seed = args.hyperparameters.seed
-          ..n_threads = 6
-          ..n_ctx = 2048;
+          ..n_threads = args.modelSettings.threadCount ?? -1
+          ..n_ctx = args.modelSettings.contextSize ?? 2048;
 
         log("Attempting to load model: ${args.modelFilepath}");
 
@@ -485,7 +492,7 @@ class PredictionWorker {
 
       params = llamaModel.getTextGenParams()
         ..seed = args.hyperparameters.seed
-        ..n_threads = 6
+        ..n_threads = args.modelSettings.threadCount ?? 1
         ..n_predict = args.hyperparameters.tokens
         ..top_k = args.hyperparameters.topK
         ..top_p = args.hyperparameters.topP
@@ -497,7 +504,7 @@ class PredictionWorker {
         ..ignore_eos = false
         ..flash_attn = true
         ..prompt_cache_all = true
-        ..n_batch = 128;
+        ..n_batch = args.modelSettings.batchSize ?? 128;
       params.setPrompt(args.promptString);
       params.setAntiprompts(args.antipromptStrings);
       log('A total of ${args.antipromptStrings.length} antiprompt strings: ${args.antipromptStrings.join(",")}');

@@ -7,7 +7,7 @@ import 'chat_log.dart';
 import 'chat_log_page.dart';
 import 'config_models.dart';
 import 'new_chat_log_page.dart';
-import 'onboarding_page.dart';
+import 'model_import_page.dart';
 
 class ChatLogSelectPage extends StatefulWidget {
   final String appTitle = 'MindMeld';
@@ -79,7 +79,7 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
               appBar: AppBar(
                 title: Text(widget.appTitle),
               ),
-              body: OnboardingPage(
+              body: ModelImportPage(
                 onNewConfigModelFiles: (newConfigModelFiles) {
                   setState(() {
                     updateConfigModelFiles(newConfigModelFiles);

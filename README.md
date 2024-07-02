@@ -107,3 +107,10 @@ https://github.com/lmstudio-ai/configs
 * Long press of send button should 'impersonate' the AI instead if there's a message in the text box?
 * Have a help icon for ChatLog Configuration to explain settings verbosely.
 * Gotta version info the config files and chat logs
+* BUG: changing model in chat log settings wont change the loaded model
+* Confirm that not supplying a ConfigModelSetting context size uses -1 or auto for default.
+* BUG: ConfigModelSettings that are nullable might not be picking good defaults. 
+    ThreadCount to -1 causes crash for example so 1 is hardcoded in as a default if not supplied.
+* BUG: Crashes if existing logs have a model name that isn't imported
+* BUG?: switching between logs might crash the app?
+* Show overall T/s or TG & PP T/s?

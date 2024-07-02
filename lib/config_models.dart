@@ -6,6 +6,36 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'config_models.g.dart';
 
+@JsonSerializable()
+class ConfigModelSettings {
+  int gpuLayers = 100;
+  int? contextSize;
+  int? threadCount;
+  int? batchSize;
+  bool promptCache;
+  bool ignoreEos;
+  bool flashAttention;
+  String? promptFormat;
+
+  ConfigModelSettings(
+      this.gpuLayers,
+      this.contextSize,
+      this.threadCount,
+      this.batchSize,
+      this.promptCache,
+      this.ignoreEos,
+      this.flashAttention,
+      this.promptFormat);
+
+  factory ConfigModelSettings.fromJson(Map<String, dynamic> json) {
+    return _$ConfigModelSettingsFromJson(json);
+  }
+
+  Map<String, dynamic> toJson() {
+    return _$ConfigModelSettingsToJson(this);
+  }
+}
+
 /// This class represents the configuration data for all of the imported LLM
 /// neural net models. When FilePicker selects a file it gets copied over to the
 /// cache, so we have to keep track of it. Similarly if the user uses the app
@@ -13,7 +43,7 @@ part 'config_models.g.dart';
 /// used when creating a new chatlog for the model.
 @JsonSerializable()
 class ConfigModelFiles {
-  final Map<String, String> modelFiles;
+  final Map<String, ConfigModelSettings> modelFiles;
 
   ConfigModelFiles({required this.modelFiles});
 
@@ -26,17 +56,16 @@ class ConfigModelFiles {
     return jsonEncode(_$ConfigModelFilesToJson(this));
   }
 
-  static Future<String> getFilepath() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return '${directory.path}/model_configs.json';
-  }
-
   Future<void> saveJsonToConfigFile() async {
-    //TODO: wrap in try/catch?
     final json = toJson();
     final filepath = await getFilepath();
     final f = File(filepath);
     await f.writeAsString(json);
+  }
+
+  static Future<String> getFilepath() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return '${directory.path}/model_configs.json';
   }
 
   static Future<ConfigModelFiles?> loadFromConfigFile() async {
