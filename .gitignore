@@ -50,3 +50,5 @@ android/app/.cxx
 packages/woolydart
 ios/Frameworks/libllama.dylib
 ios/Frameworks/libllama.framework/libllama
+macos/Frameworks/libllama.dylib
+macos/Frameworks/libllama.framework/libllama
