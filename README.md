@@ -40,11 +40,9 @@ Building the necessary library components for the iOS simulator app.
 
 ```bash
 cd packages/woolydart/src/llama.cpp
-mkdir build-ios
-cd build-ios
-cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_METAL=OFF -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DLLAMA_METAL_EMBED_LIBRARY=OFF  -DPLATFORM=SIMULATORARM64
-make build_info
-cmake --build . --config Release
+rm -rf build-ios-sim
+cmake -B build-ios-sim -DLLAMA_METAL=OFF -DLLAMA_METAL_EMBED_LIBRARY=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DENABLE_VISIBILITY=On -DPLATFORM=SIMULATORARM64
+cmake --build build-ios-sim --config Release
 cd ~/Stash/codes/mindmeld
 #rm -rf ios/Frameworks
 #mkdir -p ios/Frameworks
@@ -58,7 +56,7 @@ install_name_tool -id @rpath/libllama.framework/libllama ios/Frameworks/libllama
 Actually building for real devices means rebuilding the binary:
 
 ```bash
-cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DLLAMA_METAL_EMBED_LIBRARY=ON -DPLATFORM=OS64 
+cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF  -DLLAMA_METAL_EMBED_LIBRARY=ON  -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DPLATFORM=OS64 
 make build_info
 ```
 
@@ -76,6 +74,15 @@ Steps to get iOS going
 * -DLLAMA_METAL_EMBED_LIBRARY=ON
 
 Can verify what's exported with `nm -gU ios/Frameworks/libllama.framework/libllama`.
+
+
+Possible fix for the new build system:
+
+```bash
+cmake -S . -B build-ios -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_BUILD_TYPE=Release
+cmake --build build-ios --config Release
+```
+
 
 #### Models to explore:
 
@@ -114,3 +121,4 @@ https://github.com/lmstudio-ai/configs
 * BUG: Crashes if existing logs have a model name that isn't imported
 * BUG?: switching between logs might crash the app?
 * Show overall T/s or TG & PP T/s?
+* BUG: Showing chat log config page that is set to a model that doesn't exist crashes

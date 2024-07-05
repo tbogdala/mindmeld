@@ -7,4 +7,4 @@ set(LLAMA_VULKAN ON)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-add_subdirectory(./woolydart/src/llama.cpp)
+add_subdirectory(./woolydart/src)
