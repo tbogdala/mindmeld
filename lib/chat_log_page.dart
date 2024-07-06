@@ -455,7 +455,7 @@ class PredictionWorker {
     port.send(workerReceivePort.sendPort);
 
     // an empty string for iOS to use the current process instead of a library file.
-    final lib = Platform.isAndroid ? "libllama.so" : "";
+    final lib = Platform.isAndroid ? "libwoolydart.so" : "";
     log("Library loaded through DynamicLibrary.");
     var llamaModel = LlamaModel(lib);
 

@@ -6,7 +6,7 @@ SCRIPT_DIR=$PWD
 # Build the woolydart package for MacOS
 cd packages/woolydart/src
 rm -rf build
-cmake -B build -DLLAMA_METAL=On -DLLAMA_METAL_EMBED_LIBRARY=On 
+cmake -B build -DGGML_METAL=On -DGGML_METAL_EMBED_LIBRARY=On 
 cmake --build build --config Release
 
 # Jump back to our project dir

@@ -121,4 +121,3 @@ https://github.com/lmstudio-ai/configs
 * BUG: Crashes if existing logs have a model name that isn't imported
 * BUG?: switching between logs might crash the app?
 * Show overall T/s or TG & PP T/s?
-* BUG: Showing chat log config page that is set to a model that doesn't exist crashes

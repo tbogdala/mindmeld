@@ -6,7 +6,7 @@ SCRIPT_DIR=$PWD
 # Build the woolydart package for MacOS
 cd packages/woolydart/src
 rm -rf build-ios-sim
-cmake -B build-ios-sim -DLLAMA_METAL=OFF -DLLAMA_METAL_EMBED_LIBRARY=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DENABLE_VISIBILITY=On -DPLATFORM=SIMULATORARM64
+cmake -B build-ios-sim -DGGML_METAL=OFF -DGGML_METAL_EMBED_LIBRARY=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DENABLE_VISIBILITY=On -DPLATFORM=SIMULATORARM64
 cmake --build build-ios-sim --config Release
 
 # Jump back to our project dir

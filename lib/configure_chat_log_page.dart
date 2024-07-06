@@ -109,7 +109,12 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
         ModelPromptStyle.values.map((v) => v.nameAsString()).toList();
 
     var currentModelConfig =
-        widget.configModelFiles.modelFiles[widget.chatLog.modelName]!;
+        widget.configModelFiles.modelFiles[widget.chatLog.modelName];
+    if (currentModelConfig == null) {
+      var firstInConfig = widget.configModelFiles.modelFiles.entries.first;
+      currentModelConfig = firstInConfig.value;
+      widget.chatLog.modelName = firstInConfig.key;
+    }
     modelGpuLayersController.text = currentModelConfig.gpuLayers.toString();
     if (currentModelConfig.contextSize != null) {
       modelContextSizeController.text =
