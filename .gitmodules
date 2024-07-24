@@ -1,3 +1,6 @@
 [submodule "packages/ios-cmake"]
 	path = packages/ios-cmake
 	url = https://github.com/leetal/ios-cmake
+[submodule "packages/woolydart"]
+	path = packages/woolydart
+	url = https://github.com/tbogdala/woolydart.git

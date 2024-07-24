@@ -300,7 +300,7 @@ class ChatLog {
 
   String buildPrompt(int tokenBudget, bool continueMsg) {
     // ballpark esimating for building up a prompt
-    const charsPerToken = 3.5; // conservative...
+    const charsPerToken = 3.0; // conservative...
     final estCharBudget = tokenBudget * charsPerToken;
 
     var promptConfig = modelPromptStyle.getPromptConfig();

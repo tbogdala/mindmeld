@@ -46,8 +46,7 @@ app.*.map.json
 # NDK build folder can be excluded
 android/app/.cxx
 
-# Temp ban on this until we submodule it
-packages/woolydart
+# Block binaries
 ios/Frameworks/libllama.dylib
 ios/Frameworks/libllama.framework/libllama
 macos/Frameworks/libllama.dylib

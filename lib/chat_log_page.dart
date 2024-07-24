@@ -469,7 +469,7 @@ class PredictionWorker {
 
   static PredictReplyResult _predictReply(
       LlamaModel llamaModel, PredictReplyRequest args) {
-    late gpt_params_simple params;
+    late wooly_gpt_params params;
     try {
       if (!llamaModel.isModelLoaded()) {
         final modelParams = llamaModel.getDefaultModelParams()

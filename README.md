@@ -3,14 +3,6 @@
 
 #### Dev Notes
 
-*   Added the `woolydart` Dart wrapper under `./packages` so that it can be built by the android
-    toolchain in this example.
-
-    This library must have the `llama.cpp` sources patched and built per the README of that project!
-
-    Currently needs to be downloaded and moved into the folder manually, but it will be added as
-    a submodule eventually, once uploaded to github.
-
 *   `android/app/build.gradle references "../../packages/CMakeLists.txt" as the makefile to 
     build the android llama.cpp cross compiled libraries. This is basically a very light cmake
     file that turns on shared library building and then just defers to the upstream CMakeLists.txt
@@ -35,30 +27,8 @@
 *   Think downloading a single file would be easy with a framework like Flutter?
     Nope! This package got the job done for me: https://github.com/781flyingdutchman/background_downloader
 
+*   MacOS: Hardened Runtime setting needs 'Disable Library Validation' enabled so that `path_provider` can not crash at app start.
 
-Building the necessary library components for the iOS simulator app.
-
-```bash
-cd packages/woolydart/src/llama.cpp
-rm -rf build-ios-sim
-cmake -B build-ios-sim -DLLAMA_METAL=OFF -DLLAMA_METAL_EMBED_LIBRARY=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DENABLE_VISIBILITY=On -DPLATFORM=SIMULATORARM64
-cmake --build build-ios-sim --config Release
-cd ~/Stash/codes/mindmeld
-#rm -rf ios/Frameworks
-#mkdir -p ios/Frameworks
-#cp packages/woolydart/src/llama.cpp/build-ios/libllama.dylib ios/Frameworks/libllama.dylib
-#dart run build_runner build --delete-conflicting-outputs # maybe needed? still can't load libllama
-mkdir -p ios/Frameworks/libllama.framework
-lipo -create packages/woolydart/src/llama.cpp/build-ios/libllama.dylib -output ios/Frameworks/libllama.framework/libllama
-install_name_tool -id @rpath/libllama.framework/libllama ios/Frameworks/libllama.framework/libllama
-```
-
-Actually building for real devices means rebuilding the binary:
-
-```bash
-cmake .. -DBUILD_SHARED_LIBS=ON -DLLAMA_BUILD_TESTS=OFF -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=OFF  -DLLAMA_METAL_EMBED_LIBRARY=ON  -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DPLATFORM=OS64 
-make build_info
-```
 
 Steps to get iOS going
 * `vtool -show ios/Frameworks/libllama.framework/libllama ios/Frameworks/libllama.framework/libllama` shows minos version needed
@@ -71,20 +41,11 @@ Steps to get iOS going
 
 * Upped minimum deployments to iOS 16 with a target of iOS 17.
 * Added reference to Accelerate and Metal frameworks.
-* -DLLAMA_METAL_EMBED_LIBRARY=ON
 
-Can verify what's exported with `nm -gU ios/Frameworks/libllama.framework/libllama`.
-
-
-Possible fix for the new build system:
-
-```bash
-cmake -S . -B build-ios -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_BUILD_TYPE=Release
-cmake --build build-ios --config Release
-```
+* Can verify what's exported with `nm -gU ios/Frameworks/libllama.framework/libllama`.
 
 
-#### Models to explore:
+#### Models to explore for mobile devices:
 
 https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF   (tinychat)
 https://huggingface.co/stabilityai/stablelm-zephyr-3b           (zephyr)
@@ -96,6 +57,7 @@ https://huggingface.co/BeaverAI/Cream-Phi-3-4B-v1.1-GGUF        (phi3?)
 
 Configurations can be consulted from the LM Studio repo:
 https://github.com/lmstudio-ai/configs
+
 
 #### TODO
 
