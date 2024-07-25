@@ -29,6 +29,8 @@
 
 *   MacOS: Hardened Runtime setting needs 'Disable Library Validation' enabled so that `path_provider` can not crash at app start.
 
+*   iOS: To get over 4GB of memory, I had to add the `com.apple.developer.kernel.increased-memory-limit` entitlement.
+
 
 Steps to get iOS going
 * `vtool -show ios/Frameworks/libllama.framework/libllama ios/Frameworks/libllama.framework/libllama` shows minos version needed
