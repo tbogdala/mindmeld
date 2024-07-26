@@ -1,5 +1,53 @@
 # MindMeld
 
+A simple-to-use GUI for local AI chat.
+
+Supported platforms: iOS, Android
+In-Development platforms: MacOS
+
+
+## Getting the source code
+
+Make sure to check out the repository while being mindful of the submodules. The 
+initial commit can be done with:
+
+```bash
+git clone --recurse-submodules https://github.com/tbogdala/mindmeld.git
+```
+
+To update it, remember to recurse the submodules as well:
+
+```bash
+git pull --recurse-submodules
+```
+
+## Build Instructions
+
+Each platform is a little bit different with Flutter. For MacOS and iOS, the native binaries
+for the upstream [woolycore](https://github.com/tbogdala/woolycore) library must be built, while
+for Android they're built automatically.
+
+In both iOS and Android cases, you must have an existing [Flutter](https://flutter.dev/) development
+setup operational. That should take care of a lot of pain points. Make sure `flutter doctor` runs clean.
+
+
+### iOS Build Instructions
+
+Before running the app in the simulator or on device, you will need to build binaries manually
+for either the simulator or the on-device version. They build to separate directories, but ultimately
+*one* binary gets copied to the iOS framework folder, so these scripts will have to be re-run
+whenever changing from simulator to device or vice versa.
+
+To build simulator binaries: `./make_ios_simulator_deps.sh`
+
+To build the on-device binaries: `./make_ios_deps.sh`
+
+
+### MacOS Build Instructions
+
+Much like the iOS Build Instructions above, the MacOS framework binary has to be built manually.
+This can be done by running `./make_macos_deps.sh`.
+
 
 #### Dev Notes
 

@@ -363,11 +363,14 @@ class _ChatLogPageState extends State<ChatLogPage>
                           )));
 
               // once we've returned from the chatlog configuration page
-              // save the log incase changes were made.
+              // save the log in case changes were made.
               await widget.chatLog.saveToFile();
 
               // same with the models configuration file
               await widget.configModelFiles.saveJsonToConfigFile();
+
+              // now we dump the currently loaded model
+              prognosticator?.closeModel();
             }),
       ]),
       body: Padding(
@@ -406,6 +409,8 @@ class PredictReplyRequest {
       this.antipromptStrings, this.hyperparameters);
 }
 
+class CloseModelRequest {}
+
 // TODO: Things that need impl: * change model, * close model
 class PredictionWorker {
   late Isolate _workerIsolate;
@@ -421,6 +426,12 @@ class PredictionWorker {
     obj._workerIsolate =
         await Isolate.spawn(_isolateWorker, obj._fromIsoPort.sendPort);
     return obj;
+  }
+
+  Future<void> closeModel() async {
+    await _isoReady.future;
+    _isoResponse = Completer();
+    _toIsoPort!.send(CloseModelRequest());
   }
 
   void killWorker() {
@@ -463,6 +474,11 @@ class PredictionWorker {
       if (message is PredictReplyRequest) {
         final result = _predictReply(llamaModel, message);
         port.send(result);
+      } else if (message is CloseModelRequest) {
+        if (llamaModel.isModelLoaded()) {
+          log("Worker is closing the loaded model...");
+          llamaModel.freeModel();
+        }
       }
     });
   }
