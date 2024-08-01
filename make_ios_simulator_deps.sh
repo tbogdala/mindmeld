@@ -7,7 +7,7 @@ SCRIPT_DIR=$PWD
 cd packages/woolydart/src
 rm -rf build-ios-sim
 cmake -B build-ios-sim -DGGML_METAL=OFF -DGGML_METAL_EMBED_LIBRARY=OFF -DCMAKE_TOOLCHAIN_FILE=~/Stash/codes/mindmeld/packages/ios-cmake/ios.toolchain.cmake -DENABLE_VISIBILITY=On -DPLATFORM=SIMULATORARM64 woolycore
-cmake --build build-ios-sim --config Release
+cmake --build build-ios-sim --config Release -j 4
 
 # Jump back to our project dir
 cd "$SCRIPT_DIR"

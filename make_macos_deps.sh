@@ -7,7 +7,7 @@ SCRIPT_DIR=$PWD
 cd packages/woolydart/src
 rm -rf build
 cmake -B build -DGGML_METAL=On -DGGML_METAL_EMBED_LIBRARY=On woolycore
-cmake --build build --config Release
+cmake --build build --config Release -j 4
 
 # Jump back to our project dir
 cd "$SCRIPT_DIR"
