@@ -60,7 +60,7 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
       );
     } else {
       return MaterialApp(
-        home: Builder(builder: buildHomepage),
+        home: Builder(builder: buildChatlog),
       );
     }
   }
@@ -89,7 +89,7 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
         }));
   }
 
-  Widget buildHomepage(BuildContext context) {
+  Widget buildChatlog(BuildContext context) {
     return MaterialApp(
       title: widget.appTitle,
       theme: ThemeData(),
@@ -127,7 +127,7 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
                           Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => ChatLogPage(
+                                  builder: (context) => ChatLogWidget(
                                         chatLog: thisLog,
                                         configModelFiles: configModelFiles!,
                                       )));

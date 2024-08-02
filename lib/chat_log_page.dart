@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/material.dart';
+import 'package:mindmeld/color_theming.dart';
 
 import 'dart:ffi';
 import 'package:mindmeld/configure_chat_log_page.dart';
@@ -25,7 +26,62 @@ class ChatLogPage extends StatefulWidget {
   State<ChatLogPage> createState() => _ChatLogPageState();
 }
 
-class _ChatLogPageState extends State<ChatLogPage>
+class _ChatLogPageState extends State<ChatLogPage> {
+  late GlobalKey<_ChatLogWidgetState> chatLogWidgetState;
+
+  @override
+  void initState() {
+    super.initState();
+    chatLogWidgetState = GlobalKey();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(title: Text(widget.chatLog.name), actions: [
+          IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () async {
+                await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => ConfigureChatLogPage(
+                              chatLog: widget.chatLog,
+                              configModelFiles: widget.configModelFiles,
+                            )));
+
+                // once we've returned from the chatlog configuration page
+                // save the log in case changes were made.
+                await widget.chatLog.saveToFile();
+
+                // same with the models configuration file
+                await widget.configModelFiles.saveJsonToConfigFile();
+
+                // now we dump the currently loaded model
+                chatLogWidgetState.currentState?.closePrognosticatorModel();
+              }),
+        ]),
+        body: ChatLogWidget(
+            key: chatLogWidgetState,
+            chatLog: widget.chatLog,
+            configModelFiles: widget.configModelFiles));
+  }
+}
+
+class ChatLogWidget extends StatefulWidget {
+  final ChatLog chatLog;
+  final ConfigModelFiles configModelFiles;
+
+  const ChatLogWidget(
+      {super.key, required this.chatLog, required this.configModelFiles});
+
+  @override
+  State<ChatLogWidget> createState() => _ChatLogWidgetState();
+
+  void test() {}
+}
+
+class _ChatLogWidgetState extends State<ChatLogWidget>
     with TickerProviderStateMixin {
   final newMessgeController = TextEditingController();
 
@@ -65,22 +121,6 @@ class _ChatLogPageState extends State<ChatLogPage>
     super.initState();
   }
 
-  Color _getMessageDecorationColor(BuildContext context, bool forAIMessage) {
-    if (MediaQuery.of(context).platformBrightness == Brightness.dark) {
-      return (forAIMessage ? Colors.grey.shade800 : Colors.blue.shade800);
-    } else {
-      return (forAIMessage ? Colors.grey.shade200 : Colors.blue.shade200);
-    }
-  }
-
-  Color _getPrimaryDecorationColor(BuildContext context) {
-    if (MediaQuery.of(context).platformBrightness == Brightness.dark) {
-      return Colors.blue.shade800;
-    } else {
-      return Colors.blue.shade200;
-    }
-  }
-
   String _formatDurationString(int differenceInSeconds) {
     // Handle cases for seconds, minutes, hours
     if (differenceInSeconds < 60) {
@@ -92,6 +132,10 @@ class _ChatLogPageState extends State<ChatLogPage>
       int hours = differenceInSeconds ~/ 3600;
       return "$hours hours ago";
     }
+  }
+
+  Future<void> closePrognosticatorModel() async {
+    prognosticator?.closeModel();
   }
 
   Future<void> _generateAIMessage(bool continueMsg) async {
@@ -261,7 +305,7 @@ class _ChatLogPageState extends State<ChatLogPage>
                                     BorderSide(width: 4, color: Colors.grey))),
                         borderRadius: BorderRadius.circular(20),
                         color:
-                            _getMessageDecorationColor(context, !msg.humanSent),
+                            getMessageDecorationColor(context, !msg.humanSent),
                       ),
                       padding: const EdgeInsets.all(16),
                       child: Text(msg.message)),
@@ -330,7 +374,7 @@ class _ChatLogPageState extends State<ChatLogPage>
                         }
                       }
                     },
-                    backgroundColor: _getPrimaryDecorationColor(context),
+                    backgroundColor: getPrimaryDecorationColor(context),
                     child: (messageBeingEdited == null
                         ? const Icon(Icons.reply, size: 18)
                         : const Icon(Icons.edit, size: 18)),
