@@ -29,7 +29,7 @@ void main() async {
       await windowManager.show();
       await windowManager.focus();
     });
-    runApp(MacosMindmeldApp());
+    runApp(const MacosMindmeldApp());
   } else {
     runApp(const ChatLogSelectPage());
   }
