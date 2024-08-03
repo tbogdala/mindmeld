@@ -19,8 +19,14 @@ class ChatLogPage extends StatefulWidget {
   final ChatLog chatLog;
   final ConfigModelFiles configModelFiles;
 
+  // this callback is called when the inner ChatLogWidget has changed.
+  final void Function() onChatLogWidgetChange;
+
   const ChatLogPage(
-      {super.key, required this.chatLog, required this.configModelFiles});
+      {super.key,
+      required this.chatLog,
+      required this.configModelFiles,
+      required this.onChatLogWidgetChange});
 
   @override
   State<ChatLogPage> createState() => _ChatLogPageState();
@@ -64,9 +70,13 @@ class _ChatLogPageState extends State<ChatLogPage> {
         body: Padding(
             padding: const EdgeInsets.all(16),
             child: ChatLogWidget(
-                key: chatLogWidgetState,
-                chatLog: widget.chatLog,
-                configModelFiles: widget.configModelFiles)));
+              key: chatLogWidgetState,
+              chatLog: widget.chatLog,
+              configModelFiles: widget.configModelFiles,
+              onChatLogChange: () {
+                widget.onChatLogWidgetChange();
+              },
+            )));
   }
 }
 
@@ -74,8 +84,15 @@ class ChatLogWidget extends StatefulWidget {
   final ChatLog chatLog;
   final ConfigModelFiles configModelFiles;
 
+  // this callback is called when the chatlog has been changed by something
+  // the widget does.
+  final void Function() onChatLogChange;
+
   const ChatLogWidget(
-      {super.key, required this.chatLog, required this.configModelFiles});
+      {super.key,
+      required this.chatLog,
+      required this.configModelFiles,
+      required this.onChatLogChange});
 
   @override
   State<ChatLogWidget> createState() => _ChatLogWidgetState();
@@ -200,6 +217,8 @@ class _ChatLogWidgetState extends State<ChatLogWidget>
         circularProgresAnimController.stop();
       });
     });
+
+    widget.onChatLogChange();
   }
 
   void _showModalLongPressMessageBottomSheet(
@@ -221,6 +240,7 @@ class _ChatLogWidgetState extends State<ChatLogWidget>
                         widget.chatLog.messages.remove(msg);
                         widget.chatLog.saveToFile();
                       });
+                      widget.onChatLogChange();
                       Navigator.pop(context);
                     },
                   ),
@@ -233,7 +253,6 @@ class _ChatLogWidgetState extends State<ChatLogWidget>
                         messageBeingEdited = msg;
                         newMessgeController.text = msg.message;
                       });
-
                       Navigator.pop(context);
                     },
                   ),
@@ -399,6 +418,8 @@ class _ChatLogWidgetState extends State<ChatLogWidget>
         await _generateAIMessage(false);
       }
     }
+
+    widget.onChatLogChange();
   }
 
   @override

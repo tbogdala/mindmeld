@@ -128,9 +128,11 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) => ChatLogPage(
-                                        chatLog: thisLog,
-                                        configModelFiles: configModelFiles!,
-                                      )));
+                                      chatLog: thisLog,
+                                      configModelFiles: configModelFiles!,
+                                      onChatLogWidgetChange: () {
+                                        setState(() {}); // trigger an update
+                                      })));
                         },
                       ));
                     },

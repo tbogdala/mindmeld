@@ -124,8 +124,12 @@ class _MacosMindmeldAppState extends State<MacosMindmeldApp> {
               child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: ChatLogWidget(
-                      chatLog: selectedLog,
-                      configModelFiles: configModelFiles!)),
+                    chatLog: selectedLog,
+                    configModelFiles: configModelFiles!,
+                    onChatLogChange: () {
+                      setState(() {}); // trigger a rebuild...
+                    },
+                  )),
             )
           ],
         )),
