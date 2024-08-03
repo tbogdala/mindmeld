@@ -127,7 +127,7 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
                           Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (context) => ChatLogWidget(
+                                  builder: (context) => ChatLogPage(
                                         chatLog: thisLog,
                                         configModelFiles: configModelFiles!,
                                       )));
@@ -145,11 +145,12 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
                       builder: (context) => NewChatLogPage(
                             configModelFiles:
                                 configModelFiles!, // should only get to this widget if we have this data
-                            onConfigModelFilesChange: (newConfigModelFiles) {
-                              setState(() {
-                                updateConfigModelFiles(newConfigModelFiles);
-                              });
-                            },
+                            // TODO: review if this is being handled elsewhere
+                            // onConfigModelFilesChange: (newConfigModelFiles) {
+                            //   setState(() {
+                            //     updateConfigModelFiles(newConfigModelFiles);
+                            //   });
+                            // },
                           )));
               if (newChatLog != null) {
                 // FIXME: no safety nets on making sure a model file was actually selected.

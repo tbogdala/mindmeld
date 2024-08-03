@@ -61,10 +61,12 @@ class _ChatLogPageState extends State<ChatLogPage> {
                 chatLogWidgetState.currentState?.closePrognosticatorModel();
               }),
         ]),
-        body: ChatLogWidget(
-            key: chatLogWidgetState,
-            chatLog: widget.chatLog,
-            configModelFiles: widget.configModelFiles));
+        body: Padding(
+            padding: const EdgeInsets.all(16),
+            child: ChatLogWidget(
+                key: chatLogWidgetState,
+                chatLog: widget.chatLog,
+                configModelFiles: widget.configModelFiles)));
   }
 }
 
@@ -393,42 +395,15 @@ class _ChatLogWidgetState extends State<ChatLogWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.chatLog.name), actions: [
-        IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () async {
-              await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => ConfigureChatLogPage(
-                            chatLog: widget.chatLog,
-                            configModelFiles: widget.configModelFiles,
-                          )));
-
-              // once we've returned from the chatlog configuration page
-              // save the log in case changes were made.
-              await widget.chatLog.saveToFile();
-
-              // same with the models configuration file
-              await widget.configModelFiles.saveJsonToConfigFile();
-
-              // now we dump the currently loaded model
-              prognosticator?.closeModel();
-            }),
-      ]),
-      body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(children: [
-            Expanded(child: _buildMessageList(context)),
-            if (messageGenerationInProgress)
-              CircularProgressIndicator(
-                value: circularProgresAnimController.value,
-                semanticsLabel: 'generating reply for AI',
-              ),
-            _buildTextEntry(context),
-          ])),
-    );
+    return Column(children: [
+      Expanded(child: _buildMessageList(context)),
+      if (messageGenerationInProgress)
+        CircularProgressIndicator(
+          value: circularProgresAnimController.value,
+          semanticsLabel: 'generating reply for AI',
+        ),
+      _buildTextEntry(context),
+    ]);
   }
 }
 
