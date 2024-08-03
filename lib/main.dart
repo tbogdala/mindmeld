@@ -95,7 +95,7 @@ class _MacosMindmeldAppState extends State<MacosMindmeldApp> {
         ),
       );
     } else {
-      final firstLog = chatLogs.elementAt(0);
+      final selectedLog = chatLogs.elementAt(currentChatLog);
       return MaterialApp(
         title: 'Mindmeld',
         theme: ThemeData(),
@@ -113,13 +113,19 @@ class _MacosMindmeldAppState extends State<MacosMindmeldApp> {
                   child: DesktopChatLogListView(
                     chatLogs: chatLogs,
                     configModelFiles: configModelFiles!,
+                    onLogSelection: (newIndex) {
+                      setState(() {
+                        currentChatLog = newIndex;
+                      });
+                    },
                   )),
             ),
             Expanded(
               child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: ChatLogWidget(
-                      chatLog: firstLog, configModelFiles: configModelFiles!)),
+                      chatLog: selectedLog,
+                      configModelFiles: configModelFiles!)),
             )
           ],
         )),
@@ -131,9 +137,13 @@ class _MacosMindmeldAppState extends State<MacosMindmeldApp> {
 class DesktopChatLogListView extends StatefulWidget {
   final List<ChatLog> chatLogs;
   final ConfigModelFiles configModelFiles;
+  final Function(int) onLogSelection;
 
   const DesktopChatLogListView(
-      {super.key, required this.chatLogs, required this.configModelFiles});
+      {super.key,
+      required this.chatLogs,
+      required this.configModelFiles,
+      required this.onLogSelection});
 
   @override
   State<DesktopChatLogListView> createState() => _DesktopChatLogListViewState();
@@ -204,7 +214,7 @@ class _DesktopChatLogListViewState extends State<DesktopChatLogListView> {
                   title: Text(thisLog.name),
                   subtitle: Text('messages: ${thisLog.messages.length}'),
                   onTap: () {
-                    // currently not doing anything
+                    widget.onLogSelection(index);
                   },
                 ));
               },
