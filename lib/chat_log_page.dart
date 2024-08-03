@@ -335,6 +335,10 @@ class _ChatLogWidgetState extends State<ChatLogWidget>
           children: [
             Expanded(
                 child: TextField(
+              onSubmitted: (_) {
+                _onMessageInputSend();
+              },
+              textInputAction: TextInputAction.done,
               controller: newMessgeController,
               maxLines: null,
               keyboardType: TextInputType.multiline,
@@ -347,35 +351,7 @@ class _ChatLogWidgetState extends State<ChatLogWidget>
             if (!messageGenerationInProgress)
               GestureDetector(
                   child: FloatingActionButton(
-                    onPressed: () async {
-                      final newMsg = newMessgeController.text;
-
-                      if (messageBeingEdited != null) {
-                        // We're editing a message so simply update the message
-                        // and clear the editing 'flag'.
-                        setState(() {
-                          messageBeingEdited!.message = newMsg;
-                          messageBeingEdited = null;
-                          newMessgeController.clear();
-                        });
-                        await widget.chatLog.saveToFile();
-                      } else {
-                        // We're wanting to send a new message, so add it to
-                        // the log and start generating a new message.
-                        if (newMsg.isNotEmpty) {
-                          final chatLogMsg = ChatLogMessage(
-                              widget.chatLog.humanName, newMsg, true, null);
-                          // update the UI with the new chatlog message
-                          setState(() {
-                            newMessgeController.clear();
-                            widget.chatLog.messages.add(chatLogMsg);
-                          });
-
-                          // send our message off to the AI for a reply
-                          await _generateAIMessage(false);
-                        }
-                      }
-                    },
+                    onPressed: _onMessageInputSend,
                     backgroundColor: getPrimaryDecorationColor(context),
                     child: (messageBeingEdited == null
                         ? const Icon(Icons.reply, size: 18)
@@ -391,6 +367,38 @@ class _ChatLogWidgetState extends State<ChatLogWidget>
         ),
       ),
     );
+  }
+
+  // this function is meant to be called when the message being edited or composed
+  // is ready to be 'sent' or processed in whatever way.
+  void _onMessageInputSend() async {
+    final newMsg = newMessgeController.text;
+
+    if (messageBeingEdited != null) {
+      // We're editing a message so simply update the message
+      // and clear the editing 'flag'.
+      setState(() {
+        messageBeingEdited!.message = newMsg;
+        messageBeingEdited = null;
+        newMessgeController.clear();
+      });
+      await widget.chatLog.saveToFile();
+    } else {
+      // We're wanting to send a new message, so add it to
+      // the log and start generating a new message.
+      if (newMsg.isNotEmpty) {
+        final chatLogMsg =
+            ChatLogMessage(widget.chatLog.humanName, newMsg, true, null);
+        // update the UI with the new chatlog message
+        setState(() {
+          newMessgeController.clear();
+          widget.chatLog.messages.add(chatLogMsg);
+        });
+
+        // send our message off to the AI for a reply
+        await _generateAIMessage(false);
+      }
+    }
   }
 
   @override
