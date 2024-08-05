@@ -156,7 +156,7 @@ class _ModelImportPageState extends State<ModelImportPage> {
                           await FilePicker.platform.clearTemporaryFiles();
                           log("Temporary files have been cleared");
 
-                          // build a new models configuration file. we no longer use the full
+                          // build a new models configuration file. we no longer use the fullc
                           // filepath for the file and instead just use the relative one based
                           // on filename and our known models folder.
                           final configModelFiles =

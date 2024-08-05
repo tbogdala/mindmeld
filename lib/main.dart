@@ -21,7 +21,7 @@ void main() async {
   if (Platform.isMacOS) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
-      minimumSize: Size(480, 300),
+      minimumSize: Size(600, 420),
       size: Size(1024, 800),
       center: true,
     );
@@ -82,7 +82,6 @@ class _MacosMindmeldAppState extends State<MacosMindmeldApp> {
           }
         }
       }
-      await Future.delayed(Duration(seconds: 5));
     } catch (e) {
       log("Failed to load all the chat files: $e");
     }
