@@ -52,6 +52,7 @@ class _ChatLogPageState extends State<ChatLogPage> {
                     context,
                     MaterialPageRoute(
                         builder: (context) => ConfigureChatLogPage(
+                              isFullPage: true,
                               chatLog: widget.chatLog,
                               configModelFiles: widget.configModelFiles,
                             )));

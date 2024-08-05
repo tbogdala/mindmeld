@@ -7,9 +7,13 @@ import 'chat_log.dart';
 class ConfigureChatLogPage extends StatefulWidget {
   final ChatLog chatLog;
   final ConfigModelFiles configModelFiles;
+  final bool isFullPage;
 
   const ConfigureChatLogPage(
-      {super.key, required this.chatLog, required this.configModelFiles});
+      {super.key,
+      required this.isFullPage,
+      required this.chatLog,
+      required this.configModelFiles});
 
   @override
   State<ConfigureChatLogPage> createState() => _ConfigureChatLogPageState();
@@ -540,37 +544,69 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(title: const Text('Chat Configuration')),
-        bottomNavigationBar: NavigationBar(
-          onDestinationSelected: (int index) {
-            setState(() {
-              currentPageIndex = index;
-            });
-          },
-          selectedIndex: currentPageIndex,
-          destinations: const <Widget>[
-            NavigationDestination(
-              selectedIcon: Icon(Icons.person),
-              icon: Icon(Icons.person_outlined),
-              label: 'Characters',
-            ),
-            NavigationDestination(
-              selectedIcon: Icon(Icons.tune),
-              icon: Icon(Icons.tune_outlined),
-              label: 'Parameters',
-            ),
-            NavigationDestination(
-              selectedIcon: Icon(Icons.psychology),
-              icon: Icon(Icons.psychology_outlined),
-              label: 'Model',
-            ),
+    if (widget.isFullPage) {
+      // the full page version returns a scaffold with a nav bar
+      return Scaffold(
+          appBar: AppBar(title: const Text('Chat Configuration')),
+          bottomNavigationBar: NavigationBar(
+            onDestinationSelected: (int index) {
+              setState(() {
+                currentPageIndex = index;
+              });
+            },
+            selectedIndex: currentPageIndex,
+            destinations: const <Widget>[
+              NavigationDestination(
+                selectedIcon: Icon(Icons.person),
+                icon: Icon(Icons.person_outlined),
+                label: 'Characters',
+              ),
+              NavigationDestination(
+                selectedIcon: Icon(Icons.tune),
+                icon: Icon(Icons.tune_outlined),
+                label: 'Parameters',
+              ),
+              NavigationDestination(
+                selectedIcon: Icon(Icons.psychology),
+                icon: Icon(Icons.psychology_outlined),
+                label: 'Model',
+              ),
+            ],
+          ),
+          body: <Widget>[
+            _buildCharactersPage(context),
+            _buildParametersPage(context),
+            _buildModelPage(context),
+          ][currentPageIndex]);
+    } else {
+      // the widget version returns a column with
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            SegmentedButton(
+                segments: const <ButtonSegment<int>>[
+                  ButtonSegment<int>(value: 0, label: Text('Characters')),
+                  ButtonSegment<int>(value: 1, label: Text('Parameters')),
+                  ButtonSegment<int>(value: 2, label: Text('Model')),
+                ],
+                selected: {
+                  currentPageIndex
+                },
+                onSelectionChanged: (Set<int> newSelection) {
+                  setState(() {
+                    currentPageIndex = newSelection.first;
+                  });
+                }),
+            const SizedBox(height: 8),
+            <Widget>[
+              _buildCharactersPage(context),
+              _buildParametersPage(context),
+              _buildModelPage(context),
+            ][currentPageIndex],
           ],
         ),
-        body: <Widget>[
-          _buildCharactersPage(context),
-          _buildParametersPage(context),
-          _buildModelPage(context),
-        ][currentPageIndex]);
+      );
+    }
   }
 }

@@ -1,8 +1,8 @@
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:mindmeld/configure_chat_log_page.dart';
 import 'package:mindmeld/new_chat_log_page.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -22,14 +22,18 @@ void main() async {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
       minimumSize: Size(480, 300),
-      size: Size(1024, 768),
+      size: Size(1024, 800),
       center: true,
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
     });
-    runApp(const MacosMindmeldApp());
+    runApp(MaterialApp(
+        title: 'Mindmeld',
+        theme: ThemeData(),
+        darkTheme: ThemeData.dark(),
+        home: const MacosMindmeldApp()));
   } else {
     runApp(const ChatLogSelectPage());
   }
@@ -78,6 +82,7 @@ class _MacosMindmeldAppState extends State<MacosMindmeldApp> {
           }
         }
       }
+      await Future.delayed(Duration(seconds: 5));
     } catch (e) {
       log("Failed to load all the chat files: $e");
     }
@@ -87,53 +92,96 @@ class _MacosMindmeldAppState extends State<MacosMindmeldApp> {
   Widget build(BuildContext context) {
     // we show a progress bar if we haven't finished loading our data yet.
     if (_isLoading) {
-      return const CupertinoApp(
-        home: CupertinoPageScaffold(
-          child: Center(
-            child: CupertinoActivityIndicator(),
-          ),
-        ),
-      );
+      return const Center(
+          child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+      ));
     } else {
       final selectedLog = chatLogs.elementAt(currentChatLog);
-      return MaterialApp(
-        title: 'Mindmeld',
-        theme: ThemeData(),
-        darkTheme: ThemeData.dark(),
-        home: Scaffold(
-            // navigationBar: CupertinoNavigationBar(
-            //   middle: Text('My Flutter App'),
-            // ),
-            body: Row(
-          children: [
-            SizedBox(
-              width: 240,
-              child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: DesktopChatLogListView(
-                    chatLogs: chatLogs,
-                    configModelFiles: configModelFiles!,
-                    onLogSelection: (newIndex) {
-                      setState(() {
-                        currentChatLog = newIndex;
-                      });
-                    },
+      return Scaffold(
+          body: Row(
+        children: [
+          SizedBox(
+            width: 240,
+            child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: DesktopChatLogListView(
+                  chatLogs: chatLogs,
+                  configModelFiles: configModelFiles!,
+                  onLogSelection: (newIndex) {
+                    setState(() {
+                      currentChatLog = newIndex;
+                    });
+                  },
+                )),
+          ),
+          Expanded(
+              child: Column(
+            children: [
+              Container(
+                  decoration: BoxDecoration(
+                      color: getBackgroundDecorationColor(context),
+                      borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.all(2),
+                  margin: const EdgeInsets.all(8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: Text(selectedLog.name,
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Configure chatlog settings',
+                        icon: const Icon(Icons.settings),
+                        onPressed: () async {
+                          await showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return Dialog(
+                                    child: Container(
+                                        constraints:
+                                            const BoxConstraints.tightFor(
+                                          width: 600,
+                                        ),
+                                        child: SingleChildScrollView(
+                                            child: ConfigureChatLogPage(
+                                          isFullPage: false,
+                                          chatLog: selectedLog,
+                                          configModelFiles: configModelFiles!,
+                                        ))));
+                              });
+
+                          // once we've returned from the chatlog configuration page
+                          // save the log in case changes were made.
+                          await selectedLog.saveToFile();
+
+                          // same with the models configuration file
+                          await configModelFiles?.saveJsonToConfigFile();
+
+                          // FIXME: now we dump the currently loaded model
+                          // chatLogWidgetState.currentState
+                          //     ?.closePrognosticatorModel();
+                        },
+                      ),
+                    ],
                   )),
-            ),
-            Expanded(
-              child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: ChatLogWidget(
-                    chatLog: selectedLog,
-                    configModelFiles: configModelFiles!,
-                    onChatLogChange: () {
-                      setState(() {}); // trigger a rebuild...
-                    },
-                  )),
-            )
-          ],
-        )),
-      );
+              Expanded(
+                  child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: ChatLogWidget(
+                        chatLog: selectedLog,
+                        configModelFiles: configModelFiles!,
+                        onChatLogChange: () {
+                          setState(() {}); // trigger a rebuild...
+                        },
+                      ))),
+            ],
+          ))
+        ],
+      ));
     }
   }
 }
@@ -160,6 +208,7 @@ class _DesktopChatLogListViewState extends State<DesktopChatLogListView> {
         decoration: BoxDecoration(
             color: getBackgroundDecorationColor(context),
             borderRadius: BorderRadius.circular(8)),
+        padding: EdgeInsets.all(8),
         child: Column(
           children: [
             Row(
@@ -176,7 +225,6 @@ class _DesktopChatLogListViewState extends State<DesktopChatLogListView> {
                           builder: (BuildContext context) {
                             return Dialog(
                                 child: Container(
-                                    padding: const EdgeInsets.all(16),
                                     constraints: const BoxConstraints.tightFor(
                                       width: 400,
                                     ),
@@ -210,12 +258,17 @@ class _DesktopChatLogListViewState extends State<DesktopChatLogListView> {
               itemCount: widget.chatLogs.length,
               itemBuilder: (context, index) {
                 var thisLog = widget.chatLogs[index];
+                const shortLogNameLimit = 20;
+                final shortLogName = thisLog.name.length < shortLogNameLimit
+                    ? thisLog.name
+                    : '${thisLog.name.substring(0, shortLogNameLimit)}...';
+
                 return Card(
                     child: ListTile(
                   leading: CircleAvatar(
                     child: Text(thisLog.name.substring(0, 2)),
                   ),
-                  title: Text(thisLog.name),
+                  title: Text(shortLogName),
                   subtitle: Text('messages: ${thisLog.messages.length}'),
                   onTap: () {
                     widget.onLogSelection(index);
