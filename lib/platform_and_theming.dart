@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 Color getMessageDecorationColor(BuildContext context, bool forAIMessage) {
@@ -22,4 +24,8 @@ Color getBackgroundDecorationColor(BuildContext context) {
   } else {
     return Colors.grey.shade200;
   }
+}
+
+bool isRunningOnDesktop() {
+  return Platform.isMacOS || Platform.isLinux || Platform.isWindows;
 }

@@ -8,7 +8,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'package:mindmeld/chat_log.dart';
 import 'package:mindmeld/chat_log_page.dart';
-import 'package:mindmeld/color_theming.dart';
+import 'package:mindmeld/platform_and_theming.dart';
 import 'package:mindmeld/config_models.dart';
 
 import 'chat_log_select_page.dart';
@@ -18,7 +18,7 @@ void main() async {
 
   // right away try to detect if we're running a desktop build and do a different
   // interface that's more specialized for desktops
-  if (Platform.isMacOS) {
+  if (isRunningOnDesktop()) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
       minimumSize: Size(600, 420),
@@ -33,24 +33,24 @@ void main() async {
         title: 'Mindmeld',
         theme: ThemeData(),
         darkTheme: ThemeData.dark(),
-        home: const MacosMindmeldApp()));
+        home: const DesktopMindmeldApp()));
   } else {
     runApp(const ChatLogSelectPage());
   }
 }
 
-/* MacOS Support Code */
+/* Desktop Support Code */
 
-class MacosMindmeldApp extends StatefulWidget {
-  const MacosMindmeldApp({
+class DesktopMindmeldApp extends StatefulWidget {
+  const DesktopMindmeldApp({
     super.key,
   });
 
   @override
-  State<MacosMindmeldApp> createState() => _MacosMindmeldAppState();
+  State<DesktopMindmeldApp> createState() => _DesktopMindmeldAppState();
 }
 
-class _MacosMindmeldAppState extends State<MacosMindmeldApp> {
+class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
   bool _isLoading = true;
   List<ChatLog> chatLogs = [];
   ConfigModelFiles? configModelFiles;

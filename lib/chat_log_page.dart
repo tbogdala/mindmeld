@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/material.dart';
-import 'package:mindmeld/color_theming.dart';
+import 'package:mindmeld/platform_and_theming.dart';
 
 import 'dart:ffi';
 import 'package:mindmeld/configure_chat_log_page.dart';

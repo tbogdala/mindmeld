@@ -390,169 +390,190 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
   }
 
   Widget _buildParametersPage(BuildContext context) {
-    return Padding(
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-              ListTile(
-                  leading: const Icon(Icons.manage_search),
-                  title: TextField(
-                    controller: hpNewTokensController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "New Tokens",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.tokens =
-                          int.tryParse(text) ?? 64;
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.thermostat),
-                  title: TextField(
-                    controller: hpTempController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Temperature",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.temp =
-                          double.tryParse(text) ?? 0.8;
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.list),
-                  title: TextField(
-                    controller: hpTopKController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Top-K",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.topK =
-                          int.tryParse(text) ?? 40;
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.sort),
-                  title: TextField(
-                    controller: hpTopPController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Top-P",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.topP =
-                          (double.tryParse(text) ?? 0.9).clamp(0.0, 1.0);
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.short_text),
-                  title: TextField(
-                    controller: hpMinPController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Min-P",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.minP =
-                          (double.tryParse(text) ?? 0.05).clamp(0.0, 1.0);
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.thumbs_up_down),
-                  title: TextField(
-                    controller: hpTypicalPController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Typical-P",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.typicalP =
-                          (double.tryParse(text) ?? 1.0).clamp(0.0, 1.0);
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.trending_down),
-                  title: TextField(
-                    keyboardType: TextInputType.number,
-                    controller: hpTFSController,
-                    decoration: const InputDecoration(
-                      labelText: "Tail Free Sampling",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.tfsZ =
-                          (double.tryParse(text) ?? 1.0).clamp(0.0, 1.0);
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.filter_list_off),
-                  title: TextField(
-                    controller: hpRepPenController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Repeat Penalty",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.repeatPenalty =
-                          double.tryParse(text) ?? 1.1;
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.settings_ethernet),
-                  title: TextField(
-                    controller: hpRepPenRangeController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Repeat Range",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.repeatLastN =
-                          int.tryParse(text) ?? 64;
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.filter_list_off),
-                  title: TextField(
-                    controller: hpFreqPenController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Frequency Penalty",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.frequencyPenalty =
-                          (double.tryParse(text) ?? 0.0).clamp(0.0, 1.0);
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.filter_list_off),
-                  title: TextField(
-                    controller: hpPresencePenController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Presence Penalty",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.presencePenalty =
-                          (double.tryParse(text) ?? 0.0).clamp(0.0, 1.0);
-                    },
-                  )),
-              ListTile(
-                  leading: const Icon(Icons.shuffle),
-                  title: TextField(
-                    controller: hpSeedController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Seed",
-                    ),
-                    onChanged: (text) {
-                      widget.chatLog.hyperparmeters.seed =
-                          int.tryParse(text) ?? -1;
-                    },
-                  )),
-            ])));
+    return LayoutBuilder(builder: (context, constraints) {
+      final isWidescreen = constraints.maxWidth > 400;
+      final children = [
+        ListTile(
+            leading: const Icon(Icons.manage_search),
+            title: TextField(
+              controller: hpNewTokensController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "New Tokens",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.tokens = int.tryParse(text) ?? 64;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.thermostat),
+            title: TextField(
+              controller: hpTempController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Temperature",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.temp =
+                    double.tryParse(text) ?? 0.8;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.list),
+            title: TextField(
+              controller: hpTopKController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Top-K",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.topK = int.tryParse(text) ?? 40;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.sort),
+            title: TextField(
+              controller: hpTopPController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Top-P",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.topP =
+                    (double.tryParse(text) ?? 0.9).clamp(0.0, 1.0);
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.short_text),
+            title: TextField(
+              controller: hpMinPController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Min-P",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.minP =
+                    (double.tryParse(text) ?? 0.05).clamp(0.0, 1.0);
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.thumbs_up_down),
+            title: TextField(
+              controller: hpTypicalPController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Typical-P",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.typicalP =
+                    (double.tryParse(text) ?? 1.0).clamp(0.0, 1.0);
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.trending_down),
+            title: TextField(
+              keyboardType: TextInputType.number,
+              controller: hpTFSController,
+              decoration: const InputDecoration(
+                labelText: "Tail Free Sampling",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.tfsZ =
+                    (double.tryParse(text) ?? 1.0).clamp(0.0, 1.0);
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.filter_list_off),
+            title: TextField(
+              controller: hpRepPenController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Repeat Penalty",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.repeatPenalty =
+                    double.tryParse(text) ?? 1.1;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.settings_ethernet),
+            title: TextField(
+              controller: hpRepPenRangeController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Repeat Range",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.repeatLastN =
+                    int.tryParse(text) ?? 64;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.filter_list_off),
+            title: TextField(
+              controller: hpFreqPenController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Frequency Penalty",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.frequencyPenalty =
+                    (double.tryParse(text) ?? 0.0).clamp(0.0, 1.0);
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.filter_list_off),
+            title: TextField(
+              controller: hpPresencePenController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Presence Penalty",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.presencePenalty =
+                    (double.tryParse(text) ?? 0.0).clamp(0.0, 1.0);
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.shuffle),
+            title: TextField(
+              controller: hpSeedController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Seed",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.seed = int.tryParse(text) ?? -1;
+              },
+            )),
+      ];
+      return Padding(
+          padding: const EdgeInsets.all(8),
+          child: SingleChildScrollView(
+            child: isWidescreen
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: children.sublist(0, children.length ~/ 2),
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: children.sublist(children.length ~/ 2),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: children,
+                  ),
+          ));
+    });
   }
 
   @override
