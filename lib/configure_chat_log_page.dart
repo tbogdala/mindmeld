@@ -136,124 +136,72 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
   }
 
   Widget _buildModelPage(BuildContext context) {
-    return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          FilledButton(
-            child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [Icon(Icons.add), Text('Import a new GGUF model')]),
-            onPressed: () async {
-              newConfigCallback(newConfigModelFiles) {
-                setState(() {
-                  // update our own modelFiles with the new data
-                  var key = newConfigModelFiles.modelFiles.keys.first;
-                  var value = newConfigModelFiles.modelFiles[key]!;
-                  widget.configModelFiles.modelFiles[key] = value;
+    Widget innerConntent(BuildContext context) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        FilledButton(
+          child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [Icon(Icons.add), Text('Import a new GGUF model')]),
+          onPressed: () async {
+            newConfigCallback(newConfigModelFiles) {
+              setState(() {
+                // update our own modelFiles with the new data
+                var key = newConfigModelFiles.modelFiles.keys.first;
+                var value = newConfigModelFiles.modelFiles[key]!;
+                widget.configModelFiles.modelFiles[key] = value;
 
-                  // build the data for the model dropdown to select already imported models
-                  modelFileOptions =
-                      widget.configModelFiles.modelFiles.keys.toList();
+                // build the data for the model dropdown to select already imported models
+                modelFileOptions =
+                    widget.configModelFiles.modelFiles.keys.toList();
 
-                  // update the chatlog to use it
-                  widget.chatLog.modelName = key;
+                // update the chatlog to use it
+                widget.chatLog.modelName = key;
 
-                  // finally, save out the new config file
-                  widget.configModelFiles.saveJsonToConfigFile().then((_) {
-                    Navigator.pop(context);
-                  });
+                // finally, save out the new config file
+                widget.configModelFiles.saveJsonToConfigFile().then((_) {
+                  Navigator.pop(context);
                 });
-              }
+              });
+            }
 
-              if (widget.isFullPage) {
-                // move to model import page
-                await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => ModelImportPage(
-                            isMobile: widget.isFullPage,
-                            onNewConfigModelFiles: newConfigCallback)));
-              } else {
-                await showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return Dialog(
-                          alignment: AlignmentDirectional.topCenter,
-                          child: Container(
-                              constraints: const BoxConstraints.tightFor(
-                                width: 600,
-                              ),
-                              child: SingleChildScrollView(
-                                  child: ModelImportPage(
-                                      isMobile: false,
-                                      onNewConfigModelFiles:
-                                          newConfigCallback))));
-                    });
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-          ListTile(
-              leading: const Icon(Icons.psychology),
-              title: Row(children: [
-                const Text('Model:'),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: DropdownMenu(
-                    width: widget.isFullPage ? 210 : 410,
-                    initialSelection: widget.chatLog.modelName,
-                    dropdownMenuEntries: modelFileOptions
-                        .map((option) => DropdownMenuEntry(
-                            value: option,
-                            label: option,
-                            labelWidget: Text(
-                              option,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            )))
-                        .toList(),
-                    onSelected: (String? value) {
-                      if (value == null) {
-                        return;
-                      }
-                      var newConfig = widget.configModelFiles.modelFiles[value];
-                      if (newConfig == null) {
-                        return;
-                      }
-                      setState(() {
-                        // we change the link to the model in the chatlog
-                        widget.chatLog.modelName = value;
-
-                        // and then update all the controllers for the selected model's configuration settings
-                        modelGpuLayersController.text =
-                            newConfig.gpuLayers.toString();
-                        modelContextSizeController.text =
-                            newConfig.contextSize != null
-                                ? newConfig.contextSize.toString()
-                                : '';
-                        modelThreadCountController.text =
-                            newConfig.threadCount != null
-                                ? newConfig.threadCount.toString()
-                                : '';
-                        modelBatchSizeController.text =
-                            newConfig.batchSize != null
-                                ? newConfig.batchSize.toString()
-                                : '';
-                      });
-                    },
-                  ),
-                ),
-              ])),
-          ListTile(
-            leading: const Icon(Icons.engineering),
+            if (widget.isFullPage) {
+              // move to model import page
+              await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ModelImportPage(
+                          isMobile: widget.isFullPage,
+                          onNewConfigModelFiles: newConfigCallback)));
+            } else {
+              await showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return Dialog(
+                        alignment: AlignmentDirectional.topCenter,
+                        child: Container(
+                            constraints: const BoxConstraints.tightFor(
+                              width: 600,
+                            ),
+                            child: SingleChildScrollView(
+                                child: ModelImportPage(
+                                    isMobile: false,
+                                    onNewConfigModelFiles:
+                                        newConfigCallback))));
+                  });
+            }
+          },
+        ),
+        const SizedBox(height: 16),
+        ListTile(
+            leading: const Icon(Icons.psychology),
             title: Row(children: [
-              const Text('Prompt Style:'),
+              const Text('Model:'),
               const SizedBox(width: 16),
-              Flexible(
+              Expanded(
                 child: DropdownMenu(
-                  initialSelection:
-                      widget.chatLog.modelPromptStyle.nameAsString(),
-                  dropdownMenuEntries: promptFormatOptions
+                  width: widget.isFullPage ? 210 : 410,
+                  initialSelection: widget.chatLog.modelName,
+                  dropdownMenuEntries: modelFileOptions
                       .map((option) => DropdownMenuEntry(
                           value: option,
                           label: option,
@@ -263,86 +211,144 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                             overflow: TextOverflow.ellipsis,
                           )))
                       .toList(),
-                  onSelected: (value) {
+                  onSelected: (String? value) {
+                    if (value == null) {
+                      return;
+                    }
+                    var newConfig = widget.configModelFiles.modelFiles[value];
+                    if (newConfig == null) {
+                      return;
+                    }
                     setState(() {
-                      widget.chatLog.modelPromptStyle =
-                          modelPromptStyleFromString(value!);
+                      // we change the link to the model in the chatlog
+                      widget.chatLog.modelName = value;
+
+                      // and then update all the controllers for the selected model's configuration settings
+                      modelGpuLayersController.text =
+                          newConfig.gpuLayers.toString();
+                      modelContextSizeController.text =
+                          newConfig.contextSize != null
+                              ? newConfig.contextSize.toString()
+                              : '';
+                      modelThreadCountController.text =
+                          newConfig.threadCount != null
+                              ? newConfig.threadCount.toString()
+                              : '';
+                      modelBatchSizeController.text =
+                          newConfig.batchSize != null
+                              ? newConfig.batchSize.toString()
+                              : '';
                     });
                   },
                 ),
               ),
-            ]),
-          ),
-          const SizedBox(height: 8),
-          const Divider(),
-          const SizedBox(height: 8),
-          ListTile(
-              leading: const Icon(Icons.list),
-              title: TextField(
-                controller: modelGpuLayersController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: "GPU Layers",
-                ),
-                onChanged: (text) {
-                  var currentModelConfig = widget
-                      .configModelFiles.modelFiles[widget.chatLog.modelName]!;
-                  currentModelConfig.gpuLayers = int.tryParse(text) ?? 0;
+            ])),
+        ListTile(
+          leading: const Icon(Icons.engineering),
+          title: Row(children: [
+            const Text('Prompt Style:'),
+            const SizedBox(width: 16),
+            Flexible(
+              child: DropdownMenu(
+                initialSelection:
+                    widget.chatLog.modelPromptStyle.nameAsString(),
+                dropdownMenuEntries: promptFormatOptions
+                    .map((option) => DropdownMenuEntry(
+                        value: option,
+                        label: option,
+                        labelWidget: Text(
+                          option,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        )))
+                    .toList(),
+                onSelected: (value) {
+                  setState(() {
+                    widget.chatLog.modelPromptStyle =
+                        modelPromptStyleFromString(value!);
+                  });
                 },
-              )),
-          const SizedBox(height: 8),
-          ListTile(
-              leading: const Icon(Icons.list),
-              title: TextField(
-                controller: modelContextSizeController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: "Context Size",
-                ),
-                onChanged: (text) {
-                  var currentModelConfig = widget
-                      .configModelFiles.modelFiles[widget.chatLog.modelName]!;
-                  currentModelConfig.contextSize =
-                      text.isEmpty ? null : int.tryParse(text);
-                },
-              )),
-          const SizedBox(height: 8),
-          ListTile(
-              leading: const Icon(Icons.list),
-              title: TextField(
-                controller: modelThreadCountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: "Thread Count",
-                ),
-                onChanged: (text) {
-                  var currentModelConfig = widget
-                      .configModelFiles.modelFiles[widget.chatLog.modelName]!;
-                  currentModelConfig.threadCount =
-                      text.isEmpty ? null : int.tryParse(text);
-                },
-              )),
-          const SizedBox(height: 8),
-          ListTile(
-              leading: const Icon(Icons.list),
-              title: TextField(
-                controller: modelBatchSizeController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: "Batch Size",
-                ),
-                onChanged: (text) {
-                  var currentModelConfig = widget
-                      .configModelFiles.modelFiles[widget.chatLog.modelName]!;
-                  currentModelConfig.batchSize =
-                      text.isEmpty ? null : int.tryParse(text);
-                },
-              )),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 8),
+        const Divider(),
+        const SizedBox(height: 8),
+        ListTile(
+            leading: const Icon(Icons.list),
+            title: TextField(
+              controller: modelGpuLayersController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "GPU Layers",
+              ),
+              onChanged: (text) {
+                var currentModelConfig = widget
+                    .configModelFiles.modelFiles[widget.chatLog.modelName]!;
+                currentModelConfig.gpuLayers = int.tryParse(text) ?? 0;
+              },
+            )),
+        const SizedBox(height: 8),
+        ListTile(
+            leading: const Icon(Icons.list),
+            title: TextField(
+              controller: modelContextSizeController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Context Size",
+              ),
+              onChanged: (text) {
+                var currentModelConfig = widget
+                    .configModelFiles.modelFiles[widget.chatLog.modelName]!;
+                currentModelConfig.contextSize =
+                    text.isEmpty ? null : int.tryParse(text);
+              },
+            )),
+        const SizedBox(height: 8),
+        ListTile(
+            leading: const Icon(Icons.list),
+            title: TextField(
+              controller: modelThreadCountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Thread Count",
+              ),
+              onChanged: (text) {
+                var currentModelConfig = widget
+                    .configModelFiles.modelFiles[widget.chatLog.modelName]!;
+                currentModelConfig.threadCount =
+                    text.isEmpty ? null : int.tryParse(text);
+              },
+            )),
+        const SizedBox(height: 8),
+        ListTile(
+            leading: const Icon(Icons.list),
+            title: TextField(
+              controller: modelBatchSizeController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Batch Size",
+              ),
+              onChanged: (text) {
+                var currentModelConfig = widget
+                    .configModelFiles.modelFiles[widget.chatLog.modelName]!;
+                currentModelConfig.batchSize =
+                    text.isEmpty ? null : int.tryParse(text);
+              },
+            )),
 
-          // bool promptCache;
-          // bool ignoreEos;
-          // bool flashAttention;
-        ]));
+        // bool promptCache;
+        // bool ignoreEos;
+        // bool flashAttention;
+      ]);
+    }
+
+    return Padding(
+        padding: const EdgeInsets.all(16),
+        child: widget.isFullPage
+            ? SingleChildScrollView(child: innerConntent(context))
+            : innerConntent(context));
   }
 
   Widget _buildCharactersPage(BuildContext context) {

@@ -546,7 +546,7 @@ class PredictionWorker {
       if (!llamaModel.isModelLoaded()) {
         final modelParams = llamaModel.getDefaultModelParams()
           ..n_gpu_layers = args.modelSettings.gpuLayers
-          ..use_mmap = true;
+          ..use_mmap = isRunningOnDesktop() ? true : false;
         final contextParams = llamaModel.getDefaultContextParams()
           ..seed = args.hyperparameters.seed
           ..n_threads = args.modelSettings.threadCount ?? -1

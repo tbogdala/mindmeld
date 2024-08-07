@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:mindmeld/platform_and_theming.dart';
 import 'package:path/path.dart' as p;
 import 'dart:developer';
 
@@ -40,7 +41,9 @@ extension AutoDLModelsExtension on AutoDLModels {
 
   Future<ConfigModelSettings> getDefaultModelSettings() async {
     final modelFolderpath = await ConfigModelFiles.getModelsFolderpath();
-    final filepath = p.join(modelFolderpath, getModelFilename());
+    final filepath = isRunningOnDesktop()
+        ? p.join(modelFolderpath, getModelFilename())
+        : getModelFilename();
     switch (this) {
       case AutoDLModels.opusV12Llama3_8B:
         return ConfigModelSettings(
@@ -129,7 +132,8 @@ class _ModelImportPageState extends State<ModelImportPage> {
                   log("Temporary files have been cleared");
 
                   // update the model filepath to use to point to our copy
-                  selectedModelFilepath = copyModelFilepath;
+                  // and use a relative path ... which is actually just the filename
+                  selectedModelFilepath = selectedModelFilename;
                 }
 
                 // build a new models configuration file. we no longer use the fullc
@@ -276,7 +280,7 @@ class _ModelImportPageState extends State<ModelImportPage> {
       } else if (downloadingModel) {
         return Scaffold(
             appBar: AppBar(title: const Text(pageName)),
-            body: buildCopingWidgets(context));
+            body: buildDownloadingWidgets(context));
       } else {
         return Scaffold(
             appBar: AppBar(title: const Text(pageName)),
