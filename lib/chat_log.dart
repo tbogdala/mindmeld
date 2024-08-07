@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:mindmeld/platform_and_theming.dart';
 import 'dart:developer';
-
+import 'package:path/path.dart' as p;
 part 'chat_log.g.dart';
 
 // NOTE: REGENERATE JSON SERIALIZATION WHEN ADDING VALUES TO THIS!
@@ -237,8 +237,8 @@ class ChatLog {
       this.modelPromptStyle);
 
   static Future<String> getLogsFolder() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return '${directory.path}/chatlogs';
+    final directory = await getOurDocumentsDirectory();
+    return p.join(directory, 'chatlogs');
   }
 
   static Future<void> ensureLogsFolderExists() async {

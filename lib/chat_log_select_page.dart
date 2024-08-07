@@ -80,6 +80,7 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
                 title: Text(widget.appTitle),
               ),
               body: ModelImportPage(
+                isMobile: true,
                 onNewConfigModelFiles: (newConfigModelFiles) {
                   setState(() {
                     updateConfigModelFiles(newConfigModelFiles);

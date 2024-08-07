@@ -7,7 +7,7 @@ import 'package:mindmeld/platform_and_theming.dart';
 
 import 'dart:ffi';
 import 'package:mindmeld/configure_chat_log_page.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as p;
 import 'package:woolydart/woolydart.dart';
 import 'dart:developer';
 import 'package:format/format.dart';
@@ -33,7 +33,7 @@ class ChatLogPage extends StatefulWidget {
 }
 
 class _ChatLogPageState extends State<ChatLogPage> {
-  late GlobalKey<_ChatLogWidgetState> chatLogWidgetState;
+  late GlobalKey<ChatLogWidgetState> chatLogWidgetState;
 
   @override
   void initState() {
@@ -96,12 +96,12 @@ class ChatLogWidget extends StatefulWidget {
       required this.onChatLogChange});
 
   @override
-  State<ChatLogWidget> createState() => _ChatLogWidgetState();
+  State<ChatLogWidget> createState() => ChatLogWidgetState();
 
   void test() {}
 }
 
-class _ChatLogWidgetState extends State<ChatLogWidget>
+class ChatLogWidgetState extends State<ChatLogWidget>
     with TickerProviderStateMixin {
   final newMessgeController = TextEditingController();
 
@@ -166,10 +166,14 @@ class _ChatLogWidgetState extends State<ChatLogWidget>
 
     // get the model filepath for the selected model. right now this is a
     // relative path, so we have to combine it with our documents folder
-    var modelFilepath = join(
-        await ConfigModelFiles.getModelsFolderpath(), widget.chatLog.modelName);
     var currentModelConfig =
         widget.configModelFiles.modelFiles[widget.chatLog.modelName]!;
+    var modelFilepath = (!p.isAbsolute(currentModelConfig.modelFilepath)
+        ? p.join(await ConfigModelFiles.getModelsFolderpath(),
+            currentModelConfig.modelFilepath)
+        : currentModelConfig.modelFilepath);
+    var existsMabye = await File(modelFilepath).exists();
+    log("File for the model $modelFilepath exists: {$existsMabye}");
 
     // build the prompt to send off to the ai
     int tokenBudget = (currentModelConfig.contextSize ?? 2048) -
@@ -469,6 +473,7 @@ class PredictionWorker {
   Completer<PredictReplyResult> _isoResponse = Completer();
 
   static Future<PredictionWorker> spawn() async {
+    log('PredictionWorker: spawning...');
     PredictionWorker obj = PredictionWorker();
     obj._fromIsoPort = ReceivePort();
     obj._fromIsoPort.listen(obj._handleResponsesFromIsolate);
@@ -478,12 +483,14 @@ class PredictionWorker {
   }
 
   Future<void> closeModel() async {
+    log('PredictionWorker: close model...');
     await _isoReady.future;
     _isoResponse = Completer();
     _toIsoPort!.send(CloseModelRequest());
   }
 
   void killWorker() {
+    log('PredictionWorker: killing worker...');
     _workerIsolate.kill(priority: Isolate.immediate);
     _fromIsoPort.close();
     _toIsoPort = null;
@@ -505,7 +512,7 @@ class PredictionWorker {
     } else if (message is PredictReplyResult) {
       _isoResponse.complete(message);
     } else {
-      log("PredictionWorker._handleResponseFromIsolate() got an unknown message: $message");
+      log("PredictionWorker: _handleResponseFromIsolate() got an unknown message: $message");
     }
   }
 
@@ -516,7 +523,7 @@ class PredictionWorker {
 
     // an empty string for iOS to use the current process instead of a library file.
     final lib = Platform.isAndroid ? "libwoolydart.so" : "";
-    log("Library loaded through DynamicLibrary.");
+    log("PredictionWorker: Library loaded through DynamicLibrary.");
     var llamaModel = LlamaModel(lib);
 
     workerReceivePort.listen((dynamic message) async {
@@ -525,7 +532,7 @@ class PredictionWorker {
         port.send(result);
       } else if (message is CloseModelRequest) {
         if (llamaModel.isModelLoaded()) {
-          log("Worker is closing the loaded model...");
+          log("PredictionWorker: Worker is closing the loaded model...");
           llamaModel.freeModel();
         }
       }
@@ -539,13 +546,13 @@ class PredictionWorker {
       if (!llamaModel.isModelLoaded()) {
         final modelParams = llamaModel.getDefaultModelParams()
           ..n_gpu_layers = args.modelSettings.gpuLayers
-          ..use_mmap = false;
+          ..use_mmap = true;
         final contextParams = llamaModel.getDefaultContextParams()
           ..seed = args.hyperparameters.seed
           ..n_threads = args.modelSettings.threadCount ?? -1
           ..n_ctx = args.modelSettings.contextSize ?? 2048;
 
-        log("Attempting to load model: ${args.modelFilepath}");
+        log("PredictionWorker: Attempting to load model: ${args.modelFilepath}");
 
         final bool loadedResult = llamaModel.loadModel(
             args.modelFilepath, modelParams, contextParams, true);
@@ -572,7 +579,7 @@ class PredictionWorker {
         ..n_batch = args.modelSettings.batchSize ?? 128;
       params.setPrompt(args.promptString);
       params.setAntiprompts(args.antipromptStrings);
-      log('A total of ${args.antipromptStrings.length} antiprompt strings: ${args.antipromptStrings.join(",")}');
+      log('PredictionWorker: A total of ${args.antipromptStrings.length} antiprompt strings: ${args.antipromptStrings.join(",")}');
 
       final (predictResult, outputString) =
           llamaModel.predictText(params, nullptr);
@@ -602,7 +609,7 @@ class PredictionWorker {
           outputString ?? "<Error: No response generated.>", generationSpeed);
     } catch (e) {
       var errormsg = e.toString();
-      log("Caught exception trying to predict reply: $errormsg");
+      log("PredictionWorker: Caught exception trying to predict reply: $errormsg");
       return PredictReplyResult(false, '<Error: $errormsg>', 0.0);
     } finally {
       params.dispose();

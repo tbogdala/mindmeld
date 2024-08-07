@@ -144,35 +144,52 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [Icon(Icons.add), Text('Import a new GGUF model')]),
             onPressed: () async {
-              // move to model import page
-              await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => ModelImportPage(
-                              onNewConfigModelFiles: (newConfigModelFiles) {
-                            setState(() {
-                              // update our own modelFiles with the new data
-                              var key =
-                                  newConfigModelFiles.modelFiles.keys.first;
-                              var value = newConfigModelFiles.modelFiles[key]!;
-                              widget.configModelFiles.modelFiles[key] = value;
+              newConfigCallback(newConfigModelFiles) {
+                setState(() {
+                  // update our own modelFiles with the new data
+                  var key = newConfigModelFiles.modelFiles.keys.first;
+                  var value = newConfigModelFiles.modelFiles[key]!;
+                  widget.configModelFiles.modelFiles[key] = value;
 
-                              // build the data for the model dropdown to select already imported models
-                              modelFileOptions = widget
-                                  .configModelFiles.modelFiles.keys
-                                  .toList();
+                  // build the data for the model dropdown to select already imported models
+                  modelFileOptions =
+                      widget.configModelFiles.modelFiles.keys.toList();
 
-                              // update the chatlog to use it
-                              widget.chatLog.modelName = key;
+                  // update the chatlog to use it
+                  widget.chatLog.modelName = key;
 
-                              // finally, save out the new config file
-                              widget.configModelFiles
-                                  .saveJsonToConfigFile()
-                                  .then((_) {
-                                Navigator.pop(context);
-                              });
-                            });
-                          })));
+                  // finally, save out the new config file
+                  widget.configModelFiles.saveJsonToConfigFile().then((_) {
+                    Navigator.pop(context);
+                  });
+                });
+              }
+
+              if (widget.isFullPage) {
+                // move to model import page
+                await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => ModelImportPage(
+                            isMobile: widget.isFullPage,
+                            onNewConfigModelFiles: newConfigCallback)));
+              } else {
+                await showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return Dialog(
+                          alignment: AlignmentDirectional.topCenter,
+                          child: Container(
+                              constraints: const BoxConstraints.tightFor(
+                                width: 600,
+                              ),
+                              child: SingleChildScrollView(
+                                  child: ModelImportPage(
+                                      isMobile: false,
+                                      onNewConfigModelFiles:
+                                          newConfigCallback))));
+                    });
+              }
             },
           ),
           const SizedBox(height: 16),
@@ -181,9 +198,9 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
               title: Row(children: [
                 const Text('Model:'),
                 const SizedBox(width: 16),
-                Flexible(
+                Expanded(
                   child: DropdownMenu(
-                    width: widget.isFullPage ? 210 : null,
+                    width: widget.isFullPage ? 210 : 410,
                     initialSelection: widget.chatLog.modelName,
                     dropdownMenuEntries: modelFileOptions
                         .map((option) => DropdownMenuEntry(
@@ -195,9 +212,33 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                               overflow: TextOverflow.ellipsis,
                             )))
                         .toList(),
-                    onSelected: (value) {
+                    onSelected: (String? value) {
+                      if (value == null) {
+                        return;
+                      }
+                      var newConfig = widget.configModelFiles.modelFiles[value];
+                      if (newConfig == null) {
+                        return;
+                      }
                       setState(() {
-                        widget.chatLog.modelName = value as String;
+                        // we change the link to the model in the chatlog
+                        widget.chatLog.modelName = value;
+
+                        // and then update all the controllers for the selected model's configuration settings
+                        modelGpuLayersController.text =
+                            newConfig.gpuLayers.toString();
+                        modelContextSizeController.text =
+                            newConfig.contextSize != null
+                                ? newConfig.contextSize.toString()
+                                : '';
+                        modelThreadCountController.text =
+                            newConfig.threadCount != null
+                                ? newConfig.threadCount.toString()
+                                : '';
+                        modelBatchSizeController.text =
+                            newConfig.batchSize != null
+                                ? newConfig.batchSize.toString()
+                                : '';
                       });
                     },
                   ),

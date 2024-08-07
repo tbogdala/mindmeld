@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:developer';
-import 'package:path_provider/path_provider.dart';
+import 'package:mindmeld/platform_and_theming.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:path/path.dart' as p;
 
 part 'config_models.g.dart';
 
 @JsonSerializable()
 class ConfigModelSettings {
+  String modelFilepath;
   int gpuLayers = 100;
   int? contextSize;
   int? threadCount;
@@ -18,6 +20,7 @@ class ConfigModelSettings {
   String? promptFormat;
 
   ConfigModelSettings(
+      this.modelFilepath,
       this.gpuLayers,
       this.contextSize,
       this.threadCount,
@@ -64,8 +67,8 @@ class ConfigModelFiles {
   }
 
   static Future<String> getFilepath() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return '${directory.path}/model_configs.json';
+    final directory = await getOurDocumentsDirectory();
+    return p.join(directory, 'model_configs.json');
   }
 
   static Future<ConfigModelFiles?> loadFromConfigFile() async {
@@ -81,8 +84,8 @@ class ConfigModelFiles {
   }
 
   static Future<String> getModelsFolderpath() async {
-    final directory = await getApplicationDocumentsDirectory();
-    return '${directory.path}/models';
+    final directory = await getOurDocumentsDirectory();
+    return p.join(directory, 'models');
   }
 
   static Future<void> ensureModelsFolderExists() async {

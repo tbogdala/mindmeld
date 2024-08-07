@@ -62,20 +62,22 @@ This can be done by running `./make_macos_deps.sh`.
     and [this StackOverflow question](https://stackoverflow.com/questions/69214595/how-to-manually-add-a-xcframework-to-a-flutter-ios-plugin/70210039#70210039)
     that helped too. For UI work [this chat log example blog](https://www.freecodecamp.org/news/build-a-chat-app-ui-with-flutter/) was helpful.
 
-*   iOS builds need to have the binaries built manually first.
 
 *   JSON serialization code gets updated with: `dart run build_runner build`.
 
 *   Launcher icons get updated with: `flutter pub run flutter_launcher_icons`.
     Docs: https://pub.dev/packages/flutter_launcher_icons
 
-*   Splash screen gets updated with: `dart run flutter_native_splash:create`.
-    Docs: https://github.com/jonbhanson/flutter_native_splash
-
 *   Think downloading a single file would be easy with a framework like Flutter?
     Nope! This package got the job done for me: https://github.com/781flyingdutchman/background_downloader
 
+*   MacOS and iOS builds need to have the binaries built manually first.
+
 *   MacOS: Hardened Runtime setting needs 'Disable Library Validation' enabled so that `path_provider` can not crash at app start.
+
+*   MacOS: Removed App Sandbox entitlement in order to access GGUF files the user may already have elsewhere on the system,
+    say, for example, in the user's `.cache/huggingface` or `.cache/lm-studio` folders. With the sandbox, the models would
+    need to be duplicated or moved into one of the standard folders, like `~/Documents`.
 
 *   iOS: To get over 4GB of memory, I had to add the `com.apple.developer.kernel.increased-memory-limit` entitlement.
 
@@ -131,5 +133,4 @@ https://github.com/lmstudio-ai/configs
 * BUG: ConfigModelSettings that are nullable might not be picking good defaults. 
     ThreadCount to -1 causes crash for example so 1 is hardcoded in as a default if not supplied.
 * BUG: Crashes if existing logs have a model name that isn't imported
-* BUG?: switching between logs might crash the app?
 * Show overall T/s or TG & PP T/s?

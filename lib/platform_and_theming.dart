@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 Color getMessageDecorationColor(BuildContext context, bool forAIMessage) {
   if (MediaQuery.of(context).platformBrightness == Brightness.dark) {
@@ -28,4 +30,15 @@ Color getBackgroundDecorationColor(BuildContext context) {
 
 bool isRunningOnDesktop() {
   return Platform.isMacOS || Platform.isLinux || Platform.isWindows;
+}
+
+// This gets our documents directory which requires a little extra work on
+// the desktop runners to add our application name to the stack in the path.
+Future<String> getOurDocumentsDirectory() async {
+  final directory = await getApplicationDocumentsDirectory();
+  if (isRunningOnDesktop()) {
+    return p.join(directory.path, 'Mindmeld');
+  } else {
+    return directory.path;
+  }
 }

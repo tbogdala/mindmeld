@@ -8,6 +8,7 @@ part of 'config_models.dart';
 
 ConfigModelSettings _$ConfigModelSettingsFromJson(Map<String, dynamic> json) =>
     ConfigModelSettings(
+      json['modelFilepath'] as String,
       (json['gpuLayers'] as num).toInt(),
       (json['contextSize'] as num?)?.toInt(),
       (json['threadCount'] as num?)?.toInt(),
@@ -21,6 +22,7 @@ ConfigModelSettings _$ConfigModelSettingsFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$ConfigModelSettingsToJson(
         ConfigModelSettings instance) =>
     <String, dynamic>{
+      'modelFilepath': instance.modelFilepath,
       'gpuLayers': instance.gpuLayers,
       'contextSize': instance.contextSize,
       'threadCount': instance.threadCount,

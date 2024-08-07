@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:mindmeld/configure_chat_log_page.dart';
+import 'package:mindmeld/model_import_page.dart';
 import 'package:mindmeld/new_chat_log_page.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -23,7 +24,6 @@ void main() async {
     WindowOptions windowOptions = const WindowOptions(
       minimumSize: Size(600, 420),
       size: Size(1024, 800),
-      center: true,
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
@@ -51,6 +51,7 @@ class DesktopMindmeldApp extends StatefulWidget {
 }
 
 class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
+  late GlobalKey<ChatLogWidgetState> chatLogWidgetState;
   bool _isLoading = true;
   List<ChatLog> chatLogs = [];
   ConfigModelFiles? configModelFiles;
@@ -59,6 +60,7 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
   @override
   void initState() {
     super.initState();
+    chatLogWidgetState = GlobalKey();
     _loadConfigFiles().then((_) {
       setState(() {
         _isLoading = false;
@@ -67,8 +69,9 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
   }
 
   Future<void> _loadConfigFiles() async {
-    configModelFiles = await ConfigModelFiles.loadFromConfigFile();
+    ConfigModelFiles.ensureModelsFolderExists();
     ChatLog.ensureLogsFolderExists();
+    configModelFiles = await ConfigModelFiles.loadFromConfigFile();
     final chatLogFolder = await ChatLog.getLogsFolder();
     try {
       var d = Directory(chatLogFolder);
@@ -95,8 +98,23 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
           child: CircularProgressIndicator(
         valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
       ));
+    }
+    if (configModelFiles == null) {
+      newConfigCallback(newConfigModelFiles) {
+        setState(() {
+          newConfigModelFiles.saveJsonToConfigFile().then((_) {
+            configModelFiles = newConfigModelFiles;
+          });
+        });
+      }
+
+      return Scaffold(
+          body: ModelImportPage(
+        isMobile: false,
+        onNewConfigModelFiles: newConfigCallback,
+      ));
     } else {
-      final selectedLog = chatLogs.elementAt(currentChatLog);
+      final selectedLog = chatLogs.elementAtOrNull(currentChatLog);
       return Scaffold(
           body: Row(
         children: [
@@ -123,60 +141,73 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
                       borderRadius: BorderRadius.circular(20)),
                   padding: const EdgeInsets.all(2),
                   margin: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Center(
-                          child: Text(selectedLog.name,
-                              style: const TextStyle(
+                  child: (selectedLog == null
+                      ? const Center(
+                          child: Text('No Chatlog Selected',
+                              style: TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Configure chatlog settings',
-                        icon: const Icon(Icons.settings),
-                        onPressed: () async {
-                          await showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return Dialog(
-                                    child: Container(
-                                        constraints:
-                                            const BoxConstraints.tightFor(
-                                          width: 600,
-                                        ),
-                                        child: SingleChildScrollView(
-                                            child: ConfigureChatLogPage(
-                                          isFullPage: false,
-                                          chatLog: selectedLog,
-                                          configModelFiles: configModelFiles!,
-                                        ))));
-                              });
+                        )
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: Center(
+                                child: Text(selectedLog.name,
+                                    style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Configure chatlog settings',
+                              icon: const Icon(Icons.settings),
+                              onPressed: () async {
+                                await showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return Dialog(
+                                          alignment:
+                                              AlignmentDirectional.topCenter,
+                                          child: Container(
+                                              constraints:
+                                                  const BoxConstraints.tightFor(
+                                                width: 600,
+                                              ),
+                                              child: SingleChildScrollView(
+                                                  child: ConfigureChatLogPage(
+                                                isFullPage: false,
+                                                chatLog: selectedLog,
+                                                configModelFiles:
+                                                    configModelFiles!,
+                                              ))));
+                                    });
 
-                          // once we've returned from the chatlog configuration page
-                          // save the log in case changes were made.
-                          await selectedLog.saveToFile();
+                                // once we've returned from the chatlog configuration page
+                                // save the log in case changes were made.
+                                await selectedLog.saveToFile();
 
-                          // same with the models configuration file
-                          await configModelFiles?.saveJsonToConfigFile();
+                                // same with the models configuration file
+                                await configModelFiles?.saveJsonToConfigFile();
 
-                          // FIXME: now we dump the currently loaded model
-                          // chatLogWidgetState.currentState
-                          //     ?.closePrognosticatorModel();
-                        },
-                      ),
-                    ],
-                  )),
+                                // now we dump the currently loaded model
+                                chatLogWidgetState.currentState
+                                    ?.closePrognosticatorModel();
+                              },
+                            ),
+                          ],
+                        ))),
               Expanded(
-                  child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: ChatLogWidget(
-                        chatLog: selectedLog,
-                        configModelFiles: configModelFiles!,
-                        onChatLogChange: () {
-                          setState(() {}); // trigger a rebuild...
-                        },
-                      ))),
+                  child: (selectedLog == null
+                      ? const Center(child: Text('Create a log file ...'))
+                      : Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: ChatLogWidget(
+                            key: chatLogWidgetState,
+                            chatLog: selectedLog,
+                            configModelFiles: configModelFiles!,
+                            onChatLogChange: () {
+                              setState(() {}); // trigger a rebuild...
+                            },
+                          )))),
             ],
           ))
         ],
