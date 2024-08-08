@@ -135,6 +135,29 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
     super.initState();
   }
 
+  void _doUpdateToSelectedModel(String? value) {
+    if (value == null) {
+      return;
+    }
+    var newConfig = widget.configModelFiles.modelFiles[value];
+    setState(() {
+      // we change the link to the model in the chatlog
+      widget.chatLog.modelName = value;
+
+      // and then update all the controllers for the selected model's configuration settings
+      modelGpuLayersController.text =
+          newConfig?.gpuLayers != null ? newConfig!.gpuLayers.toString() : '';
+      modelContextSizeController.text = newConfig?.contextSize != null
+          ? newConfig!.contextSize.toString()
+          : '';
+      modelThreadCountController.text = newConfig?.threadCount != null
+          ? newConfig!.threadCount.toString()
+          : '';
+      modelBatchSizeController.text =
+          newConfig?.batchSize != null ? newConfig!.batchSize.toString() : '';
+    });
+  }
+
   Widget _buildModelPage(BuildContext context) {
     Widget innerConntent(BuildContext context) {
       return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
@@ -160,6 +183,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                 // finally, save out the new config file
                 widget.configModelFiles.saveJsonToConfigFile().then((_) {
                   Navigator.pop(context);
+                  _doUpdateToSelectedModel(key);
                 });
               });
             }
@@ -212,33 +236,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                           )))
                       .toList(),
                   onSelected: (String? value) {
-                    if (value == null) {
-                      return;
-                    }
-                    var newConfig = widget.configModelFiles.modelFiles[value];
-                    if (newConfig == null) {
-                      return;
-                    }
-                    setState(() {
-                      // we change the link to the model in the chatlog
-                      widget.chatLog.modelName = value;
-
-                      // and then update all the controllers for the selected model's configuration settings
-                      modelGpuLayersController.text =
-                          newConfig.gpuLayers.toString();
-                      modelContextSizeController.text =
-                          newConfig.contextSize != null
-                              ? newConfig.contextSize.toString()
-                              : '';
-                      modelThreadCountController.text =
-                          newConfig.threadCount != null
-                              ? newConfig.threadCount.toString()
-                              : '';
-                      modelBatchSizeController.text =
-                          newConfig.batchSize != null
-                              ? newConfig.batchSize.toString()
-                              : '';
-                    });
+                    _doUpdateToSelectedModel(value);
                   },
                 ),
               ),
