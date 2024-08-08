@@ -17,11 +17,12 @@ ConfigModelSettings _$ConfigModelSettingsFromJson(Map<String, dynamic> json) =>
       json['ignoreEos'] as bool,
       json['flashAttention'] as bool,
       json['promptFormat'] as String?,
-    );
+    )..version = (json['version'] as num).toInt();
 
 Map<String, dynamic> _$ConfigModelSettingsToJson(
         ConfigModelSettings instance) =>
     <String, dynamic>{
+      'version': instance.version,
       'modelFilepath': instance.modelFilepath,
       'gpuLayers': instance.gpuLayers,
       'contextSize': instance.contextSize,

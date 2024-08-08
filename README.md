@@ -2,8 +2,8 @@
 
 A simple-to-use GUI for local AI chat.
 
-Supported platforms: iOS, Android
-In-Development platforms: MacOS
+Supported platforms: iOS, Android, MacOS
+In-Development platforms: Windows, Linux
 
 
 ## Getting the source code
@@ -49,6 +49,21 @@ Much like the iOS Build Instructions above, the MacOS framework binary has to be
 This can be done by running `./make_macos_deps.sh`.
 
 
+### Android Build Instructions
+
+The Android system shouldn't need any extra steps once the whole ecosystem for Android support
+in flutter is setup. `android/app/build.gradle` has some minimums. It's expecting the compiler
+to be SDK 34, and the NDK used is "26.3.11579264". The Android SDK CMake version was pinned
+to "3.22.1" as well.
+
+When compiling the project it will compile the upstream [woolycore](https://github.com/tbogdala/woolycore)
+and [llama.cpp](https://github.com/ggerganov/llama.cpp) code for Android use. The debug version is
+**drastically** slower on text inference. The scripts for iOS and MacOS runners automatically
+compile the library for release mode, but currently the Android runner doesn't do that.
+
+To do a full clean Android build, besides running `flutter clean` you need to `rm -rf android/app/.cxx`.
+
+
 #### Dev Notes
 
 *   `android/app/build.gradle references "../../packages/CMakeLists.txt" as the makefile to 
@@ -71,15 +86,16 @@ This can be done by running `./make_macos_deps.sh`.
 *   Think downloading a single file would be easy with a framework like Flutter?
     Nope! This package got the job done for me: https://github.com/781flyingdutchman/background_downloader
 
-*   MacOS and iOS builds need to have the binaries built manually first.
+*   MacOS: Hardened Runtime setting needs 'Disable Library Validation' enabled so that `path_provider` 
+    can not crash at app start.
 
-*   MacOS: Hardened Runtime setting needs 'Disable Library Validation' enabled so that `path_provider` can not crash at app start.
+*   MacOS: Removed App Sandbox entitlement in order to access GGUF files the user may already have 
+    elsewhere on the system, say, for example, in the user's `.cache/huggingface` or `.cache/lm-studio` 
+    folders. With the sandbox, the models would need to be duplicated or moved into one of the standard 
+    folders, like `~/Documents`.
 
-*   MacOS: Removed App Sandbox entitlement in order to access GGUF files the user may already have elsewhere on the system,
-    say, for example, in the user's `.cache/huggingface` or `.cache/lm-studio` folders. With the sandbox, the models would
-    need to be duplicated or moved into one of the standard folders, like `~/Documents`.
-
-*   iOS: To get over 4GB of memory, I had to add the `com.apple.developer.kernel.increased-memory-limit` entitlement.
+*   iOS: To get over 4GB of memory, I had to add the `com.apple.developer.kernel.increased-memory-limit` 
+    entitlement.
 
 
 Steps to get iOS going
@@ -90,10 +106,8 @@ Steps to get iOS going
 * Scroll down to 'Frameworks, Libraries, and Embedded Content and click +
 * Hit the 'add other..' button select 'add files...' browse to the 'libllama.framework' folder and click the 'open' button to add the framework.
 * Add 'Info.plist' file, edited by hand.
-
 * Upped minimum deployments to iOS 16 with a target of iOS 17.
 * Added reference to Accelerate and Metal frameworks.
-
 * Can verify what's exported with `nm -gU ios/Frameworks/libllama.framework/libllama`.
 
 
@@ -113,22 +127,12 @@ https://github.com/lmstudio-ai/configs
 
 #### TODO
 
-* Need to break apart the new chat log page to have model setup on it's own page.
 * Add avatar pictures to the chat log and to be used in the AppBar for the chat log page
-* Low nBatch ruined something in llama_decode somewhere in the bindings. Batch of 8 limited incoming prompt to 166 characters.
-* Provide a text hint as to how to add more models in the onboarding page.
 * BUG: make sure chat logs with duplicate names can't be made
 * Should have copy icon next to chat log settings to copy scenario/desc and then paste icons in the sections.
   Should confirm the pastes with a bottom sheet so that there's not accidental overrides.
-* Main screen should be a main menu where you can:
-    - chat
-    - manage models
-    - [tbd: group chat, games, etc]
-* When app isn't focus, maybe send the user a notification?
 * Long press of send button should 'impersonate' the AI instead if there's a message in the text box?
 * Have a help icon for ChatLog Configuration to explain settings verbosely.
-* Gotta version info the config files and chat logs
-* BUG: changing model in chat log settings wont change the loaded model
 * Confirm that not supplying a ConfigModelSetting context size uses -1 or auto for default.
 * BUG: ConfigModelSettings that are nullable might not be picking good defaults. 
     ThreadCount to -1 causes crash for example so 1 is hardcoded in as a default if not supplied.

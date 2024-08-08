@@ -9,6 +9,7 @@ part 'config_models.g.dart';
 
 @JsonSerializable()
 class ConfigModelSettings {
+  int version = 1;
   String modelFilepath;
   int gpuLayers = 100;
   int? contextSize;
