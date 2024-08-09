@@ -565,6 +565,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.1"
+  profile_photo:
+    dependency: "direct main"
+    description:
+      name: profile_photo
+      sha256: "8cb2d1e4af2525343c9f27ca23b07489f676cd1474a03be6446d45dc0f359f4f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.3"
   pub_semver:
     dependency: transitive
     description:

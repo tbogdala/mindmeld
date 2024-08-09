@@ -68,7 +68,7 @@ ChatLogCharacter _$ChatLogCharacterFromJson(Map<String, dynamic> json) =>
       description: json['description'] as String,
       personality: json['personality'] as String,
       isUserControlled: json['isUserControlled'] as bool,
-    );
+    )..profilePicFilename = json['profilePicFilename'] as String?;
 
 Map<String, dynamic> _$ChatLogCharacterToJson(ChatLogCharacter instance) =>
     <String, dynamic>{
@@ -76,6 +76,7 @@ Map<String, dynamic> _$ChatLogCharacterToJson(ChatLogCharacter instance) =>
       'description': instance.description,
       'personality': instance.personality,
       'isUserControlled': instance.isUserControlled,
+      'profilePicFilename': instance.profilePicFilename,
     };
 
 ChatLog _$ChatLogFromJson(Map<String, dynamic> json) => ChatLog(

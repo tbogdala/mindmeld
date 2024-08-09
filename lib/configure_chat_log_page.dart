@@ -1,6 +1,12 @@
+import 'dart:developer';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:mindmeld/config_models.dart';
 import 'package:mindmeld/model_import_page.dart';
+import 'package:mindmeld/platform_and_theming.dart';
+import 'package:profile_photo/profile_photo.dart';
+import 'package:path/path.dart' as p;
 
 import 'chat_log.dart';
 
@@ -354,92 +360,204 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
             : innerConntent(context));
   }
 
+  // this function will remove any profile pic for the character and on
+  // mobile it will delete the file
+  Future<void> _eraseProfilePic(ChatLogCharacter character) async {
+    if (!isRunningOnDesktop()) {
+      if (character.profilePicFilename != null) {
+        if (!p.isAbsolute(character.profilePicFilename!)) {
+          var pfpDir = await ChatLog.getProfilePicsFolder();
+          var pfpRelativeFilepath =
+              p.join(pfpDir, character.profilePicFilename!);
+          File pfpFile = File(pfpRelativeFilepath);
+          if (await pfpFile.exists()) {
+            await pfpFile.delete();
+            log('Deleted profile picture file: $pfpRelativeFilepath');
+          }
+        }
+      }
+    }
+    setState(() {
+      character.profilePicFilename = null;
+    });
+  }
+
+  void _browseforNewProfilePic(ChatLogCharacter character) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+        dialogTitle: "Pick a new profile picture",
+        type: FileType.image,
+        allowMultiple: false,
+        allowCompression: true);
+    if (result != null) {
+      var selectedPfpFilepath = result.files.first.path!;
+      final selectedPfpFilename = p.basename(selectedPfpFilepath);
+      log("new profile picture selected: $selectedPfpFilepath");
+
+      // if we're running on mobile, we're going to have to make a copy of it
+      if (widget.isFullPage) {
+        await ChatLog.ensureProfilePicsFolderExists();
+        final pfpFolderpath = await ChatLog.getProfilePicsFolder();
+        final copyPfpFilepath = p.join(pfpFolderpath, selectedPfpFilename);
+
+        final originalFile = File(selectedPfpFilepath);
+        await originalFile.copy(copyPfpFilepath);
+        log("Copy source: $selectedPfpFilepath");
+        log("Copy deset : $copyPfpFilepath");
+        await FilePicker.platform.clearTemporaryFiles();
+        log("Temporary files have been cleared");
+
+        // update the model filepath to use to point to our copy
+        // and use a relative path ... which is actually just the filename
+        selectedPfpFilepath = selectedPfpFilename;
+      }
+
+      setState(() {
+        character.profilePicFilename = selectedPfpFilepath;
+      });
+    }
+  }
+
   Widget _buildCharactersPage(BuildContext context) {
     var humanCharacter = widget.chatLog.getHumanCharacter()!;
     var aiCharacter = widget.chatLog.getAICharacter()!;
 
     return Padding(
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-              ListTile(
-                leading: const Icon(Icons.person),
-                title: TextField(
-                  controller: userNameController,
-                  decoration: const InputDecoration(
-                    labelText: "Your Name",
-                  ),
-                  onChanged: (text) {
-                    humanCharacter.name = text;
-                  },
-                ),
-                subtitle: TextField(
-                  controller: userDescController,
-                  maxLines: 2,
-                  decoration: const InputDecoration(
-                    labelText: "Your Description",
-                  ),
-                  onChanged: (text) {
-                    humanCharacter.description = text;
-                  },
-                ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          ListTile(
+            title: TextField(
+              controller: storyContextController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: "Story Context",
               ),
-              const SizedBox(height: 8),
-              const Divider(),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.precision_manufacturing),
-                title: TextField(
-                  controller: aiNameController,
-                  decoration: const InputDecoration(
-                    labelText: "AI Name",
+              onChanged: (text) {
+                widget.chatLog.context = text;
+              },
+            ),
+          ),
+          Row(children: [
+            FutureBuilder(
+                future: humanCharacter.getEffectiveProfilePic(),
+                builder: (BuildContext context,
+                    AsyncSnapshot<ImageProvider<Object>> snapshot) {
+                  if (snapshot.hasData) {
+                    return ProfilePhoto(
+                      totalWidth: 96,
+                      color: Colors.transparent,
+                      outlineColor: Colors.transparent,
+                      image: snapshot.data,
+                      onTap: () {
+                        _browseforNewProfilePic(humanCharacter);
+                      },
+                      onLongPress: () {
+                        _eraseProfilePic(humanCharacter);
+                      },
+                    );
+                  } else {
+                    return ProfilePhoto(
+                      totalWidth: 96,
+                      color: Colors.transparent,
+                      outlineColor: Colors.transparent,
+                    );
+                  }
+                }),
+            Expanded(
+              child: Column(children: [
+                ListTile(
+                  title: TextField(
+                    controller: userNameController,
+                    decoration: const InputDecoration(
+                      labelText: "Your Name",
+                    ),
+                    onChanged: (text) {
+                      humanCharacter.name = text;
+                    },
                   ),
-                  onChanged: (text) {
-                    aiCharacter.name = text;
-                  },
-                ),
-                subtitle: TextField(
-                  controller: aiDescController,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    labelText: "AI Description",
+                  subtitle: TextField(
+                    controller: userDescController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: "Your Description",
+                    ),
+                    onChanged: (text) {
+                      humanCharacter.description = text;
+                    },
                   ),
-                  onChanged: (text) {
-                    aiCharacter.description = text;
-                  },
                 ),
+              ]),
+            ),
+          ]),
+          const Divider(),
+          Row(
+            children: [
+              FutureBuilder(
+                  future: aiCharacter.getEffectiveProfilePic(),
+                  builder: (BuildContext context,
+                      AsyncSnapshot<ImageProvider<Object>> snapshot) {
+                    if (snapshot.hasData) {
+                      return ProfilePhoto(
+                        totalWidth: 96,
+                        color: Colors.transparent,
+                        outlineColor: Colors.transparent,
+                        image: snapshot.data,
+                        onTap: () {
+                          _browseforNewProfilePic(aiCharacter);
+                        },
+                        onLongPress: () {
+                          _eraseProfilePic(aiCharacter);
+                        },
+                      );
+                    } else {
+                      return ProfilePhoto(
+                        totalWidth: 96,
+                        color: Colors.transparent,
+                        outlineColor: Colors.transparent,
+                      );
+                    }
+                  }),
+              Expanded(
+                child: Column(children: [
+                  ListTile(
+                    title: TextField(
+                      controller: aiNameController,
+                      decoration: const InputDecoration(
+                        labelText: "AI Name",
+                      ),
+                      onChanged: (text) {
+                        aiCharacter.name = text;
+                      },
+                    ),
+                    subtitle: TextField(
+                      controller: aiDescController,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: "AI Description",
+                      ),
+                      onChanged: (text) {
+                        aiCharacter.description = text;
+                      },
+                    ),
+                  ),
+                  ListTile(
+                    title: TextField(
+                      controller: aiPersonalityController,
+                      decoration: const InputDecoration(
+                        labelText: "AI Personality",
+                      ),
+                      onChanged: (text) {
+                        aiCharacter.personality = text;
+                      },
+                    ),
+                  ),
+                ]),
               ),
-              ListTile(
-                leading: const Icon(Icons.psychology),
-                title: TextField(
-                  controller: aiPersonalityController,
-                  decoration: const InputDecoration(
-                    labelText: "AI Personality",
-                  ),
-                  onChanged: (text) {
-                    aiCharacter.personality = text;
-                  },
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Divider(),
-              const SizedBox(height: 8),
-              ListTile(
-                leading: const Icon(Icons.alt_route),
-                title: TextField(
-                  controller: storyContextController,
-                  maxLines: 6,
-                  decoration: const InputDecoration(
-                    labelText: "Story Context",
-                  ),
-                  onChanged: (text) {
-                    widget.chatLog.context = text;
-                  },
-                ),
-              ),
-            ])));
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildParametersPage(BuildContext context) {

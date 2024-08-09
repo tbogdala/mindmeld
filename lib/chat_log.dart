@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:mindmeld/platform_and_theming.dart';
 import 'dart:developer';
@@ -224,6 +225,7 @@ class ChatLogCharacter {
   String description;
   String personality;
   bool isUserControlled;
+  String? profilePicFilename;
 
   ChatLogCharacter(
       {required this.name,
@@ -237,6 +239,27 @@ class ChatLogCharacter {
 
   Map<String, dynamic> toJson() {
     return _$ChatLogCharacterToJson(this);
+  }
+
+  // will return one of the default icons depending on whether or not the
+  // character is human controlled or not if a profile pic file hasn't been
+  // specified; otherwise it returns the customized profile pic
+  Future<ImageProvider<Object>> getEffectiveProfilePic() async {
+    if (profilePicFilename != null) {
+      if (p.isAbsolute(profilePicFilename!)) {
+        return Image.file(File(profilePicFilename!)).image;
+      } else {
+        var pfpDir = await ChatLog.getProfilePicsFolder();
+        var pfpRelativeFilepath = p.join(pfpDir, profilePicFilename!);
+        return Image.file(File(pfpRelativeFilepath)).image;
+      }
+    } else {
+      if (isUserControlled) {
+        return const AssetImage('assets/default_pfp_1024.png');
+      } else {
+        return const AssetImage('assets/app_icon_1024.png');
+      }
+    }
   }
 }
 
@@ -271,6 +294,23 @@ class ChatLog {
       log("ChatLog folder was ensured.");
     } catch (e) {
       log("Failed to ensure ChatLog folder exists at $logsDir");
+      log("Error: $e");
+    }
+  }
+
+  static Future<String> getProfilePicsFolder() async {
+    final directory = await getLogsFolder();
+    return p.join(directory, 'pfps');
+  }
+
+  static Future<void> ensureProfilePicsFolderExists() async {
+    var pfpDir = await ChatLog.getProfilePicsFolder();
+    try {
+      var d = Directory(pfpDir);
+      await d.create(recursive: true);
+      log("Profile pics folders was ensured.");
+    } catch (e) {
+      log("Failed to ensure profile picture folder exists at $pfpDir");
       log("Error: $e");
     }
   }

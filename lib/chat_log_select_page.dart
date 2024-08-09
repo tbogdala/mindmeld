@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:profile_photo/profile_photo.dart';
 import 'dart:developer';
 
 import 'chat_log.dart';
@@ -118,9 +119,25 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
                       var thisLog = chatLogs[index];
                       return Card(
                           child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(thisLog.name.substring(0, 2)),
-                        ),
+                        leading: FutureBuilder(
+                            future: thisLog
+                                .getAICharacter()!
+                                .getEffectiveProfilePic(),
+                            builder: (BuildContext context,
+                                AsyncSnapshot<ImageProvider<Object>> snapshot) {
+                              if (snapshot.hasData) {
+                                return ProfilePhoto(
+                                    totalWidth: 48,
+                                    outlineColor: Colors.transparent,
+                                    color: Colors.transparent,
+                                    image: snapshot.data);
+                              } else {
+                                return ProfilePhoto(
+                                    totalWidth: 48,
+                                    outlineColor: Colors.transparent,
+                                    color: Colors.transparent);
+                              }
+                            }),
                         title: Text(thisLog.name),
                         subtitle:
                             Text('message count: ${thisLog.messages.length}'),

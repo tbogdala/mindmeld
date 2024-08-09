@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:mindmeld/configure_chat_log_page.dart';
 import 'package:mindmeld/model_import_page.dart';
 import 'package:mindmeld/new_chat_log_page.dart';
+import 'package:profile_photo/profile_photo.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'package:mindmeld/chat_log.dart';
@@ -69,8 +70,9 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
   }
 
   Future<void> _loadConfigFiles() async {
-    ConfigModelFiles.ensureModelsFolderExists();
-    ChatLog.ensureLogsFolderExists();
+    await ConfigModelFiles.ensureModelsFolderExists();
+    await ChatLog.ensureLogsFolderExists();
+    await ChatLog.ensureProfilePicsFolderExists();
     configModelFiles = await ConfigModelFiles.loadFromConfigFile();
     final chatLogFolder = await ChatLog.getLogsFolder();
     try {
@@ -189,8 +191,10 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
                                 await configModelFiles?.saveJsonToConfigFile();
 
                                 // now we dump the currently loaded model
-                                chatLogWidgetState.currentState
-                                    ?.closePrognosticatorModel();
+                                setState(() {
+                                  chatLogWidgetState.currentState
+                                      ?.closePrognosticatorModel();
+                                });
                               },
                             ),
                           ],
@@ -295,9 +299,24 @@ class _DesktopChatLogListViewState extends State<DesktopChatLogListView> {
 
                 return Card(
                     child: ListTile(
-                  leading: CircleAvatar(
-                    child: Text(thisLog.name.substring(0, 2)),
-                  ),
+                  leading: FutureBuilder(
+                      future:
+                          thisLog.getAICharacter()!.getEffectiveProfilePic(),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<ImageProvider<Object>> snapshot) {
+                        if (snapshot.hasData) {
+                          return ProfilePhoto(
+                              totalWidth: 48,
+                              outlineColor: Colors.transparent,
+                              color: Colors.transparent,
+                              image: snapshot.data);
+                        } else {
+                          return ProfilePhoto(
+                              totalWidth: 48,
+                              outlineColor: Colors.transparent,
+                              color: Colors.transparent);
+                        }
+                      }),
                   title: Text(shortLogName),
                   subtitle: Text('messages: ${thisLog.messages.length}'),
                   onTap: () {

@@ -9,6 +9,7 @@ import 'package:mindmeld/platform_and_theming.dart';
 import 'dart:ffi';
 import 'package:mindmeld/configure_chat_log_page.dart';
 import 'package:path/path.dart' as p;
+import 'package:profile_photo/profile_photo.dart';
 import 'package:woolydart/woolydart.dart';
 import 'dart:developer';
 import 'package:format/format.dart';
@@ -65,8 +66,13 @@ class _ChatLogPageState extends State<ChatLogPage> {
                 // same with the models configuration file
                 await widget.configModelFiles.saveJsonToConfigFile();
 
-                // now we dump the currently loaded model
-                chatLogWidgetState.currentState?.closePrognosticatorModel();
+                setState(() {
+                  // now we dump the currently loaded model
+                  chatLogWidgetState.currentState?.closePrognosticatorModel();
+
+                  // let the parent context know something might have changed.
+                  widget.onChatLogWidgetChange();
+                });
               }),
         ]),
         body: Padding(
@@ -304,8 +310,10 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   Widget _buildMessageList(BuildContext context) {
     // we do a double reversal - messages and list - so they come out in the
     // intended order but the listview starts at the bottom (most recent).
-    var reverseMessages = widget.chatLog.messages.reversed;
-    var now = DateTime.now();
+    final reverseMessages = widget.chatLog.messages.reversed;
+    final now = DateTime.now();
+    final humanCharacter = widget.chatLog.getHumanCharacter()!;
+    final aiCharacter = widget.chatLog.getAICharacter()!;
 
     return ListView.builder(
       reverse: true,
@@ -316,38 +324,101 @@ class ChatLogWidgetState extends State<ChatLogWidget>
             reverseMessages.elementAt(index); // widget.chatLog.messages[index];
         final msgTimeDiff = now.difference(msg.messageCreatedAt);
         final timeDiffString = _formatDurationString(msgTimeDiff.inSeconds);
+        final isHumanSent = msg.senderName == humanCharacter.name;
+
         return GestureDetector(
-          child: Container(
-              // different padding here is what pushes the chat bubbles to either side.
-              padding: (msg.humanSent
-                  ? const EdgeInsets.only(left: 32, top: 8, bottom: 8)
-                  : const EdgeInsets.only(right: 32, top: 8, bottom: 8)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                      decoration: BoxDecoration(
-                        border: (messageBeingEdited != msg
-                            ? null
-                            : const Border(
-                                bottom:
-                                    BorderSide(width: 4, color: Colors.grey),
-                                top: BorderSide(width: 4, color: Colors.grey),
-                                left: BorderSide(width: 4, color: Colors.grey),
-                                right:
-                                    BorderSide(width: 4, color: Colors.grey))),
-                        borderRadius: BorderRadius.circular(20),
-                        color:
-                            getMessageDecorationColor(context, !msg.humanSent),
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      child: Text(msg.message)),
-                  (msg.generationSpeedTPS == null
-                      ? Text(format('{}', timeDiffString))
-                      : Text(format('{} ({:,.2n} T/s)', timeDiffString,
-                          msg.generationSpeedTPS!))),
-                ],
-              )),
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    (!isHumanSent
+                        ? Container(
+                            // different padding here is what pushes the chat bubbles to either side.
+                            padding: (const EdgeInsets.only(
+                                right: 16, top: 8, bottom: 8)),
+                            child: FutureBuilder(
+                                future: aiCharacter.getEffectiveProfilePic(),
+                                builder: (BuildContext context,
+                                    AsyncSnapshot<ImageProvider<Object>>
+                                        snapshot) {
+                                  if (snapshot.hasData) {
+                                    return ProfilePhoto(
+                                        totalWidth: 64,
+                                        outlineColor: Colors.transparent,
+                                        color: Colors.transparent,
+                                        image: snapshot.data);
+                                  } else {
+                                    return ProfilePhoto(
+                                        totalWidth: 64,
+                                        outlineColor: Colors.transparent,
+                                        color: Colors.transparent);
+                                  }
+                                }),
+                          )
+                        : const SizedBox(
+                            width: 1,
+                          )),
+                    Flexible(
+                      child: Container(
+                          decoration: BoxDecoration(
+                            border: (messageBeingEdited != msg
+                                ? null
+                                : const Border(
+                                    bottom: BorderSide(
+                                        width: 4, color: Colors.grey),
+                                    top: BorderSide(
+                                        width: 4, color: Colors.grey),
+                                    left: BorderSide(
+                                        width: 4, color: Colors.grey),
+                                    right: BorderSide(
+                                        width: 4, color: Colors.grey))),
+                            borderRadius: BorderRadius.circular(20),
+                            color: getMessageDecorationColor(
+                                context, !msg.humanSent),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Text(msg.message)),
+                    ),
+                    (isHumanSent
+                        ? Container(
+                            // different padding here is what pushes the chat bubbles to either side.
+                            padding: (const EdgeInsets.only(
+                                left: 16, top: 8, bottom: 8)),
+                            child: FutureBuilder(
+                                future: humanCharacter.getEffectiveProfilePic(),
+                                builder: (BuildContext context,
+                                    AsyncSnapshot<ImageProvider<Object>>
+                                        snapshot) {
+                                  if (snapshot.hasData) {
+                                    return ProfilePhoto(
+                                        totalWidth: 64,
+                                        color: Colors.transparent,
+                                        outlineColor: Colors.transparent,
+                                        image: snapshot.data);
+                                  } else {
+                                    return ProfilePhoto(
+                                        totalWidth: 64,
+                                        outlineColor: Colors.transparent,
+                                        color: Colors.transparent);
+                                  }
+                                }),
+                          )
+                        : const SizedBox(
+                            width: 1,
+                          )),
+                  ],
+                ),
+                (msg.generationSpeedTPS == null
+                    ? Text(format('{}', timeDiffString))
+                    : Text(format('{} ({:,.2n} T/s)', timeDiffString,
+                        msg.generationSpeedTPS!))),
+              ],
+            ),
+          ),
           onLongPress: () {
             _showModalLongPressMessageBottomSheet(context, msg);
           },
