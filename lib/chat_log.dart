@@ -219,22 +219,44 @@ class ChatLogHyperparameters {
 }
 
 @JsonSerializable()
+class ChatLogCharacter {
+  String name;
+  String description;
+  String personality;
+  bool isUserControlled;
+
+  ChatLogCharacter(
+      {required this.name,
+      required this.description,
+      required this.personality,
+      required this.isUserControlled});
+
+  factory ChatLogCharacter.fromJson(Map<String, dynamic> json) {
+    return _$ChatLogCharacterFromJson(json);
+  }
+
+  Map<String, dynamic> toJson() {
+    return _$ChatLogCharacterToJson(this);
+  }
+}
+
+@JsonSerializable()
 class ChatLog {
   int version = 1;
   String name;
-  String humanName;
-  String? humanDescription;
-  String aiName;
-  String? aiDescription;
-  String? aiPersonality;
-  String? context;
   String modelName;
   ModelPromptStyle modelPromptStyle;
+  String context;
   ChatLogHyperparameters hyperparmeters = ChatLogHyperparameters();
+  List<ChatLogCharacter> characters = [];
   List<ChatLogMessage> messages = [];
 
-  ChatLog(this.name, this.humanName, this.aiName, this.modelName,
-      this.modelPromptStyle);
+  static const defaultUserName = 'User';
+  static const defaultUserDesc = 'A human user.';
+  static const defaultAiName = 'Assistant';
+  static const defaultAiDesc = 'A friendly sentient AI superbeing.';
+
+  ChatLog(this.name, this.modelName, this.modelPromptStyle, this.context);
 
   static Future<String> getLogsFolder() async {
     final directory = await getOurDocumentsDirectory();
@@ -298,22 +320,80 @@ class ChatLog {
     return jsonEncode(_$ChatLogToJson(this));
   }
 
+  // returns the first character in the chatlog that is user controlled
+  ChatLogCharacter? getHumanCharacter() {
+    for (final c in characters) {
+      if (c.isUserControlled) return c;
+    }
+    return null;
+  }
+
+  // returns the first character in the chatlog that is not user controlled
+  // TODO: this is a hack until full multicharacter support is added in.
+  // anything that uses this will need to be adapted to deal with possibly
+  // many non-human controlled characters.
+  ChatLogCharacter? getAICharacter() {
+    for (final c in characters) {
+      if (c.isUserControlled == false) return c;
+    }
+    return null;
+  }
+
   String buildPrompt(int tokenBudget, bool continueMsg) {
     // ballpark esimating for building up a prompt
-    const charsPerToken = 3.0; // conservative...
+    const charsPerToken = 3.8; // conservative...
     final estCharBudget = tokenBudget * charsPerToken;
 
     var promptConfig = modelPromptStyle.getPromptConfig();
 
-    String humanDesc = humanDescription ?? "";
-    String botDesc = aiDescription ?? "";
-    String botPer = aiPersonality ?? "";
-    String ctxDesc = context ??
-        "$humanName and $aiName are having a conversation over text messaging.";
+    // sort out the human and 'other' characters
+    assert(characters.isNotEmpty);
+    late ChatLogCharacter humanCharacter;
+    List<ChatLogCharacter> otherCharacters = [];
+    for (final c in characters) {
+      if (c.isUserControlled) {
+        humanCharacter = c;
+      } else {
+        otherCharacters.add(c);
+      }
+    }
+
+    final String humanName =
+        humanCharacter.name.isNotEmpty ? humanCharacter.name : defaultUserName;
+    final String humanDesc = humanCharacter.description.isNotEmpty
+        ? humanCharacter.description
+        : defaultUserDesc;
+
+    //TODO: provide better defaults for when the strings are empty in the characters
+    String aiNames = '';
+    String aiDescriptions = '';
+    assert(otherCharacters.isNotEmpty);
+    for (var i = 0; i < otherCharacters.length; i++) {
+      final oc = otherCharacters.elementAt(i);
+      final ocName = oc.name.isNotEmpty ? oc.name : defaultAiName;
+
+      // we build a string of names to be used for the context if the user doesn't supply one.
+      if (i == otherCharacters.length - 1) {
+        aiNames += ' and $ocName';
+      } else {
+        aiNames += ', $ocName';
+      }
+      // then we add the character description to the string that will be used in the full prompt.
+      aiDescriptions += '### $ocName\n\n';
+      aiDescriptions +=
+          oc.description.isNotEmpty ? oc.description : defaultAiDesc;
+      if (oc.personality.isNotEmpty) {
+        aiDescriptions +=
+            '\n\n$ocName\'s Personality Traits: ${oc.personality}\n';
+      }
+    }
+    String ctxDesc = context.isNotEmpty
+        ? context
+        : "$humanName$aiNames are having a conversation over text messaging.";
 
     // bulid the whole system preamble
     final system =
-        "${promptConfig.system}## Overall plot description:\n\n$ctxDesc\n\n## Characters:\n\n### $humanName\n\n$humanDesc\n\n### $aiName\n\n$botDesc\n$aiName's Personality: $botPer\n";
+        '${promptConfig.system}## Overall plot description:\n\n$ctxDesc\n\n## Characters:\n\n### $humanName\n\n$humanDesc\n\n$aiDescriptions\n';
 
     final String preamble =
         promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
@@ -324,11 +404,12 @@ class ChatLog {
     List<String> msgBuffer = [];
     for (final m in messages.reversed) {
       var formattedMsg = "";
-      if (m.humanSent) {
+
+      if (m.senderName == humanName) {
         formattedMsg =
             "${promptConfig.userPrefix}$humanName: ${m.message}${promptConfig.userSuffix}";
       } else {
-        formattedMsg = "${promptConfig.aiPrefix}$aiName: ${m.message}";
+        formattedMsg = "${promptConfig.aiPrefix}${m.senderName}: ${m.message}";
         // if we're trying to continue the chatlog, then for the first message we
         // encounter here, make sure not to include the suffix because it's been
         // deemed incomplete by the user and we want _moar_ ...
@@ -353,8 +434,14 @@ class ChatLog {
 
     // if we're not continuing the last message, add the prompt in to start
     // a new message prediction from the ai.
+    // FIXME: once proper multi-character support is in, this will have to be updated.
+    // it assumes one character and takes the first non-human. eventually, will
+    // need to supply the character getting gnerated.
     if (!continueMsg) {
-      budgettedChatlog += "${promptConfig.aiPrefix}$aiName: ";
+      final firstOther = otherCharacters.first;
+      final ocName =
+          firstOther.name.isNotEmpty ? firstOther.name : defaultAiName;
+      budgettedChatlog += "${promptConfig.aiPrefix}$ocName: ";
     }
 
     final prompt = preamble + budgettedChatlog;

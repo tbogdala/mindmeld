@@ -95,29 +95,6 @@ class _NewChatLogWidgetState extends State<NewChatLogWidget> {
           },
         ),
         const SizedBox(height: 8),
-        // FilledButton(
-        //   child: const Text('Import a New AI Model'),
-        //   onPressed: () async {
-        //     try {
-        //       FilePickerResult? result = await FilePicker.platform
-        //           .pickFiles(
-        //               dialogTitle: "Load Model File",
-        //               type: FileType.any,
-        //               allowMultiple: false,
-        //               allowCompression: false);
-        //       log("await returned");
-        //       if (result != null) {
-        //         setState(() {
-        //           final selectedModelFilepath = result.files.first.path!;
-        //           log("selected file: $selectedModelFilepath");
-        //         });
-        //       }
-        //     } catch (e) {
-        //       log("Excemption from the file picker: $e");
-        //     }
-        //   },
-        // ),
-        // const SizedBox(height: 8),
         const Divider(),
         const SizedBox(height: 8),
         const Text(
@@ -166,11 +143,19 @@ class _NewChatLogWidgetState extends State<NewChatLogWidget> {
             onPressed: () {
               var result = ChatLog(
                   logNameController.text,
-                  userNameController.text,
-                  aiNameController.text,
                   selectedModelFileOption,
-                  modelPromptStyleFromString(selectedPromptFormatOption));
-
+                  modelPromptStyleFromString(selectedPromptFormatOption),
+                  '');
+              result.characters.add(ChatLogCharacter(
+                  name: userNameController.text,
+                  description: '',
+                  personality: '',
+                  isUserControlled: true));
+              result.characters.add(ChatLogCharacter(
+                  name: aiNameController.text,
+                  description: '',
+                  personality: '',
+                  isUserControlled: false));
               Navigator.pop(context, result);
             },
           ),

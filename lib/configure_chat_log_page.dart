@@ -81,12 +81,17 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
 
   @override
   void initState() {
-    userNameController.text = widget.chatLog.humanName;
-    userDescController.text = widget.chatLog.humanDescription ?? "";
-    aiNameController.text = widget.chatLog.aiName;
-    aiDescController.text = widget.chatLog.aiDescription ?? "";
-    aiPersonalityController.text = widget.chatLog.aiPersonality ?? "";
-    storyContextController.text = widget.chatLog.context ?? "";
+    var humanCharacter = widget.chatLog.getHumanCharacter();
+    var aiCharacter = widget.chatLog.getAICharacter();
+    assert(humanCharacter != null);
+    assert(aiCharacter != null);
+
+    userNameController.text = humanCharacter?.name ?? "";
+    userDescController.text = humanCharacter?.description ?? "";
+    aiNameController.text = aiCharacter?.name ?? "";
+    aiDescController.text = aiCharacter?.description ?? "";
+    aiPersonalityController.text = aiCharacter?.personality ?? "";
+    storyContextController.text = widget.chatLog.context;
 
     hpNewTokensController.text =
         widget.chatLog.hyperparmeters.tokens.toString();
@@ -350,6 +355,9 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
   }
 
   Widget _buildCharactersPage(BuildContext context) {
+    var humanCharacter = widget.chatLog.getHumanCharacter()!;
+    var aiCharacter = widget.chatLog.getAICharacter()!;
+
     return Padding(
         padding: const EdgeInsets.all(16),
         child: SingleChildScrollView(
@@ -364,7 +372,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                     labelText: "Your Name",
                   ),
                   onChanged: (text) {
-                    widget.chatLog.humanName = text;
+                    humanCharacter.name = text;
                   },
                 ),
                 subtitle: TextField(
@@ -374,7 +382,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                     labelText: "Your Description",
                   ),
                   onChanged: (text) {
-                    widget.chatLog.humanDescription = text;
+                    humanCharacter.description = text;
                   },
                 ),
               ),
@@ -389,7 +397,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                     labelText: "AI Name",
                   ),
                   onChanged: (text) {
-                    widget.chatLog.aiName = text;
+                    aiCharacter.name = text;
                   },
                 ),
                 subtitle: TextField(
@@ -399,7 +407,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                     labelText: "AI Description",
                   ),
                   onChanged: (text) {
-                    widget.chatLog.aiDescription = text;
+                    aiCharacter.description = text;
                   },
                 ),
               ),
@@ -411,7 +419,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                     labelText: "AI Personality",
                   ),
                   onChanged: (text) {
-                    widget.chatLog.aiPersonality = text;
+                    aiCharacter.personality = text;
                   },
                 ),
               ),

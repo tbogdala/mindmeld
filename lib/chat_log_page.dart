@@ -185,7 +185,13 @@ class ChatLogWidgetState extends State<ChatLogWidget>
 
     // add the human user's name to the stop phrases
     List<String> stopPhrases = List.from(promptConfig.stopPhrases);
-    stopPhrases.add('${widget.chatLog.humanName}:');
+    final humanChar = widget.chatLog.getHumanCharacter();
+    if (humanChar != null && humanChar.name.isNotEmpty) {
+      stopPhrases.add('${humanChar.name}:');
+      stopPhrases.add('### ${humanChar.name}');
+    } else {
+      stopPhrases.add('${ChatLog.defaultUserName}:');
+    }
 
     // run the text inference in an isolate
     if (prognosticator == null) {
@@ -208,7 +214,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     setState(() {
       if (!continueMsg) {
         widget.chatLog.messages.add(ChatLogMessage(
-            widget.chatLog.aiName,
+            widget.chatLog.getAICharacter()!.name,
             predictedOutput.message.trimLeft(),
             false,
             predictedOutput.generationSpeedTPS));
@@ -411,8 +417,8 @@ class ChatLogWidgetState extends State<ChatLogWidget>
       // We're wanting to send a new message, so add it to
       // the log and start generating a new message.
       if (newMsg.isNotEmpty) {
-        final chatLogMsg =
-            ChatLogMessage(widget.chatLog.humanName, newMsg, true, null);
+        final chatLogMsg = ChatLogMessage(
+            widget.chatLog.getHumanCharacter()!.name, newMsg, true, null);
         // update the UI with the new chatlog message
         setState(() {
           newMessgeController.clear();
@@ -517,26 +523,37 @@ class PredictionWorker {
   }
 
   static void _isolateWorker(SendPort port) {
-    // send the communication's port back right away
-    final workerReceivePort = ReceivePort();
-    port.send(workerReceivePort.sendPort);
+    LlamaModel? llamaModel;
 
-    // an empty string for iOS to use the current process instead of a library file.
-    final lib = Platform.isAndroid ? "libwoolycore.so" : "";
-    log("PredictionWorker: Library loaded through DynamicLibrary.");
-    var llamaModel = LlamaModel(lib);
+    try {
+      // send the communication's port back right away
+      final workerReceivePort = ReceivePort();
+      port.send(workerReceivePort.sendPort);
 
-    workerReceivePort.listen((dynamic message) async {
-      if (message is PredictReplyRequest) {
-        final result = _predictReply(llamaModel, message);
-        port.send(result);
-      } else if (message is CloseModelRequest) {
-        if (llamaModel.isModelLoaded()) {
-          log("PredictionWorker: Worker is closing the loaded model...");
-          llamaModel.freeModel();
+      // an empty string for iOS to use the current process instead of a library file.
+      final lib = Platform.isAndroid ? "libwoolycore.so" : "";
+      log("PredictionWorker: Library loaded through DynamicLibrary.");
+      llamaModel = LlamaModel(lib);
+
+      workerReceivePort.listen((dynamic message) async {
+        if (message is PredictReplyRequest) {
+          final result = _predictReply(llamaModel!, message);
+          port.send(result);
+        } else if (message is CloseModelRequest) {
+          if (llamaModel!.isModelLoaded()) {
+            log("PredictionWorker: Worker is closing the loaded model...");
+            llamaModel.freeModel();
+          }
         }
-      }
-    });
+      });
+    } catch (e) {
+      var errormsg = e.toString();
+      log("PredictionWorker: _isolateWorker caught exception: $errormsg");
+      log("... closing model.");
+      try {
+        llamaModel?.freeModel();
+      } finally {}
+    }
   }
 
   static PredictReplyResult _predictReply(

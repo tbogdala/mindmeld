@@ -62,20 +62,34 @@ Map<String, dynamic> _$ChatLogHyperparametersToJson(
       'mirostatTau': instance.mirostatTau,
     };
 
+ChatLogCharacter _$ChatLogCharacterFromJson(Map<String, dynamic> json) =>
+    ChatLogCharacter(
+      name: json['name'] as String,
+      description: json['description'] as String,
+      personality: json['personality'] as String,
+      isUserControlled: json['isUserControlled'] as bool,
+    );
+
+Map<String, dynamic> _$ChatLogCharacterToJson(ChatLogCharacter instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'description': instance.description,
+      'personality': instance.personality,
+      'isUserControlled': instance.isUserControlled,
+    };
+
 ChatLog _$ChatLogFromJson(Map<String, dynamic> json) => ChatLog(
       json['name'] as String,
-      json['humanName'] as String,
-      json['aiName'] as String,
       json['modelName'] as String,
       $enumDecode(_$ModelPromptStyleEnumMap, json['modelPromptStyle']),
+      json['context'] as String,
     )
       ..version = (json['version'] as num).toInt()
-      ..humanDescription = json['humanDescription'] as String?
-      ..aiDescription = json['aiDescription'] as String?
-      ..aiPersonality = json['aiPersonality'] as String?
-      ..context = json['context'] as String?
       ..hyperparmeters = ChatLogHyperparameters.fromJson(
           json['hyperparmeters'] as Map<String, dynamic>)
+      ..characters = (json['characters'] as List<dynamic>)
+          .map((e) => ChatLogCharacter.fromJson(e as Map<String, dynamic>))
+          .toList()
       ..messages = (json['messages'] as List<dynamic>)
           .map((e) => ChatLogMessage.fromJson(e as Map<String, dynamic>))
           .toList();
@@ -83,15 +97,11 @@ ChatLog _$ChatLogFromJson(Map<String, dynamic> json) => ChatLog(
 Map<String, dynamic> _$ChatLogToJson(ChatLog instance) => <String, dynamic>{
       'version': instance.version,
       'name': instance.name,
-      'humanName': instance.humanName,
-      'humanDescription': instance.humanDescription,
-      'aiName': instance.aiName,
-      'aiDescription': instance.aiDescription,
-      'aiPersonality': instance.aiPersonality,
-      'context': instance.context,
       'modelName': instance.modelName,
       'modelPromptStyle': _$ModelPromptStyleEnumMap[instance.modelPromptStyle]!,
+      'context': instance.context,
       'hyperparmeters': instance.hyperparmeters,
+      'characters': instance.characters,
       'messages': instance.messages,
     };
 
