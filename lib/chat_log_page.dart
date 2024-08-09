@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mindmeld/platform_and_theming.dart';
 
@@ -558,7 +559,7 @@ class PredictionWorker {
 
   static PredictReplyResult _predictReply(
       LlamaModel llamaModel, PredictReplyRequest args) {
-    late wooly_gpt_params params;
+    wooly_gpt_params? params;
     try {
       if (!llamaModel.isModelLoaded()) {
         final modelParams = llamaModel.getDefaultModelParams()
@@ -567,12 +568,14 @@ class PredictionWorker {
         final contextParams = llamaModel.getDefaultContextParams()
           ..seed = args.hyperparameters.seed
           ..n_threads = args.modelSettings.threadCount ?? -1
+          ..flash_attn = true
           ..n_ctx = args.modelSettings.contextSize ?? 2048;
 
         log("PredictionWorker: Attempting to load model: ${args.modelFilepath}");
 
+        // we make the upstream llamacpp code 'chatty' in the log for debug builds
         final bool loadedResult = llamaModel.loadModel(
-            args.modelFilepath, modelParams, contextParams, true);
+            args.modelFilepath, modelParams, contextParams, !kDebugMode);
         if (loadedResult == false) {
           return PredictReplyResult(
               false, '<Error: Failed to load the GGUF model.>', 0.0);
@@ -629,7 +632,7 @@ class PredictionWorker {
       log("PredictionWorker: Caught exception trying to predict reply: $errormsg");
       return PredictReplyResult(false, '<Error: $errormsg>', 0.0);
     } finally {
-      params.dispose();
+      params?.dispose();
     }
   }
 }
