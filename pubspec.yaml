@@ -67,6 +67,10 @@ flutter_launcher_icons:
   macos:
     generate: true
     image_path: "assets/app_icon_1024.png"
+  windows:
+    generate: true
+    image_path: "assets/app_icon_1024.png"
+    icon_size: 256
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
