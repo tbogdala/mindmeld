@@ -249,7 +249,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ElevatedButton.icon(
+                  OutlinedButton.icon(
                     icon: const Icon(Icons.delete),
                     label: Text("Delete Message",
                         style: Theme.of(context).textTheme.titleLarge),
@@ -262,7 +262,8 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                       Navigator.pop(context);
                     },
                   ),
-                  ElevatedButton.icon(
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
                     icon: const Icon(Icons.edit),
                     label: Text("Edit Message",
                         style: Theme.of(context).textTheme.titleLarge),
@@ -274,8 +275,9 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                       Navigator.pop(context);
                     },
                   ),
+                  const SizedBox(height: 8),
                   if (msg == widget.chatLog.messages.last && !msg.humanSent)
-                    ElevatedButton.icon(
+                    OutlinedButton.icon(
                       icon: const Icon(Icons.fast_forward),
                       label: Text("Continue Message",
                           style: Theme.of(context).textTheme.titleLarge),
@@ -286,8 +288,10 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                         Navigator.pop(context);
                       },
                     ),
-                  if (msg == widget.chatLog.messages.last)
-                    ElevatedButton.icon(
+                  const SizedBox(height: 8),
+                  if (msg == widget.chatLog.messages.last &&
+                      !messageGenerationInProgress)
+                    OutlinedButton.icon(
                       icon: const Icon(Icons.restart_alt),
                       label: Text("Regenerate Message",
                           style: Theme.of(context).textTheme.titleLarge),
