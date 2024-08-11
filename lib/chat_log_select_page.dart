@@ -63,7 +63,7 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
           content: const SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Would you like to permanently delete the chatlog?.'),
+                Text('Would you like to permanently delete the chatlog?'),
               ],
             ),
           ),
