@@ -26,7 +26,6 @@ class ConfigureChatLogPage extends StatefulWidget {
 }
 
 class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
-  final chatlogNameController = TextEditingController();
   final userNameController = TextEditingController();
   final userDescController = TextEditingController();
   final aiNameController = TextEditingController();
@@ -58,7 +57,6 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
 
   @override
   void dispose() {
-    chatlogNameController.dispose();
     userNameController.dispose();
     userDescController.dispose();
     aiNameController.dispose();
@@ -94,7 +92,6 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
     assert(humanCharacter != null);
     assert(aiCharacter != null);
 
-    chatlogNameController.text = widget.chatLog.name;
     userNameController.text = humanCharacter?.name ?? "";
     userDescController.text = humanCharacter?.description ?? "";
     aiNameController.text = aiCharacter?.name ?? "";
@@ -428,17 +425,6 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          ListTile(
-            title: TextField(
-              controller: chatlogNameController,
-              decoration: const InputDecoration(
-                labelText: "Chatlog Name",
-              ),
-              onChanged: (text) {
-                widget.chatLog.name = text;
-              },
-            ),
-          ),
           ListTile(
             title: TextField(
               controller: storyContextController,

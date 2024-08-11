@@ -221,6 +221,7 @@ class ChatLogHyperparameters {
 
 @JsonSerializable()
 class ChatLogCharacter {
+  // Name of the chatlog, but should be modified using `rename()` instead.
   String name;
   String description;
   String personality;
@@ -358,6 +359,36 @@ class ChatLog {
 
   String toJson() {
     return jsonEncode(_$ChatLogToJson(this));
+  }
+
+  Future<void> deleteFile() async {
+    File chatlogFile = File(await getLogFilepath());
+    if (await chatlogFile.exists()) {
+      log('Deleting chatlog: $name');
+      chatlogFile.delete();
+    }
+  }
+
+  // Sets the `name` property of the chatlog and also renames the file on the file
+  // system to match.
+  Future<void> rename(String newName) async {
+    final currentChatlogFilepath = await getLogFilepath();
+    File chatlogFile = File(currentChatlogFilepath);
+    if (await chatlogFile.exists()) {
+      final parentFolder = chatlogFile.parent.path;
+
+      // build the new filepath for the chatlog
+      name = newName;
+      final newFilename = getSafeFilename();
+      final newChatlogFilepath = p.join(parentFolder, newFilename);
+
+      // perform the filesystem action
+      log('Renaming chatlog:\n\t$currentChatlogFilepath ==>\n\t$newChatlogFilepath');
+      await chatlogFile.rename(newChatlogFilepath);
+
+      // now save the chatlog to file so the new name is preserved
+      await saveToFile();
+    }
   }
 
   // returns the first character in the chatlog that is user controlled

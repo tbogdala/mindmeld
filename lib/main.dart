@@ -36,7 +36,12 @@ void main() async {
         darkTheme: ThemeData.dark(),
         home: const DesktopMindmeldApp()));
   } else {
-    runApp(const ChatLogSelectPage());
+    runApp(MaterialApp(
+        title: 'Mindmeld',
+        theme: ThemeData(),
+        darkTheme: ThemeData.dark(),
+        themeMode: ThemeMode.system,
+        home: const ChatLogSelectPage()));
   }
 }
 
@@ -236,13 +241,136 @@ class DesktopChatLogListView extends StatefulWidget {
 }
 
 class _DesktopChatLogListViewState extends State<DesktopChatLogListView> {
+  Future<bool?> _showConfirmDeleteDialog() async {
+    return showDialog<bool?>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Chatlog?'),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Would you like to permanently delete the chatlog?.'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Delete',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<String?> _showRenameChatlogDialog(String initialName) async {
+    TextEditingController newNameFieldController = TextEditingController();
+    newNameFieldController.text = initialName;
+    return showDialog<String?>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enter new name:'),
+          content: TextField(
+            controller: newNameFieldController,
+            decoration: const InputDecoration(hintText: "New Chatlog Name"),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(null);
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Rename',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(newNameFieldController.text);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showModalLongPressMessageBottomSheet(
+      BuildContext context, ChatLog chatlog) {
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.delete),
+                    label: Text("Delete Chatlog",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    onPressed: () async {
+                      var shouldDelete = await _showConfirmDeleteDialog();
+                      if (shouldDelete != null && shouldDelete == true) {
+                        await chatlog.deleteFile();
+                        setState(() {
+                          final logRemoved = widget.chatLogs.remove(chatlog);
+                          log('Chatlog was removed from collection: $logRemoved');
+                        });
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.edit),
+                    label: Text("Rename Chatlog",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    onPressed: () async {
+                      var newChatlogName =
+                          await _showRenameChatlogDialog(chatlog.name);
+                      if (newChatlogName != null) {
+                        setState(() {
+                          log('New chatlog name chosen by user: $newChatlogName');
+                          chatlog.rename(newChatlogName);
+                        });
+                      }
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  )
+                ],
+              ));
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
         decoration: BoxDecoration(
             color: getBackgroundDecorationColor(context),
             borderRadius: BorderRadius.circular(8)),
-        padding: EdgeInsets.all(8),
+        padding: const EdgeInsets.all(8),
         child: Column(
           children: [
             Row(
@@ -275,8 +403,6 @@ class _DesktopChatLogListViewState extends State<DesktopChatLogListView> {
                                     ))));
                           });
                       if (newChatLog != null) {
-                        // FIXME: no safety nets on making sure a model file was actually selected.
-                        // there's a delay because it haas to copy it over to the app storage...
                         setState(() {
                           widget.chatLogs.add(newChatLog);
                           newChatLog.saveToFile();
@@ -297,32 +423,37 @@ class _DesktopChatLogListViewState extends State<DesktopChatLogListView> {
                     ? thisLog.name
                     : '${thisLog.name.substring(0, shortLogNameLimit)}...';
 
-                return Card(
-                    child: ListTile(
-                  leading: FutureBuilder(
-                      future:
-                          thisLog.getAICharacter()!.getEffectiveProfilePic(),
-                      builder: (BuildContext context,
-                          AsyncSnapshot<ImageProvider<Object>> snapshot) {
-                        if (snapshot.hasData) {
-                          return ProfilePhoto(
-                              totalWidth: 48,
-                              outlineColor: Colors.transparent,
-                              color: Colors.transparent,
-                              image: snapshot.data);
-                        } else {
-                          return ProfilePhoto(
-                              totalWidth: 48,
-                              outlineColor: Colors.transparent,
-                              color: Colors.transparent);
-                        }
-                      }),
-                  title: Text(shortLogName),
-                  subtitle: Text('messages: ${thisLog.messages.length}'),
-                  onTap: () {
-                    widget.onLogSelection(index);
+                return GestureDetector(
+                  onLongPress: () {
+                    _showModalLongPressMessageBottomSheet(context, thisLog);
                   },
-                ));
+                  child: Card(
+                      child: ListTile(
+                    leading: FutureBuilder(
+                        future:
+                            thisLog.getAICharacter()!.getEffectiveProfilePic(),
+                        builder: (BuildContext context,
+                            AsyncSnapshot<ImageProvider<Object>> snapshot) {
+                          if (snapshot.hasData) {
+                            return ProfilePhoto(
+                                totalWidth: 48,
+                                outlineColor: Colors.transparent,
+                                color: Colors.transparent,
+                                image: snapshot.data);
+                          } else {
+                            return ProfilePhoto(
+                                totalWidth: 48,
+                                outlineColor: Colors.transparent,
+                                color: Colors.transparent);
+                          }
+                        }),
+                    title: Text(shortLogName),
+                    subtitle: Text('messages: ${thisLog.messages.length}'),
+                    onTap: () {
+                      widget.onLogSelection(index);
+                    },
+                  )),
+                );
               },
             ))
           ],

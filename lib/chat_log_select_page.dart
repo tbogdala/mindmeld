@@ -53,139 +53,233 @@ class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
     });
   }
 
+  Future<bool?> _showConfirmDeleteDialog() async {
+    return showDialog<bool?>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Chatlog?'),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Would you like to permanently delete the chatlog?.'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Delete',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<String?> _showRenameChatlogDialog(String initialName) async {
+    TextEditingController newNameFieldController = TextEditingController();
+    newNameFieldController.text = initialName;
+    return showDialog<String?>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enter new name:'),
+          content: TextField(
+            controller: newNameFieldController,
+            decoration: const InputDecoration(hintText: "New Chatlog Name"),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(null);
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Rename',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(newNameFieldController.text);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showModalLongPressMessageBottomSheet(
+      BuildContext context, ChatLog chatlog) {
+    showModalBottomSheet(
+        context: context,
+        builder: (BuildContext context) {
+          return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.delete),
+                    label: Text("Delete Chatlog",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    onPressed: () async {
+                      var shouldDelete = await _showConfirmDeleteDialog();
+                      if (shouldDelete != null && shouldDelete == true) {
+                        await chatlog.deleteFile();
+                        setState(() {
+                          final logRemoved = chatLogs.remove(chatlog);
+                          log('Chatlog was removed from collection: $logRemoved');
+                        });
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.edit),
+                    label: Text("Rename Chatlog",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    onPressed: () async {
+                      var newChatlogName =
+                          await _showRenameChatlogDialog(chatlog.name);
+                      if (newChatlogName != null) {
+                        setState(() {
+                          log('New chatlog name chosen by user: $newChatlogName');
+                          chatlog.rename(newChatlogName);
+                        });
+                      }
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  )
+                ],
+              ));
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (configModelFiles == null) {
-      return MaterialApp(
-        home: Builder(builder: buildOnboarding),
-      );
+      return Builder(builder: buildOnboarding);
     } else {
-      return MaterialApp(
-        home: Builder(builder: buildChatlog),
-      );
+      return Builder(builder: buildChatlog);
     }
   }
 
   Widget buildOnboarding(BuildContext context) {
-    return MaterialApp(
-        title: widget.appTitle,
-        theme: ThemeData(),
-        darkTheme: ThemeData.dark(),
-        themeMode: ThemeMode.system,
-
-        // we use a new Builder here so that the theme choice above are applied
-        // for the context object.
-        home: Builder(builder: (context) {
-          return Scaffold(
-              appBar: AppBar(
-                title: Text(widget.appTitle),
-              ),
-              body: ModelImportPage(
-                isMobile: true,
-                onNewConfigModelFiles: (newConfigModelFiles) {
-                  setState(() {
-                    updateConfigModelFiles(newConfigModelFiles);
-                  });
-                },
-              ));
-        }));
+    return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.appTitle),
+        ),
+        body: ModelImportPage(
+          isMobile: true,
+          onNewConfigModelFiles: (newConfigModelFiles) {
+            setState(() {
+              updateConfigModelFiles(newConfigModelFiles);
+            });
+          },
+        ));
   }
 
   Widget buildChatlog(BuildContext context) {
-    return MaterialApp(
-      title: widget.appTitle,
-      theme: ThemeData(),
-      darkTheme: ThemeData.dark(),
-      themeMode: ThemeMode.system,
-
-      // we use a new Builder here so that the theme choice above are applied
-      // for the context object.
-      home: Builder(builder: (context) {
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(widget.appTitle),
-          ),
-          body: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text('Chatlogs',
-                      style: Theme.of(context).textTheme.headlineLarge),
-                  const SizedBox(height: 16),
-                  Expanded(
-                      child: ListView.builder(
-                    itemCount: chatLogs.length,
-                    itemBuilder: (context, index) {
-                      var thisLog = chatLogs[index];
-                      return Card(
-                          child: ListTile(
-                        leading: FutureBuilder(
-                            future: thisLog
-                                .getAICharacter()!
-                                .getEffectiveProfilePic(),
-                            builder: (BuildContext context,
-                                AsyncSnapshot<ImageProvider<Object>> snapshot) {
-                              if (snapshot.hasData) {
-                                return ProfilePhoto(
-                                    totalWidth: 48,
-                                    outlineColor: Colors.transparent,
-                                    color: Colors.transparent,
-                                    image: snapshot.data);
-                              } else {
-                                return ProfilePhoto(
-                                    totalWidth: 48,
-                                    outlineColor: Colors.transparent,
-                                    color: Colors.transparent);
-                              }
-                            }),
-                        title: Text(thisLog.name),
-                        subtitle:
-                            Text('message count: ${thisLog.messages.length}'),
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ChatLogPage(
-                                      chatLog: thisLog,
-                                      configModelFiles: configModelFiles!,
-                                      onChatLogWidgetChange: () {
-                                        setState(() {}); // trigger an update
-                                      })));
-                        },
-                      ));
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.appTitle),
+      ),
+      body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Text('Chatlogs',
+                  style: Theme.of(context).textTheme.headlineLarge),
+              const SizedBox(height: 16),
+              Expanded(
+                  child: ListView.builder(
+                itemCount: chatLogs.length,
+                itemBuilder: (context, index) {
+                  var thisLog = chatLogs[index];
+                  return GestureDetector(
+                    onLongPress: () {
+                      _showModalLongPressMessageBottomSheet(context, thisLog);
                     },
-                  )),
-                ],
+                    child: Card(
+                        child: ListTile(
+                      leading: FutureBuilder(
+                          future: thisLog
+                              .getAICharacter()!
+                              .getEffectiveProfilePic(),
+                          builder: (BuildContext context,
+                              AsyncSnapshot<ImageProvider<Object>> snapshot) {
+                            if (snapshot.hasData) {
+                              return ProfilePhoto(
+                                  totalWidth: 48,
+                                  outlineColor: Colors.transparent,
+                                  color: Colors.transparent,
+                                  image: snapshot.data);
+                            } else {
+                              return ProfilePhoto(
+                                  totalWidth: 48,
+                                  outlineColor: Colors.transparent,
+                                  color: Colors.transparent);
+                            }
+                          }),
+                      title: Text(thisLog.name),
+                      subtitle:
+                          Text('message count: ${thisLog.messages.length}'),
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ChatLogPage(
+                                    chatLog: thisLog,
+                                    configModelFiles: configModelFiles!,
+                                    onChatLogWidgetChange: () {
+                                      setState(() {}); // trigger an update
+                                    })));
+                      },
+                    )),
+                  );
+                },
               )),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () async {
-              final newChatLog = await Navigator.push<ChatLog>(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => NewChatLogPage(
-                            configModelFiles:
-                                configModelFiles!, // should only get to this widget if we have this data
-                            // TODO: review if this is being handled elsewhere
-                            // onConfigModelFilesChange: (newConfigModelFiles) {
-                            //   setState(() {
-                            //     updateConfigModelFiles(newConfigModelFiles);
-                            //   });
-                            // },
-                          )));
-              if (newChatLog != null) {
-                // FIXME: no safety nets on making sure a model file was actually selected.
-                // there's a delay because it haas to copy it over to the app storage...
-
-                setState(() {
-                  chatLogs.add(newChatLog);
-                  newChatLog.saveToFile();
-                });
-              }
-            },
-            child: const Icon(Icons.add),
-          ),
-        );
-      }),
+            ],
+          )),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final newChatLog = await Navigator.push<ChatLog>(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => NewChatLogPage(
+                        configModelFiles:
+                            configModelFiles!, // should only get to this widget if we have this data
+                      )));
+          if (newChatLog != null) {
+            setState(() {
+              chatLogs.add(newChatLog);
+              newChatLog.saveToFile();
+            });
+          }
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
