@@ -250,16 +250,21 @@ class ChatLogCharacter {
       if (p.isAbsolute(profilePicFilename!)) {
         return Image.file(File(profilePicFilename!)).image;
       } else {
-        var pfpDir = await ChatLog.getProfilePicsFolder();
-        var pfpRelativeFilepath = p.join(pfpDir, profilePicFilename!);
-        return Image.file(File(pfpRelativeFilepath)).image;
+        final pfpDir = await ChatLog.getProfilePicsFolder();
+        final pfpRelativeFilepath = p.join(pfpDir, profilePicFilename!);
+        final pfpFile = File(pfpRelativeFilepath);
+        if (await pfpFile.exists()) {
+          return Image.file(pfpFile).image;
+        }
       }
+    }
+
+    // if we haven't loaded a picture and returned it yet, then return
+    // a default image bundled into the app.
+    if (isUserControlled) {
+      return const AssetImage('assets/default_pfp_1024.png');
     } else {
-      if (isUserControlled) {
-        return const AssetImage('assets/default_pfp_1024.png');
-      } else {
-        return const AssetImage('assets/app_icon_1024.png');
-      }
+      return const AssetImage('assets/app_icon_1024.png');
     }
   }
 }
