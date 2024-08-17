@@ -444,7 +444,9 @@ class ChatLogWidgetState extends State<ChatLogWidget>
               onSubmitted: (_) {
                 _onMessageInputSend();
               },
-              textInputAction: TextInputAction.done,
+              textInputAction: (isRunningOnDesktop()
+                  ? TextInputAction.done
+                  : TextInputAction.newline),
               controller: newMessgeController,
               maxLines: null,
               keyboardType: TextInputType.multiline,
