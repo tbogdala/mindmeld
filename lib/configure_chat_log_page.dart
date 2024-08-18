@@ -126,21 +126,24 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
     var currentModelConfig =
         widget.configModelFiles.modelFiles[widget.chatLog.modelName];
     if (currentModelConfig == null) {
-      var firstInConfig = widget.configModelFiles.modelFiles.entries.first;
-      currentModelConfig = firstInConfig.value;
-      widget.chatLog.modelName = firstInConfig.key;
-    }
-    modelGpuLayersController.text = currentModelConfig.gpuLayers.toString();
-    if (currentModelConfig.contextSize != null) {
-      modelContextSizeController.text =
-          currentModelConfig.contextSize.toString();
-    }
-    if (currentModelConfig.threadCount != null) {
-      modelThreadCountController.text =
-          currentModelConfig.threadCount.toString();
-    }
-    if (currentModelConfig.batchSize != null) {
-      modelBatchSizeController.text = currentModelConfig.batchSize.toString();
+      if (widget.configModelFiles.modelFiles.isNotEmpty) {
+        var firstInConfig = widget.configModelFiles.modelFiles.entries.first;
+        currentModelConfig = firstInConfig.value;
+        widget.chatLog.modelName = firstInConfig.key;
+      }
+    } else {
+      modelGpuLayersController.text = currentModelConfig.gpuLayers.toString();
+      if (currentModelConfig.contextSize != null) {
+        modelContextSizeController.text =
+            currentModelConfig.contextSize.toString();
+      }
+      if (currentModelConfig.threadCount != null) {
+        modelThreadCountController.text =
+            currentModelConfig.threadCount.toString();
+      }
+      if (currentModelConfig.batchSize != null) {
+        modelBatchSizeController.text = currentModelConfig.batchSize.toString();
+      }
     }
 
     super.initState();
@@ -169,64 +172,45 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
     });
   }
 
+  Future<bool?> _showConfirmDeleteModelDialog(String modelName) async {
+    return showDialog<bool?>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete model?'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('Would you like to remove "$modelName"?'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Delete',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildModelPage(BuildContext context) {
     Widget innerConntent(BuildContext context) {
       return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-        FilledButton(
-          child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [Icon(Icons.add), Text('Import a new GGUF model')]),
-          onPressed: () async {
-            newConfigCallback(newConfigModelFiles) {
-              setState(() {
-                // update our own modelFiles with the new data
-                var key = newConfigModelFiles.modelFiles.keys.first;
-                var value = newConfigModelFiles.modelFiles[key]!;
-                widget.configModelFiles.modelFiles[key] = value;
-
-                // build the data for the model dropdown to select already imported models
-                modelFileOptions =
-                    widget.configModelFiles.modelFiles.keys.toList();
-
-                // update the chatlog to use it
-                widget.chatLog.modelName = key;
-
-                // finally, save out the new config file
-                widget.configModelFiles.saveJsonToConfigFile().then((_) {
-                  Navigator.pop(context);
-                  _doUpdateToSelectedModel(key);
-                });
-              });
-            }
-
-            if (widget.isFullPage) {
-              // move to model import page
-              await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => ModelImportPage(
-                          isMobile: widget.isFullPage,
-                          onNewConfigModelFiles: newConfigCallback)));
-            } else {
-              await showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return Dialog(
-                        alignment: AlignmentDirectional.topCenter,
-                        child: Container(
-                            constraints: const BoxConstraints.tightFor(
-                              width: 600,
-                            ),
-                            child: SingleChildScrollView(
-                                child: ModelImportPage(
-                                    isMobile: false,
-                                    onNewConfigModelFiles:
-                                        newConfigCallback))));
-                  });
-            }
-          },
-        ),
-        const SizedBox(height: 16),
         ListTile(
             leading: const Icon(Icons.psychology),
             title: Row(children: [
@@ -252,6 +236,129 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                 ),
               ),
             ])),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.only(right: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Tooltip(
+                message: 'Import a new GGUF model file',
+                child: FilledButton(
+                  child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [Icon(Icons.add), Text('Import')]),
+                  onPressed: () async {
+                    newConfigCallback(newConfigModelFiles) {
+                      setState(() {
+                        // update our own modelFiles with the new data
+                        var key = newConfigModelFiles.modelFiles.keys.first;
+                        var value = newConfigModelFiles.modelFiles[key]!;
+                        widget.configModelFiles.modelFiles[key] = value;
+
+                        // build the data for the model dropdown to select already imported models
+                        modelFileOptions =
+                            widget.configModelFiles.modelFiles.keys.toList();
+
+                        // update the chatlog to use it
+                        widget.chatLog.modelName = key;
+
+                        // finally, save out the new config file
+                        widget.configModelFiles
+                            .saveJsonToConfigFile()
+                            .then((_) {
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                          }
+                          _doUpdateToSelectedModel(key);
+                        });
+                      });
+                    }
+
+                    if (widget.isFullPage) {
+                      // move to model import page
+                      await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => ModelImportPage(
+                                  isMobile: widget.isFullPage,
+                                  onNewConfigModelFiles: newConfigCallback)));
+                    } else {
+                      await showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return Dialog(
+                                alignment: AlignmentDirectional.topCenter,
+                                child: Container(
+                                    constraints: const BoxConstraints.tightFor(
+                                      width: 600,
+                                    ),
+                                    child: SingleChildScrollView(
+                                        child: ModelImportPage(
+                                            isMobile: false,
+                                            onNewConfigModelFiles:
+                                                newConfigCallback))));
+                          });
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Tooltip(
+                message: 'Remove selected GGUF model',
+                child: FilledButton(
+                  child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [Icon(Icons.remove), Text('Remove')]),
+                  onPressed: () async {
+                    final currentModelName = widget.chatLog.modelName;
+                    final shouldDelete =
+                        await _showConfirmDeleteModelDialog(currentModelName);
+                    if (shouldDelete != null && shouldDelete == true) {
+                      final currentModelConfig =
+                          widget.configModelFiles.modelFiles[currentModelName];
+                      final currentModelFilepath =
+                          currentModelConfig?.modelFilepath;
+                      if (currentModelFilepath == null) return;
+
+                      // if we're using a relative path under our models folder, actually
+                      // delete the file because we consider it 'ours' and managed. Other
+                      // file paths are not managed by the app and we should therefore
+                      // just remove the lhe entry in our model configs file.
+                      if (p.isRelative(currentModelFilepath)) {
+                        await File(p.join(
+                                await ConfigModelFiles.getModelsFolderpath(),
+                                currentModelFilepath))
+                            .delete();
+                        log('Model was deleted on the filesystem: $currentModelFilepath');
+                      }
+                      setState(() {
+                        widget.configModelFiles.modelFiles
+                            .remove(currentModelName);
+                        log('Model was removed from collection: $currentModelName');
+
+                        // select the first model remaining
+                        final otherModels =
+                            widget.configModelFiles.modelFiles.keys;
+                        _doUpdateToSelectedModel(
+                            otherModels.isNotEmpty ? otherModels.first : '');
+
+                        // and update the drop down box options
+                        modelFileOptions =
+                            widget.configModelFiles.modelFiles.keys.toList();
+                      });
+
+                      // finally, save all of this out to file since the model may
+                      // have fully been deleted from the filesystem.
+                      await widget.configModelFiles.saveJsonToConfigFile();
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         ListTile(
           leading: const Icon(Icons.engineering),
           title: Row(children: [

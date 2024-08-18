@@ -127,7 +127,6 @@ https://github.com/lmstudio-ai/configs
 
 #### TODO
 
-* Add avatar pictures to the chat log and to be used in the AppBar for the chat log page
 * BUG: make sure chat logs with duplicate names can't be made
 * Should have copy icon next to chat log settings to copy scenario/desc and then paste icons in the sections.
   Should confirm the pastes with a bottom sheet so that there's not accidental overrides.
@@ -136,5 +135,4 @@ https://github.com/lmstudio-ai/configs
 * Confirm that not supplying a ConfigModelSetting context size uses -1 or auto for default.
 * BUG: ConfigModelSettings that are nullable might not be picking good defaults. 
     ThreadCount to -1 causes crash for example so 1 is hardcoded in as a default if not supplied.
-* BUG: Crashes if existing logs have a model name that isn't imported
 * Show overall T/s or TG & PP T/s?

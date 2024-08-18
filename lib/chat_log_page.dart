@@ -165,22 +165,42 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     prognosticator?.closeModel();
   }
 
-  Future<void> _generateAIMessage(bool continueMsg) async {
-    setState(() {
-      messageGenerationInProgress = true;
-      circularProgresAnimController.repeat(reverse: true);
-    });
+  Future<void> _showErrorForMissingModel() async {
+    return showDialog(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+              title: const Text('Error'),
+              content: const Text(
+                  'No LLM model has been set up and therefore nothing can be generated from the AI. Please go to the chat configuration, select Model, and either select a valid model from the dropdown menu or import a new GGUF file.'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.pop(context, 'OK'),
+                  child: const Text('OK'),
+                ),
+              ],
+            ));
+  }
 
+  Future<void> _generateAIMessage(bool continueMsg) async {
     // get the model filepath for the selected model. right now this is a
     // relative path, so we have to combine it with our documents folder
     var currentModelConfig =
-        widget.configModelFiles.modelFiles[widget.chatLog.modelName]!;
+        widget.configModelFiles.modelFiles[widget.chatLog.modelName];
+    if (currentModelConfig == null) {
+      return await _showErrorForMissingModel();
+    }
+
     var modelFilepath = (!p.isAbsolute(currentModelConfig.modelFilepath)
         ? p.join(await ConfigModelFiles.getModelsFolderpath(),
             currentModelConfig.modelFilepath)
         : currentModelConfig.modelFilepath);
     var existsMabye = await File(modelFilepath).exists();
     log("File for the model $modelFilepath exists: {$existsMabye}");
+
+    setState(() {
+      messageGenerationInProgress = true;
+      circularProgresAnimController.repeat(reverse: true);
+    });
 
     // build the prompt to send off to the ai
     int tokenBudget = (currentModelConfig.contextSize ?? 2048) -
@@ -275,22 +295,31 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                       Navigator.pop(context);
                     },
                   ),
-                  const SizedBox(height: 8),
-                  if (msg == widget.chatLog.messages.last && !msg.humanSent)
+                  if (msg == widget.chatLog.messages.last &&
+                      !messageGenerationInProgress &&
+                      !msg.humanSent)
+                    const SizedBox(height: 8),
+                  if (msg == widget.chatLog.messages.last &&
+                      !messageGenerationInProgress &&
+                      !msg.humanSent)
                     OutlinedButton.icon(
                       icon: const Icon(Icons.fast_forward),
                       label: Text("Continue Message",
                           style: Theme.of(context).textTheme.titleLarge),
                       onPressed: () {
+                        Navigator.pop(context);
+
                         // run the AI text generation
                         _generateAIMessage(true);
-
-                        Navigator.pop(context);
                       },
                     ),
-                  const SizedBox(height: 8),
                   if (msg == widget.chatLog.messages.last &&
-                      !messageGenerationInProgress)
+                      !messageGenerationInProgress &&
+                      !msg.humanSent)
+                    const SizedBox(height: 8),
+                  if (msg == widget.chatLog.messages.last &&
+                      !messageGenerationInProgress &&
+                      !msg.humanSent)
                     OutlinedButton.icon(
                       icon: const Icon(Icons.restart_alt),
                       label: Text("Regenerate Message",
@@ -300,10 +329,12 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                           widget.chatLog.messages.removeLast();
                         });
 
-                        // run the AI text generation
-                        _generateAIMessage(false);
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
 
-                        Navigator.pop(context);
+                        // run the AI text generation
+                        await _generateAIMessage(false);
                       },
                     ),
                 ],
