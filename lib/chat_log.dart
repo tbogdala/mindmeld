@@ -12,6 +12,7 @@ enum ModelPromptStyle {
   alpaca,
   chatml,
   llama3,
+  mistralInstruct,
   opusV12,
   phi3,
   tinyllama,
@@ -31,7 +32,9 @@ extension ModelPromptStyleExtension on ModelPromptStyle {
       case ModelPromptStyle.llama3:
         return ModelPromptConfig.llama3();
       case ModelPromptStyle.opusV12:
-        return ModelPromptConfig.OpusV12();
+        return ModelPromptConfig.opusV12();
+      case ModelPromptStyle.mistralInstruct:
+        return ModelPromptConfig.mistralInstruct();
       case ModelPromptStyle.phi3:
         return ModelPromptConfig.phi3();
       case ModelPromptStyle.tinyllama:
@@ -104,7 +107,7 @@ class ModelPromptConfig {
     stopPhrases = ["<|start_header_id|>", "<|eot_id|>"];
   }
 
-  ModelPromptConfig.OpusV12() {
+  ModelPromptConfig.opusV12() {
     name = "Llama3";
     system =
         "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play based on the information below.\n\n";
@@ -115,6 +118,19 @@ class ModelPromptConfig {
     aiPrefix = "<|start_header_id|>writer<|end_header_id|>\n\n";
     aiSuffix = "<|eot_id|>\n";
     stopPhrases = ["<|start_header_id|>", "<|eot_id|>"];
+  }
+
+  ModelPromptConfig.mistralInstruct() {
+    name = "Mistral Instruct";
+    system =
+        "You are an intelligent, skilled, versatile writer. Write a reply based on the plot and character information below.\n\n";
+    preSystemPrefix = "";
+    preSystemSuffix = "";
+    userPrefix = "[INST] ";
+    userSuffix = "[/INST]\n";
+    aiPrefix = "";
+    aiSuffix = "\n";
+    stopPhrases = ["[INST]"];
   }
 
   ModelPromptConfig.phi3() {
@@ -517,7 +533,7 @@ class ChatLog {
       final firstOther = otherCharacters.first;
       final ocName =
           firstOther.name.isNotEmpty ? firstOther.name : defaultAiName;
-      budgettedChatlog += "${promptConfig.aiPrefix}$ocName: ";
+      budgettedChatlog += "${promptConfig.aiPrefix}$ocName:";
     }
 
     final prompt = preamble + budgettedChatlog;

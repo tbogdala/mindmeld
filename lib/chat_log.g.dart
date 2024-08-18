@@ -110,6 +110,7 @@ const _$ModelPromptStyleEnumMap = {
   ModelPromptStyle.alpaca: 'alpaca',
   ModelPromptStyle.chatml: 'chatml',
   ModelPromptStyle.llama3: 'llama3',
+  ModelPromptStyle.mistralInstruct: 'mistralInstruct',
   ModelPromptStyle.opusV12: 'opusV12',
   ModelPromptStyle.phi3: 'phi3',
   ModelPromptStyle.tinyllama: 'tinyllama',
