@@ -149,15 +149,23 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   }
 
   String _formatDurationString(int differenceInSeconds) {
-    // Handle cases for seconds, minutes, hours
+    // Handle cases for seconds, minutes, hours, and days
     if (differenceInSeconds < 60) {
       return "less than a minute ago";
     } else if (differenceInSeconds < 3600) {
       int minutes = differenceInSeconds ~/ 60;
       return "$minutes minutes ago";
-    } else {
+    } else if (differenceInSeconds < 86400) {
       int hours = differenceInSeconds ~/ 3600;
       return "$hours hours ago";
+    } else {
+      int days = differenceInSeconds ~/ 86400;
+      int remainingHours = (differenceInSeconds % 86400) ~/ 3600;
+      if (remainingHours > 0) {
+        return "$days days and $remainingHours hours ago";
+      } else {
+        return "$days days ago";
+      }
     }
   }
 
