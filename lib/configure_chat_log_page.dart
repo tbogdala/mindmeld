@@ -358,7 +358,9 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
+        const Divider(),
+        const SizedBox(height: 8),
         ListTile(
           leading: const Icon(Icons.engineering),
           title: Row(children: [
