@@ -87,6 +87,8 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
 
   @override
   void initState() {
+    super.initState();
+
     var humanCharacter = widget.chatLog.getHumanCharacter();
     var aiCharacter = widget.chatLog.getAICharacter();
     assert(humanCharacter != null);
@@ -145,8 +147,6 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
         modelBatchSizeController.text = currentModelConfig.batchSize.toString();
       }
     }
-
-    super.initState();
   }
 
   void _doUpdateToSelectedModel(String? value) {

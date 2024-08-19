@@ -136,3 +136,5 @@ https://github.com/lmstudio-ai/configs
 * BUG: ConfigModelSettings that are nullable might not be picking good defaults. 
     ThreadCount to -1 causes crash for example so 1 is hardcoded in as a default if not supplied.
 * Show overall T/s or TG & PP T/s?
+* Some 'empty' replies have been traced to a generic system prompt for the prompt formatting rules. Should
+    eventually provide a way to supply a custom system message to help users customize things further.

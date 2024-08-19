@@ -346,7 +346,7 @@ class ChatLog {
     var chatLogDirpath = await getLogsFolder();
     var directory = Directory(chatLogDirpath);
     var safeFilenameBase = getSafeFilename();
-    return "${directory.path}/$safeFilenameBase";
+    return p.join(directory.path, safeFilenameBase);
   }
 
   String getSafeFilename() {
@@ -376,6 +376,25 @@ class ChatLog {
       log("Error: $e");
       return null;
     }
+  }
+
+  static Future<List<ChatLog>> loadAllChatlogs() async {
+    List<ChatLog> chatlogs = [];
+    final chatLogFolder = await ChatLog.getLogsFolder();
+    try {
+      var d = Directory(chatLogFolder);
+      await for (final entity in d.list()) {
+        if (entity is File && entity.path.endsWith(".json")) {
+          var newChatLog = await ChatLog.loadFromFile(entity.path);
+          if (newChatLog != null) {
+            chatlogs.add(newChatLog);
+          }
+        }
+      }
+    } catch (e) {
+      log("Failed to load all the chatlog files: $e");
+    }
+    return chatlogs;
   }
 
   factory ChatLog.fromJson(Map<String, dynamic> json) {
@@ -501,7 +520,7 @@ class ChatLog {
     for (final m in messages.reversed) {
       var formattedMsg = "";
 
-      if (m.senderName == humanName) {
+      if (m.humanSent) {
         formattedMsg =
             "${promptConfig.userPrefix}$humanName: ${m.message}${promptConfig.userSuffix}";
       } else {

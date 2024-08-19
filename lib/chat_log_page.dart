@@ -277,7 +277,6 @@ class ChatLogWidgetState extends State<ChatLogWidget>
 
     await targetChatlog.saveToFile();
     if (closeModelAfterGeneration) {
-      log('Attempting to close model now that genearation was finished');
       await closePrognosticatorModel();
     }
 

@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:mindmeld/configure_chat_log_page.dart';
+import 'package:mindmeld/edit_lorebooks_page.dart';
+import 'package:mindmeld/lorebook.dart';
 import 'package:mindmeld/model_import_page.dart';
 import 'package:mindmeld/new_chat_log_page.dart';
 import 'package:profile_photo/profile_photo.dart';
@@ -25,6 +27,7 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
   late GlobalKey<ChatLogWidgetState> chatLogWidgetState;
   bool _isLoading = true;
   List<ChatLog> chatLogs = [];
+  List<Lorebook> lorebooks = [];
   ConfigModelFiles? configModelFiles;
   int currentChatLog = 0;
 
@@ -43,23 +46,11 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
     await ConfigModelFiles.ensureModelsFolderExists();
     await ChatLog.ensureLogsFolderExists();
     await ChatLog.ensureProfilePicsFolderExists();
+    await Lorebook.ensureLorebooksFolderExists();
+
     configModelFiles = await ConfigModelFiles.loadFromConfigFile();
-    final chatLogFolder = await ChatLog.getLogsFolder();
-    try {
-      var d = Directory(chatLogFolder);
-      await for (final entity in d.list()) {
-        if (entity is File && entity.path.endsWith(".json")) {
-          var newChatLog = await ChatLog.loadFromFile(entity.path);
-          if (newChatLog != null) {
-            setState(() {
-              chatLogs.add(newChatLog);
-            });
-          }
-        }
-      }
-    } catch (e) {
-      log("Failed to load all the chat files: $e");
-    }
+    lorebooks = await Lorebook.loadAllLorebooks();
+    chatLogs = await ChatLog.loadAllChatlogs();
   }
 
   @override
@@ -128,6 +119,27 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold)),
                               ),
+                            ),
+                            IconButton(
+                              tooltip: 'Configure lorebooks',
+                              icon: const Icon(Icons.inventory),
+                              onPressed: () async {
+                                await showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return Dialog(
+                                          alignment:
+                                              AlignmentDirectional.topCenter,
+                                          child: Container(
+                                              constraints:
+                                                  const BoxConstraints.tightFor(
+                                                width: 600,
+                                              ),
+                                              child: const EditLorebooksPage(
+                                                isFullPage: false,
+                                              )));
+                                    });
+                              },
                             ),
                             IconButton(
                               tooltip: 'Configure chatlog settings',

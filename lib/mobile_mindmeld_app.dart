@@ -7,6 +7,7 @@ import 'dart:developer';
 import 'chat_log.dart';
 import 'chat_log_page.dart';
 import 'config_models.dart';
+import 'lorebook.dart';
 import 'new_chat_log_page.dart';
 import 'model_import_page.dart';
 
@@ -21,36 +22,30 @@ class MobileMindmeldApp extends StatefulWidget {
 
 class _MobileMindmeldAppState extends State<MobileMindmeldApp> {
   List<ChatLog> chatLogs = [];
+  List<Lorebook> lorebooks = [];
   ConfigModelFiles? configModelFiles;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
 
-    ConfigModelFiles.loadFromConfigFile().then((v) {
+    _loadConfigFiles().then((_) {
       setState(() {
-        configModelFiles = v;
+        _isLoading = false;
       });
     });
+  }
 
-    ChatLog.ensureLogsFolderExists().then((_) {});
-    ChatLog.getLogsFolder().then((chatLogFolder) async {
-      try {
-        var d = Directory(chatLogFolder);
-        await for (final entity in d.list()) {
-          if (entity is File && entity.path.endsWith(".json")) {
-            var newChatLog = await ChatLog.loadFromFile(entity.path);
-            if (newChatLog != null) {
-              setState(() {
-                chatLogs.add(newChatLog);
-              });
-            }
-          }
-        }
-      } catch (e) {
-        log("Failed to load all the chat files: $e");
-      }
-    });
+  Future<void> _loadConfigFiles() async {
+    await ConfigModelFiles.ensureModelsFolderExists();
+    await ChatLog.ensureLogsFolderExists();
+    await ChatLog.ensureProfilePicsFolderExists();
+    await Lorebook.ensureLorebooksFolderExists();
+
+    configModelFiles = await ConfigModelFiles.loadFromConfigFile();
+    lorebooks = await Lorebook.loadAllLorebooks();
+    chatLogs = await ChatLog.loadAllChatlogs();
   }
 
   Future<bool?> _showConfirmDeleteDialog() async {
