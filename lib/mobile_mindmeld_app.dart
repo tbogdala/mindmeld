@@ -10,16 +10,16 @@ import 'config_models.dart';
 import 'new_chat_log_page.dart';
 import 'model_import_page.dart';
 
-class ChatLogSelectPage extends StatefulWidget {
+class MobileMindmeldApp extends StatefulWidget {
   final String appTitle = 'MindMeld';
 
-  const ChatLogSelectPage({super.key});
+  const MobileMindmeldApp({super.key});
 
   @override
-  State<ChatLogSelectPage> createState() => _ChatLogSelectPageState();
+  State<MobileMindmeldApp> createState() => _MobileMindmeldAppState();
 }
 
-class _ChatLogSelectPageState extends State<ChatLogSelectPage> {
+class _MobileMindmeldAppState extends State<MobileMindmeldApp> {
   List<ChatLog> chatLogs = [];
   ConfigModelFiles? configModelFiles;
 

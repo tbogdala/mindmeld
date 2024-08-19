@@ -205,22 +205,28 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     var existsMabye = await File(modelFilepath).exists();
     log("File for the model $modelFilepath exists: {$existsMabye}");
 
+    // turn the busy flag and animation on
     setState(() {
       messageGenerationInProgress = true;
       circularProgresAnimController.repeat(reverse: true);
     });
 
+    // store a reference to the chatlog used for generation so that
+    // if the user switches the 'current' chatlog up while waiting
+    // for generation, the message will still get added to this log.
+    final targetChatlog = widget.chatLog;
+
     // build the prompt to send off to the ai
     int tokenBudget = (currentModelConfig.contextSize ?? 2048) -
-        widget.chatLog.hyperparmeters.tokens;
-    final promptConfig = widget.chatLog.modelPromptStyle.getPromptConfig();
-    final prompt = widget.chatLog.buildPrompt(tokenBudget, continueMsg);
+        targetChatlog.hyperparmeters.tokens;
+    final promptConfig = targetChatlog.modelPromptStyle.getPromptConfig();
+    final prompt = targetChatlog.buildPrompt(tokenBudget, continueMsg);
     log("Prompt Built:");
     log(prompt);
 
     // add the human user's name to the stop phrases
     List<String> stopPhrases = List.from(promptConfig.stopPhrases);
-    final humanChar = widget.chatLog.getHumanCharacter();
+    final humanChar = targetChatlog.getHumanCharacter();
     if (humanChar != null && humanChar.name.isNotEmpty) {
       stopPhrases.add('${humanChar.name}:');
       stopPhrases.add('### ${humanChar.name}');
@@ -234,7 +240,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
       return;
     }
     PredictReplyRequest request = PredictReplyRequest(modelFilepath,
-        currentModelConfig, prompt, stopPhrases, widget.chatLog.hyperparmeters);
+        currentModelConfig, prompt, stopPhrases, targetChatlog.hyperparmeters);
     var predictedOutput = await prognosticator!.predictText(request);
 
     for (final anti in stopPhrases) {
@@ -248,16 +254,16 @@ class ChatLogWidgetState extends State<ChatLogWidget>
 
     setState(() {
       if (!continueMsg) {
-        widget.chatLog.messages.add(ChatLogMessage(
-            widget.chatLog.getAICharacter()!.name,
+        targetChatlog.messages.add(ChatLogMessage(
+            targetChatlog.getAICharacter()!.name,
             predictedOutput.message.trimLeft(),
             false,
             predictedOutput.generationSpeedTPS));
       } else {
-        widget.chatLog.messages.last.message += predictedOutput.message;
+        targetChatlog.messages.last.message += predictedOutput.message;
       }
 
-      widget.chatLog.saveToFile().then((_) {
+      targetChatlog.saveToFile().then((_) {
         messageGenerationInProgress = false;
         circularProgresAnimController.reset();
         circularProgresAnimController.stop();
@@ -630,9 +636,11 @@ class PredictionWorker {
 
   void _handleResponsesFromIsolate(dynamic message) {
     if (message is SendPort) {
+      log('PredictionWorker: _handleResponseFromIsolate() got a ready notification');
       _toIsoPort = message;
       _isoReady.complete();
     } else if (message is PredictReplyResult) {
+      log('PredictionWorker: _handleResponseFromIsolate() got a prediction reply');
       _isoResponse.complete(message);
     } else {
       log("PredictionWorker: _handleResponseFromIsolate() got an unknown message: $message");
@@ -656,6 +664,7 @@ class PredictionWorker {
         if (message is PredictReplyRequest) {
           final result = _predictReply(llamaModel!, message);
           port.send(result);
+          log('PredictionWorker: Finished reply prediction request...');
         } else if (message is CloseModelRequest) {
           if (llamaModel!.isModelLoaded()) {
             log("PredictionWorker: Worker is closing the loaded model...");
