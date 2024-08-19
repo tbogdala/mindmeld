@@ -114,6 +114,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
 
   late AnimationController circularProgresAnimController;
   bool messageGenerationInProgress = false;
+  bool closeModelAfterGeneration = false;
 
   // set this to non-null when a messages is getting edited
   ChatLogMessage? messageBeingEdited;
@@ -170,7 +171,11 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   }
 
   Future<void> closePrognosticatorModel() async {
-    prognosticator?.closeModel();
+    if (messageGenerationInProgress) {
+      closeModelAfterGeneration = true;
+    } else {
+      prognosticator?.closeModel();
+    }
   }
 
   Future<void> _showErrorForMissingModel() async {
@@ -208,6 +213,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     // turn the busy flag and animation on
     setState(() {
       messageGenerationInProgress = true;
+      closeModelAfterGeneration = false;
       circularProgresAnimController.repeat(reverse: true);
     });
 
@@ -269,6 +275,10 @@ class ChatLogWidgetState extends State<ChatLogWidget>
         circularProgresAnimController.stop();
       });
     });
+
+    if (closeModelAfterGeneration) {
+      await closePrognosticatorModel();
+    }
 
     widget.onChatLogChange();
   }
