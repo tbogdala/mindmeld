@@ -69,7 +69,7 @@ class ModelPromptConfig {
   ModelPromptConfig.alpaca() {
     name = "Alpaca";
     system =
-        "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n";
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.\n";
     preSystemPrefix = "";
     preSystemSuffix = "";
     userPrefix = "\n### Instruction:\n";
@@ -81,7 +81,8 @@ class ModelPromptConfig {
 
   ModelPromptConfig.chatML() {
     name = "ChatML";
-    system = "Perform the task to the best of your ability.\n";
+    system =
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.\n";
     preSystemPrefix = "<|im_start|>system\n";
     preSystemSuffix = "<|im_end|>\n";
     userPrefix = "<|im_start|>user\n";
@@ -97,7 +98,7 @@ class ModelPromptConfig {
   ModelPromptConfig.llama3() {
     name = "Llama3";
     system =
-        "You are a helpful, smart, kind, and efficient AI assistant. You always fulfill the user's requests to the best of your ability.\n";
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.\n";
     preSystemPrefix = "<|start_header_id|>system<|end_header_id|>\n\n";
     preSystemSuffix = "<|eot_id|>";
     userPrefix = "<|start_header_id|>user<|end_header_id|>\n\n";
@@ -110,7 +111,7 @@ class ModelPromptConfig {
   ModelPromptConfig.opusV12() {
     name = "Llama3";
     system =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play based on the information below.\n\n";
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.\n\n";
     preSystemPrefix = "<|start_header_id|>system<|end_header_id|>\n\n";
     preSystemSuffix = "\n<|eot_id|>\n";
     userPrefix = "<|start_header_id|>user<|end_header_id|>\n\n";
@@ -123,7 +124,7 @@ class ModelPromptConfig {
   ModelPromptConfig.mistralInstruct() {
     name = "Mistral Instruct";
     system =
-        "You are an intelligent, skilled, versatile writer. Write a reply based on the plot and character information below.\n\n";
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the plot and character information below.\n\n";
     preSystemPrefix = "";
     preSystemSuffix = "";
     userPrefix = "[INST] ";
@@ -135,7 +136,8 @@ class ModelPromptConfig {
 
   ModelPromptConfig.phi3() {
     name = "Phi3";
-    system = "";
+    system =
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the plot and character information below.\n";
     preSystemPrefix = "<|system|>\n";
     preSystemSuffix = "<|end|>\n";
     userPrefix = "<|user|>\n";
@@ -147,7 +149,8 @@ class ModelPromptConfig {
 
   ModelPromptConfig.tinyllama() {
     name = "TinyLlama-Chat";
-    system = "";
+    system =
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the plot and character information below.\n";
     preSystemPrefix = "<|system|>\n";
     preSystemSuffix = "\n";
     userPrefix = "<|user|>\n";
@@ -160,7 +163,7 @@ class ModelPromptConfig {
   ModelPromptConfig.vicuna() {
     name = "Vicuna";
     system =
-        "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions.\n";
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the plot and character information below.\n";
     preSystemPrefix = "";
     preSystemSuffix = "\n\n";
     userPrefix = "USER: ";
@@ -172,7 +175,8 @@ class ModelPromptConfig {
 
   ModelPromptConfig.zephyr() {
     name = "Zephyr";
-    system = "";
+    system =
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the plot and character information below.\n";
     preSystemPrefix = "";
     preSystemSuffix = "";
     userPrefix = "<|user|>\n";

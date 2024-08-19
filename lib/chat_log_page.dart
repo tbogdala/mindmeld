@@ -173,6 +173,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   Future<void> closePrognosticatorModel() async {
     if (messageGenerationInProgress) {
       closeModelAfterGeneration = true;
+      log('Will close model after prediction request is finished');
     } else {
       prognosticator?.closeModel();
     }
@@ -269,14 +270,14 @@ class ChatLogWidgetState extends State<ChatLogWidget>
         targetChatlog.messages.last.message += predictedOutput.message;
       }
 
-      targetChatlog.saveToFile().then((_) {
-        messageGenerationInProgress = false;
-        circularProgresAnimController.reset();
-        circularProgresAnimController.stop();
-      });
+      messageGenerationInProgress = false;
+      circularProgresAnimController.reset();
+      circularProgresAnimController.stop();
     });
 
+    await targetChatlog.saveToFile();
     if (closeModelAfterGeneration) {
+      log('Attempting to close model now that genearation was finished');
       await closePrognosticatorModel();
     }
 
