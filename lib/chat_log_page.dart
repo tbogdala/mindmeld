@@ -228,6 +228,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
         targetChatlog.hyperparmeters.tokens;
     final promptConfig = targetChatlog.modelPromptStyle.getPromptConfig();
     final prompt = targetChatlog.buildPrompt(tokenBudget, continueMsg);
+    log("Token budget: $tokenBudget");
     log("Prompt Built:");
     log(prompt);
 
@@ -241,6 +242,9 @@ class ChatLogWidgetState extends State<ChatLogWidget>
       stopPhrases.add('${ChatLog.defaultUserName}:');
     }
 
+    // throw in the narrator's name as well
+    stopPhrases.add('Narrator:');
+
     // run the text inference in an isolate
     if (prognosticator == null) {
       log("prognosticator was not initialized yet, skipping _generateAIMessage...");
@@ -250,6 +254,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
         currentModelConfig, prompt, stopPhrases, targetChatlog.hyperparmeters);
     var predictedOutput = await prognosticator!.predictText(request);
 
+    log("Returned prection length: ${predictedOutput.message.length}");
     for (final anti in stopPhrases) {
       if (predictedOutput.message.endsWith(anti)) {
         predictedOutput.message = predictedOutput.message
@@ -261,11 +266,22 @@ class ChatLogWidgetState extends State<ChatLogWidget>
 
     setState(() {
       if (!continueMsg) {
-        targetChatlog.messages.add(ChatLogMessage(
-            targetChatlog.getAICharacter()!.name,
-            predictedOutput.message.trimLeft(),
-            false,
-            predictedOutput.generationSpeedTPS));
+        // check for a slash command that might alter how we add the returned
+        // data to the chatlog
+        if (targetChatlog.messages.last.message.startsWith('/narrator ')) {
+          // if we ran a narrator command, add the prediction in under the 'Narrator' character
+          targetChatlog.messages.add(ChatLogMessage(
+              'Narrator',
+              predictedOutput.message.trimLeft(),
+              false,
+              predictedOutput.generationSpeedTPS));
+        } else {
+          targetChatlog.messages.add(ChatLogMessage(
+              targetChatlog.getAICharacter()!.name,
+              predictedOutput.message.trimLeft(),
+              false,
+              predictedOutput.generationSpeedTPS));
+        }
       } else {
         targetChatlog.messages.last.message += predictedOutput.message;
       }
@@ -384,6 +400,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
         final msgTimeDiff = now.difference(msg.messageCreatedAt);
         final timeDiffString = _formatDurationString(msgTimeDiff.inSeconds);
         final isHumanSent = msg.senderName == humanCharacter.name;
+        final isNarrator = msg.senderName == 'Narrator';
 
         return GestureDetector(
           child: Padding(
@@ -394,7 +411,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    (!isHumanSent
+                    (!isHumanSent && !isNarrator
                         ? Container(
                             // different padding here is what pushes the chat bubbles to either side.
                             padding: (const EdgeInsets.only(
@@ -416,8 +433,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                                         outlineColor: Colors.transparent,
                                         color: Colors.transparent);
                                   }
-                                }),
-                          )
+                                }))
                         : const SizedBox(
                             width: 1,
                           )),
@@ -503,7 +519,8 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                   ? TextInputAction.done
                   : TextInputAction.newline),
               controller: newMessgeController,
-              maxLines: null,
+              maxLines: 10,
+              minLines: 1,
               keyboardType: TextInputType.multiline,
               decoration: const InputDecoration(
                 hintText: 'Write message...',

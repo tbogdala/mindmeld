@@ -138,3 +138,4 @@ https://github.com/lmstudio-ai/configs
 * Show overall T/s or TG & PP T/s?
 * Some 'empty' replies have been traced to a generic system prompt for the prompt formatting rules. Should
     eventually provide a way to supply a custom system message to help users customize things further.
+* NOTE: /narrator replies cannot be continued as the narrator, currently.

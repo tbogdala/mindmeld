@@ -456,7 +456,7 @@ class ChatLog {
 
   String buildPrompt(int tokenBudget, bool continueMsg) {
     // ballpark esimating for building up a prompt
-    const charsPerToken = 3.8; // conservative...
+    const charsPerToken = 3.7; // conservative...
     final estCharBudget = tokenBudget * charsPerToken;
 
     var promptConfig = modelPromptStyle.getPromptConfig();
@@ -507,17 +507,61 @@ class ChatLog {
         : "$humanName$aiNames are having a conversation over text messaging.";
 
     // bulid the whole system preamble
-    final system =
+    String system =
         '${promptConfig.system}## Overall plot description:\n\n$ctxDesc\n\n## Characters:\n\n### $humanName\n\n$humanDesc\n\n$aiDescriptions\n';
 
-    final String preamble =
+    String preamble =
         promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
 
     // start keeping a running estimate of how many characters we have left to use
     var remainingBudget = estCharBudget - preamble.length;
 
+    // messages are added in reverse order
+    var reversedMessages = messages.reversed;
+    final firstMessage = reversedMessages.first;
+    String? slashCommandFooter;
+
+    // check for any slash commands, of which we currently support one: /narrator
+    if (firstMessage.message.startsWith('/narrator ')) {
+      // take it out of circulation
+      reversedMessages = reversedMessages.skip(1);
+
+      // get the narrator command from the slash command
+      final narratorRequest =
+          firstMessage.message.replaceFirst('/narrator ', '');
+
+      const narratorSystemMsg =
+          'You are an omniscient, creative narrator for an interactive story. Your task is to vividly describe environments, characters, and events, as well as provide dialogue and actions for non-player characters (NPCs) when appropriate.';
+      const String narratorDescription = '''
+The Narrator is an enigmatic, omniscient entity that guides the story. Unseen yet ever-present, the Narrator shapes the narrative, describes the world, and gives voice to NPCs. When invoked with the '/narrator' command, the Narrator will focus on the requested task. Otherwise, the Narrator will:
+
+- Provide vivid, sensory descriptions of environments
+- Introduce and describe characters
+- Narrate events and actions
+- Provide dialogue for NPCs
+- Create atmosphere and mood through descriptive language
+- Offer subtle hints or clues to guide the story
+- Respond to player actions with appropriate narrative consequences
+
+The Narrator should maintain a neutral tone, avoiding direct interaction with players unless specifically addressed. The goal is to create an immersive, dynamic story world that reacts to player choices while maintaining narrative coherence.
+''';
+
+      // rebuild the prompt but swap out for the narrator parts and recalculate the budget
+      system =
+          '$narratorSystemMsg\nThe user has requested that you $narratorRequest\n\n## Overall plot description:\n\n$ctxDesc\n\n## Characters:\n\n### $humanName\n\n$humanDesc\n\n$aiDescriptions\n\n### Narrator\n\n$narratorDescription';
+      preamble =
+          promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
+      remainingBudget = estCharBudget - preamble.length;
+
+      // we put the Narrator's name in parens here because it also gets added as an antiprompt,
+      // which will halt all generation if included as is. This is the compromise. May have
+      // to adjust it later if results are poor.
+      slashCommandFooter =
+          "${promptConfig.userPrefix}Narrator, $narratorRequest${promptConfig.userSuffix}${promptConfig.aiPrefix}(Narrator): ";
+    }
+
     List<String> msgBuffer = [];
-    for (final m in messages.reversed) {
+    for (final m in reversedMessages) {
       var formattedMsg = "";
 
       if (m.humanSent) {
@@ -553,10 +597,16 @@ class ChatLog {
     // it assumes one character and takes the first non-human. eventually, will
     // need to supply the character getting gnerated.
     if (!continueMsg) {
-      final firstOther = otherCharacters.first;
-      final ocName =
-          firstOther.name.isNotEmpty ? firstOther.name : defaultAiName;
-      budgettedChatlog += "${promptConfig.aiPrefix}$ocName:";
+      // if we don't have a special override due to a slash command, then build
+      // the AI character prompt normally
+      if (slashCommandFooter == null) {
+        final firstOther = otherCharacters.first;
+        final ocName =
+            firstOther.name.isNotEmpty ? firstOther.name : defaultAiName;
+        budgettedChatlog += "${promptConfig.aiPrefix}$ocName:";
+      } else {
+        budgettedChatlog += slashCommandFooter;
+      }
     }
 
     final prompt = preamble + budgettedChatlog;
