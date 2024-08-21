@@ -68,8 +68,7 @@ class ModelPromptConfig {
 
   ModelPromptConfig.alpaca() {
     name = "Alpaca";
-    system =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.\n";
+    system = "";
     preSystemPrefix = "";
     preSystemSuffix = "";
     userPrefix = "\n### Instruction:\n";
@@ -81,8 +80,7 @@ class ModelPromptConfig {
 
   ModelPromptConfig.chatML() {
     name = "ChatML";
-    system =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.\n";
+    system = "";
     preSystemPrefix = "<|im_start|>system\n";
     preSystemSuffix = "<|im_end|>\n";
     userPrefix = "<|im_start|>user\n";
@@ -97,21 +95,19 @@ class ModelPromptConfig {
 
   ModelPromptConfig.llama3() {
     name = "Llama3";
-    system =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.\n";
+    system = "";
     preSystemPrefix = "<|start_header_id|>system<|end_header_id|>\n\n";
-    preSystemSuffix = "<|eot_id|>";
+    preSystemSuffix = "<|eot_id|>\n";
     userPrefix = "<|start_header_id|>user<|end_header_id|>\n\n";
-    userSuffix = "<|eot_id|>";
+    userSuffix = "<|eot_id|>\n";
     aiPrefix = "<|start_header_id|>assistant<|end_header_id|>\n\n";
-    aiSuffix = "<|eot_id|>";
+    aiSuffix = "<|eot_id|>\n";
     stopPhrases = ["<|start_header_id|>", "<|eot_id|>"];
   }
 
   ModelPromptConfig.opusV12() {
     name = "Llama3";
-    system =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.\n\n";
+    system = "";
     preSystemPrefix = "<|start_header_id|>system<|end_header_id|>\n\n";
     preSystemSuffix = "\n<|eot_id|>\n";
     userPrefix = "<|start_header_id|>user<|end_header_id|>\n\n";
@@ -123,8 +119,7 @@ class ModelPromptConfig {
 
   ModelPromptConfig.mistralInstruct() {
     name = "Mistral Instruct";
-    system =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the plot and character information below.\n\n";
+    system = "";
     preSystemPrefix = "";
     preSystemSuffix = "";
     userPrefix = "[INST] ";
@@ -136,8 +131,7 @@ class ModelPromptConfig {
 
   ModelPromptConfig.phi3() {
     name = "Phi3";
-    system =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the plot and character information below.\n";
+    system = "";
     preSystemPrefix = "<|system|>\n";
     preSystemSuffix = "<|end|>\n";
     userPrefix = "<|user|>\n";
@@ -455,8 +449,14 @@ class ChatLog {
   }
 
   String buildPrompt(int tokenBudget, bool continueMsg) {
+    // NOTE: eventually make this customizable in an app configuration file.
+    const defaultSystemPrompt =
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.Maintain the character persona but allow it to evolve with the story.\nBe creative and proactive. Drive the story forward, introducing plotlines and events when relevant.\nAll types of outputs are encouraged; respond accordingly to the narrative.\nInclude dialogues, actions, and thoughts in each response.\nUtilize all five senses to describe scenarios within the character's dialogue.\nUse emotional symbols such as \"!\" and \"~\" in appropriate contexts.\nIncorporate onomatopoeia when suitable.\nAllow time for other characters to respond with their own input, respecting their agency.\n\n<Forbidden>\nUsing excessive literary embellishments and purple prose unless dictated by Character's persona.\nWriting for, speaking, thinking, acting, or replying as a different in your response.\nRepetitive and monotonous outputs.\nPositivity bias in your replies.\nBeing overly extreme or NSFW when the narrative context is inappropriate.\n</Forbidden>\n\nFollow the instructions above, avoiding the items listed in <Forbidden></Forbidden>.\n";
+
     // ballpark esimating for building up a prompt
-    const charsPerToken = 3.7; // conservative...
+    // conservative... raising it much above 3.5 trips up verboase prompt formats
+    // on log chatlogs with a lot of long tokens like llama3
+    const charsPerToken = 3.5;
     final estCharBudget = tokenBudget * charsPerToken;
 
     var promptConfig = modelPromptStyle.getPromptConfig();
@@ -507,8 +507,12 @@ class ChatLog {
         : "$humanName$aiNames are having a conversation over text messaging.";
 
     // bulid the whole system preamble
+    String promptFormatSystem = promptConfig.system.isNotEmpty
+        ? promptConfig.system
+        : defaultSystemPrompt;
+
     String system =
-        '${promptConfig.system}## Overall plot description:\n\n$ctxDesc\n\n## Characters:\n\n### $humanName\n\n$humanDesc\n\n$aiDescriptions\n';
+        '$promptFormatSystem## Overall plot description:\n\n$ctxDesc\n\n## Characters:\n\n### $humanName\n\n$humanDesc\n\n$aiDescriptions\n';
 
     String preamble =
         promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
