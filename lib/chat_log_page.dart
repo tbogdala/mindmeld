@@ -683,7 +683,18 @@ class PredictionWorker {
       port.send(workerReceivePort.sendPort);
 
       // an empty string for iOS to use the current process instead of a library file.
-      final lib = Platform.isAndroid ? "libwoolycore.so" : "";
+      String lib = "";
+      if (Platform.isAndroid) {
+        lib = "libwoolycore.so";
+      } else if (Platform.isLinux) {
+        final woolycorePath = p.joinAll(
+            ["packages", "woolydart", "src", "build-linux", "libwoolycore.so"]);
+        if (File(woolycorePath).existsSync()) {
+          lib = woolycorePath;
+        } else {
+          lib = "libwoolycore.so";
+        }
+      }
       log("PredictionWorker: Library loaded through DynamicLibrary.");
       llamaModel = LlamaModel(lib);
 

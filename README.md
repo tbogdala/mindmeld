@@ -53,13 +53,11 @@ This can be done by running `./make_macos_deps.sh`.
 
 The Android system shouldn't need any extra steps once the whole ecosystem for Android support
 in flutter is setup. `android/app/build.gradle` has some minimums. It's expecting the compiler
-to be SDK 34, and the NDK used is "26.3.11579264". The Android SDK CMake version was pinned
+to be SDK 35, and the NDK used is "27.0.12077973". The Android SDK CMake version was pinned
 to "3.22.1" as well.
 
 When compiling the project it will compile the upstream [woolycore](https://github.com/tbogdala/woolycore)
-and [llama.cpp](https://github.com/ggerganov/llama.cpp) code for Android use. The debug version is
-**drastically** slower on text inference. The scripts for iOS and MacOS runners automatically
-compile the library for release mode, but currently the Android runner doesn't do that.
+and [llama.cpp](https://github.com/ggerganov/llama.cpp) code for Android use.
 
 To do a full clean Android build, besides running `flutter clean` you need to `rm -rf android/app/.cxx`.
 
@@ -139,9 +137,11 @@ https://github.com/lmstudio-ai/configs
 * Some 'empty' replies have been traced to a generic system prompt for the prompt formatting rules. Should
     eventually provide a way to supply a custom system message to help users customize things further.
 * NOTE: /narrator replies cannot be continued as the narrator, currently.
+* BUG: any file can be added as a model, such as `img.png`. :(
 
 ### Road to Github upload:
 
-1) Lorebook support
+1) Lore book support
 2) More models to auto-download with option to supply a URL to a GGUF
+3) Setup 'safe' defaults for models when using the auto-download option. 
 
