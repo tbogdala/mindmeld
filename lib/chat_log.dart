@@ -396,7 +396,8 @@ class ChatLog {
   }
 
   String toJson() {
-    return jsonEncode(_$ChatLogToJson(this));
+    var rawJsonMap = _$ChatLogToJson(this);
+    return const JsonEncoder.withIndent('  ').convert(rawJsonMap);
   }
 
   Future<void> deleteFile() async {

@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:mindmeld/configure_chat_log_page.dart';
@@ -135,10 +134,19 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
                                                   const BoxConstraints.tightFor(
                                                 width: 600,
                                               ),
-                                              child: const EditLorebooksPage(
-                                                isFullPage: false,
+                                              child: SingleChildScrollView(
+                                                child: EditLorebooksPage(
+                                                  isFullPage: false,
+                                                  lorebooks: lorebooks,
+                                                  selectedChatLog: selectedLog,
+                                                ),
                                               )));
                                     });
+
+                                // save out all the lorebooks, but no UI state update should be needed
+                                for (final book in lorebooks) {
+                                  await book.saveToFile();
+                                }
                               },
                             ),
                             IconButton(

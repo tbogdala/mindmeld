@@ -139,3 +139,9 @@ https://github.com/lmstudio-ai/configs
 * Some 'empty' replies have been traced to a generic system prompt for the prompt formatting rules. Should
     eventually provide a way to supply a custom system message to help users customize things further.
 * NOTE: /narrator replies cannot be continued as the narrator, currently.
+
+### Road to Github upload:
+
+1) Lorebook support
+2) More models to auto-download with option to supply a URL to a GGUF
+

@@ -194,10 +194,10 @@ packages:
     dependency: transitive
     description:
       name: crypto
-      sha256: ff625774173754681d66daaf4a448684fb04b78f902da9cb3d308c19cc5e8bab
+      sha256: ec30d999af904f33454ba22ed9a86162b35e52b44ac4807d1d93c288041d7d27
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.3"
+    version: "3.0.5"
   dart_style:
     dependency: transitive
     description:
@@ -218,10 +218,10 @@ packages:
     dependency: "direct main"
     description:
       name: ffi
-      sha256: "493f37e7df1804778ff3a53bd691d8692ddf69702cf4c1c1096a2e41b4779e21"
+      sha256: "16ed7b077ef01ad6170a3d0c57caa4a112a38d7a2ed5602e0aca9ca6f3d98da6"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.2"
+    version: "2.1.3"
   file:
     dependency: transitive
     description:
@@ -234,10 +234,10 @@ packages:
     dependency: "direct main"
     description:
       name: file_picker
-      sha256: "825aec673606875c33cd8d3c4083f1a3c3999015a84178b317b7ef396b7384f3"
+      sha256: "167bb619cdddaa10ef2907609feb8a79c16dfa479d3afaf960f8e223f754bf12"
       url: "https://pub.dev"
     source: hosted
-    version: "8.0.7"
+    version: "8.1.2"
   fixnum:
     dependency: transitive
     description:
@@ -497,10 +497,10 @@ packages:
     dependency: transitive
     description:
       name: path_provider_android
-      sha256: "490539678396d4c3c0b06efdaab75ae60675c3e0c66f72bc04c2e2c1e0e2abeb"
+      sha256: "6f01f8e37ec30b07bc424b4deabac37cacb1bc7e2e515ad74486039918a37eb7"
       url: "https://pub.dev"
     source: hosted
-    version: "2.2.9"
+    version: "2.2.10"
   path_provider_foundation:
     dependency: transitive
     description:
@@ -718,10 +718,10 @@ packages:
     dependency: transitive
     description:
       name: vm_service
-      sha256: f652077d0bdf60abe4c1f6377448e8655008eef28f128bc023f7b5e8dfeb48fc
+      sha256: "5c5f338a667b4c644744b661f309fb8080bb94b18a7e91ef1dbd343bed00ed6d"
       url: "https://pub.dev"
     source: hosted
-    version: "14.2.4"
+    version: "14.2.5"
   watcher:
     dependency: transitive
     description:
@@ -734,10 +734,10 @@ packages:
     dependency: transitive
     description:
       name: web
-      sha256: "97da13628db363c635202ad97068d47c5b8aa555808e7a9411963c533b449b27"
+      sha256: d43c1d6b787bf0afad444700ae7f4db8827f701bc61c255ac8d328c6f4d52062
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.1"
+    version: "1.0.0"
   web_socket:
     dependency: transitive
     description:
@@ -758,18 +758,18 @@ packages:
     dependency: transitive
     description:
       name: win32
-      sha256: "015002c060f1ae9f41a818f2d5640389cc05283e368be19dc8d77cecb43c40c9"
+      sha256: "68d1e89a91ed61ad9c370f9f8b6effed9ae5e0ede22a270bdfa6daf79fc2290a"
       url: "https://pub.dev"
     source: hosted
-    version: "5.5.3"
+    version: "5.5.4"
   window_manager:
     dependency: "direct main"
     description:
       name: window_manager
-      sha256: e052224c7d8f0d1d0b2e03b7b1047bb08ea800d919a79453518311839881fa5f
+      sha256: ab8b2a7f97543d3db2b506c9d875e637149d48ee0c6a5cb5f5fd6e0dac463792
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.0"
+    version: "0.4.2"
   woolydart:
     dependency: "direct main"
     description:

@@ -52,7 +52,8 @@ class Lorebook {
   }
 
   String toJson() {
-    return jsonEncode(_$LorebookToJson(this));
+    var rawJsonMap = _$LorebookToJson(this);
+    return const JsonEncoder.withIndent('  ').convert(rawJsonMap);
   }
 
   static Future<String> getLorebooksFolder() async {
