@@ -7,9 +7,10 @@ import 'package:mindmeld/lorebook.dart';
 
 class LorebookEntryWidget extends StatefulWidget {
   final LorebookEntry entry;
-  final VoidCallback onDelete;
+  final Function(LorebookEntry) onDelete;
 
   const LorebookEntryWidget({
+    super.key,
     required this.entry,
     required this.onDelete,
   });
@@ -38,31 +39,39 @@ class _LorebookEntryWidgetState extends State<LorebookEntryWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: TextField(
-          onChanged: (value) {
-            widget.entry.patterns = value;
-          },
-          decoration: const InputDecoration(
-            labelText: "Patterns",
-          ),
-          controller: _patternController),
-      subtitle: TextField(
-        onChanged: (value) {
-          widget.entry.lore = value;
-        },
-        decoration: const InputDecoration(
-          labelText: "Lore",
-        ),
-        controller: _loreController,
-        minLines: 2,
-        maxLines: 6,
-      ),
-      trailing: IconButton(
-        icon: const Icon(Icons.delete),
-        onPressed: widget.onDelete,
-      ),
-    );
+    return Padding(
+        padding: const EdgeInsets.all(8),
+        child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.grey.shade900,
+            ),
+            padding: const EdgeInsets.all(4),
+            child: ListTile(
+              title: TextField(
+                  onChanged: (value) {
+                    widget.entry.patterns = value;
+                  },
+                  decoration: const InputDecoration(
+                    labelText: "Patterns",
+                  ),
+                  controller: _patternController),
+              subtitle: TextField(
+                onChanged: (value) {
+                  widget.entry.lore = value;
+                },
+                decoration: const InputDecoration(
+                  labelText: "Lore",
+                ),
+                controller: _loreController,
+                minLines: 2,
+                maxLines: 6,
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => widget.onDelete(widget.entry),
+              ),
+            )));
   }
 }
 
@@ -324,13 +333,28 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
     });
   }
 
+  void _doDeleteEntry(Lorebook lorebook, LorebookEntry entry) {
+    if (lorebook.entries.contains(entry)) {
+      log('removing lorebook entry "${entry.patterns}" from the lorebook "${lorebook.name}"');
+      setState(() {
+        lorebook.entries.remove(entry);
+      });
+    }
+  }
+
   Widget _buildEntryList(BuildContext context, Lorebook selectedLorebook) {
     return ListView.builder(
         itemCount: selectedLorebook.entries.length,
         shrinkWrap: true,
         itemBuilder: (context, index) {
           return LorebookEntryWidget(
-              entry: selectedLorebook.entries[index], onDelete: () {});
+              entry: selectedLorebook.entries[index],
+              onDelete: (entry) {
+                final selectedLorebook = _getSelectedLorebook();
+                if (selectedLorebook != null) {
+                  _doDeleteEntry(selectedLorebook, entry);
+                }
+              });
         });
   }
 
