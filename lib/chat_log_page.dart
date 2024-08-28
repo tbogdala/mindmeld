@@ -544,9 +544,23 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                   ),
                   onLongPress: () async {
                     // when a long press is detected we generate a new message from
-                    // the AI, regardless of what's going on with the input state
-                    // of the controls or anything else.
-                    await _generateAIMessage(false);
+                    // the AI if the newMessage controller is empty.
+                    if (newMessgeController.text.trim().isEmpty) {
+                      await _generateAIMessage(false);
+                    } else {
+                      // if we have text, then a long press will just add the message
+                      // to the chatlog without generating a message.
+                      setState(() {
+                        final humanCharacter =
+                            widget.chatLog.getHumanCharacter();
+                        widget.chatLog.messages.add(ChatLogMessage(
+                            humanCharacter!.name,
+                            newMessgeController.text.trimLeft(),
+                            true,
+                            null));
+                        newMessgeController.clear();
+                      });
+                    }
                   }),
           ],
         ),
