@@ -109,6 +109,7 @@ Map<String, dynamic> _$ChatLogToJson(ChatLog instance) => <String, dynamic>{
 const _$ModelPromptStyleEnumMap = {
   ModelPromptStyle.alpaca: 'alpaca',
   ModelPromptStyle.chatml: 'chatml',
+  ModelPromptStyle.gemma: 'gemma',
   ModelPromptStyle.llama3: 'llama3',
   ModelPromptStyle.mistralInstruct: 'mistralInstruct',
   ModelPromptStyle.opusV12: 'opusV12',

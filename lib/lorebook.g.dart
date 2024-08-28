@@ -6,6 +6,18 @@ part of 'lorebook.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+LorebookEntry _$LorebookEntryFromJson(Map<String, dynamic> json) =>
+    LorebookEntry(
+      patterns: json['patterns'] as String,
+      lore: json['lore'] as String,
+    );
+
+Map<String, dynamic> _$LorebookEntryToJson(LorebookEntry instance) =>
+    <String, dynamic>{
+      'patterns': instance.patterns,
+      'lore': instance.lore,
+    };
+
 Lorebook _$LorebookFromJson(Map<String, dynamic> json) => Lorebook(
       name: json['name'] as String,
       characterNames: json['characterNames'] as String,
@@ -19,16 +31,4 @@ Map<String, dynamic> _$LorebookToJson(Lorebook instance) => <String, dynamic>{
       'name': instance.name,
       'characterNames': instance.characterNames,
       'entries': instance.entries,
-    };
-
-LorebookEntry _$LorebookEntryFromJson(Map<String, dynamic> json) =>
-    LorebookEntry(
-      patterns: json['patterns'] as String,
-      lore: json['lore'] as String,
-    );
-
-Map<String, dynamic> _$LorebookEntryToJson(LorebookEntry instance) =>
-    <String, dynamic>{
-      'patterns': instance.patterns,
-      'lore': instance.lore,
     };

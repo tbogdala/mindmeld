@@ -13,6 +13,7 @@ part 'chat_log.g.dart';
 enum ModelPromptStyle {
   alpaca,
   chatml,
+  gemma,
   llama3,
   mistralInstruct,
   opusV12,
@@ -31,6 +32,8 @@ extension ModelPromptStyleExtension on ModelPromptStyle {
         return ModelPromptConfig.alpaca();
       case ModelPromptStyle.chatml:
         return ModelPromptConfig.chatML();
+      case ModelPromptStyle.gemma:
+        return ModelPromptConfig.gemmaInstruct();
       case ModelPromptStyle.llama3:
         return ModelPromptConfig.llama3();
       case ModelPromptStyle.opusV12:
@@ -92,6 +95,22 @@ class ModelPromptConfig {
     stopPhrases = [
       "<|im_start|>",
       "<|im_end|>",
+    ];
+  }
+
+  ModelPromptConfig.gemmaInstruct() {
+    name = "Gemma";
+    system = "";
+    preSystemPrefix = "";
+    preSystemSuffix = "";
+    userPrefix = "<start_of_turn>user\n";
+    userSuffix = "<end_of_turn>\n";
+    aiPrefix = "<start_of_turn>model\n";
+    aiSuffix = "<end_of_turn>\n";
+    stopPhrases = [
+      "<start_of_turn>user",
+      "<start_of_turn>model",
+      "<end_of_turn>"
     ];
   }
 
