@@ -16,10 +16,12 @@ import 'package:format/format.dart';
 
 import 'chat_log.dart';
 import 'config_models.dart';
+import 'lorebook.dart';
 
 class ChatLogPage extends StatefulWidget {
   final ChatLog chatLog;
   final ConfigModelFiles configModelFiles;
+  final List<Lorebook> lorebooks;
 
   // this callback is called when the inner ChatLogWidget has changed.
   final void Function() onChatLogWidgetChange;
@@ -28,6 +30,7 @@ class ChatLogPage extends StatefulWidget {
       {super.key,
       required this.chatLog,
       required this.configModelFiles,
+      required this.lorebooks,
       required this.onChatLogWidgetChange});
 
   @override
@@ -81,6 +84,7 @@ class _ChatLogPageState extends State<ChatLogPage> {
               key: chatLogWidgetState,
               chatLog: widget.chatLog,
               configModelFiles: widget.configModelFiles,
+              lorebooks: widget.lorebooks,
               onChatLogChange: () {
                 widget.onChatLogWidgetChange();
               },
@@ -91,6 +95,7 @@ class _ChatLogPageState extends State<ChatLogPage> {
 class ChatLogWidget extends StatefulWidget {
   final ChatLog chatLog;
   final ConfigModelFiles configModelFiles;
+  final List<Lorebook> lorebooks;
 
   // this callback is called when the chatlog has been changed by something
   // the widget does.
@@ -100,12 +105,11 @@ class ChatLogWidget extends StatefulWidget {
       {super.key,
       required this.chatLog,
       required this.configModelFiles,
+      required this.lorebooks,
       required this.onChatLogChange});
 
   @override
   State<ChatLogWidget> createState() => ChatLogWidgetState();
-
-  void test() {}
 }
 
 class ChatLogWidgetState extends State<ChatLogWidget>
@@ -227,7 +231,8 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     int tokenBudget = (currentModelConfig.contextSize ?? 2048) -
         targetChatlog.hyperparmeters.tokens;
     final promptConfig = targetChatlog.modelPromptStyle.getPromptConfig();
-    final prompt = targetChatlog.buildPrompt(tokenBudget, continueMsg);
+    final prompt =
+        targetChatlog.buildPrompt(widget.lorebooks, tokenBudget, continueMsg);
     log("Token budget: $tokenBudget");
     log("Prompt Built:");
     log(prompt);

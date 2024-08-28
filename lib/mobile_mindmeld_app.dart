@@ -245,6 +245,7 @@ class _MobileMindmeldAppState extends State<MobileMindmeldApp> {
                                 builder: (context) => ChatLogPage(
                                     chatLog: thisLog,
                                     configModelFiles: configModelFiles!,
+                                    lorebooks: lorebooks,
                                     onChatLogWidgetChange: () {
                                       setState(() {}); // trigger an update
                                     })));

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:mindmeld/chat_log.dart';
 import 'package:mindmeld/lorebook.dart';
 
+import 'platform_and_theming.dart';
+
 class LorebookEntryWidget extends StatefulWidget {
   final LorebookEntry entry;
   final Function(LorebookEntry) onDelete;
@@ -44,7 +46,7 @@ class _LorebookEntryWidgetState extends State<LorebookEntryWidget> {
         child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              color: Colors.grey.shade900,
+              color: getBackgroundDecorationColor(context),
             ),
             padding: const EdgeInsets.all(4),
             child: ListTile(
@@ -64,7 +66,7 @@ class _LorebookEntryWidgetState extends State<LorebookEntryWidget> {
                   labelText: "Lore",
                 ),
                 controller: _loreController,
-                minLines: 2,
+                minLines: 1,
                 maxLines: 6,
               ),
               trailing: IconButton(
@@ -93,7 +95,7 @@ class EditLorebooksPage extends StatefulWidget {
 
 class _EditLorebooksPageState extends State<EditLorebooksPage> {
   late List<String> lorebookOptions;
-  String? selectedLorebookOption;
+  Lorebook? selectedLorebook;
   final matchingCharactersController = TextEditingController();
 
   @override
@@ -122,7 +124,8 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
     }
   }
 
-  Lorebook? _getSelectedLorebook() {
+  Lorebook? _getSelectedLorebook(String? selectedLorebookOption) {
+    log('attempting to get selected lorebook for $selectedLorebookOption ...');
     return selectedLorebookOption != null
         ? widget.lorebooks
             .firstWhere((book) => book.name == selectedLorebookOption)
@@ -152,7 +155,7 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
     setState(() {
       widget.lorebooks.add(newLorebook);
       _initLorebookOptions();
-      selectedLorebookOption = newLorebook.name;
+      selectedLorebook = newLorebook;
     });
   }
 
@@ -210,7 +213,7 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
     setState(() {
       widget.lorebooks.remove(lorebook);
       _initLorebookOptions();
-      selectedLorebookOption = lorebookOptions.firstOrNull;
+      selectedLorebook = widget.lorebooks.firstOrNull;
     });
   }
 
@@ -269,7 +272,7 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
     // dependencies as well
     setState(() {
       _initLorebookOptions();
-      selectedLorebookOption = lorebook.name;
+      selectedLorebook = lorebook;
     });
     return;
   }
@@ -316,11 +319,9 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
   void _doUpdateToSelectedLorebook(String? value) {
     // null updates are allowed
     setState(() {
-      selectedLorebookOption = value;
-      if (selectedLorebookOption != null) {
-        final matchingLorebook = widget.lorebooks
-            .firstWhere((book) => book.name == selectedLorebookOption);
-        matchingCharactersController.text = matchingLorebook.characterNames;
+      selectedLorebook = _getSelectedLorebook(value);
+      if (selectedLorebook != null) {
+        matchingCharactersController.text = selectedLorebook!.characterNames;
       }
     });
   }
@@ -342,24 +343,26 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
     }
   }
 
-  Widget _buildEntryList(BuildContext context, Lorebook selectedLorebook) {
-    return ListView.builder(
-        itemCount: selectedLorebook.entries.length,
-        shrinkWrap: true,
-        itemBuilder: (context, index) {
-          return LorebookEntryWidget(
-              entry: selectedLorebook.entries[index],
-              onDelete: (entry) {
-                final selectedLorebook = _getSelectedLorebook();
-                if (selectedLorebook != null) {
-                  _doDeleteEntry(selectedLorebook, entry);
-                }
-              });
-        });
+  Widget _buildEntryList(BuildContext context) {
+    if (selectedLorebook == null) {
+      return const SizedBox(height: 1);
+    } else {
+      return ListView(
+          shrinkWrap: true,
+          children: selectedLorebook!.entries.map((entry) {
+            return LorebookEntryWidget(
+                key: ValueKey('${entry.patterns}${entry.lore}'),
+                entry: entry,
+                onDelete: (entry) {
+                  if (selectedLorebook != null) {
+                    _doDeleteEntry(selectedLorebook!, entry);
+                  }
+                });
+          }).toList());
+    }
   }
 
   Widget buildInner(BuildContext context) {
-    var selectedLorebook = _getSelectedLorebook();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       ListTile(
           leading: const Icon(Icons.inventory),
@@ -367,21 +370,22 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
             const Text('Lorebook:'),
             const SizedBox(width: 16),
             Expanded(
-              child: DropdownMenu(
-                enabled: _areLorebooksPresent(),
-                width: widget.isFullPage ? 210 : 410,
-                initialSelection: selectedLorebookOption,
-                dropdownMenuEntries: lorebookOptions
-                    .map((option) => DropdownMenuEntry(
+              child: DropdownButtonFormField<String>(
+                //enabled: _areLorebooksPresent(),
+                //width: widget.isFullPage ? 210 : 410,
+                value: selectedLorebook?.name,
+                borderRadius: const BorderRadius.all(Radius.circular(8.0)),
+                padding: const EdgeInsets.only(left: 8.0, right: 8.0),
+                items: lorebookOptions
+                    .map((option) => DropdownMenuItem<String>(
                         value: option,
-                        label: option,
-                        labelWidget: Text(
+                        child: Text(
                           option,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         )))
                     .toList(),
-                onSelected: (String? value) {
+                onChanged: (String? value) {
                   _doUpdateToSelectedLorebook(value);
                 },
               ),
@@ -433,13 +437,13 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
                 labelText: "Matching Characters",
               ),
               onChanged: (text) {
-                selectedLorebook.characterNames = text;
+                selectedLorebook!.characterNames = text;
               },
             )),
       if (selectedLorebook != null) const SizedBox(height: 16),
       if (selectedLorebook != null)
         SingleChildScrollView(
-          child: _buildEntryList(context, selectedLorebook),
+          child: _buildEntryList(context),
         ),
       if (selectedLorebook != null) const SizedBox(height: 8),
       if (selectedLorebook != null)
@@ -448,7 +452,7 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
               message: 'Add a new entry to the selected lorebook',
               child: FilledButton(
                 onPressed: _areLorebooksPresent()
-                    ? () => _doAddNewEntry(selectedLorebook)
+                    ? () => _doAddNewEntry(selectedLorebook!)
                     : null,
                 child: const Row(
                     mainAxisSize: MainAxisSize.min,

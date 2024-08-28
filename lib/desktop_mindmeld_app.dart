@@ -198,6 +198,7 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
                             key: chatLogWidgetState,
                             chatLog: selectedLog,
                             configModelFiles: configModelFiles!,
+                            lorebooks: lorebooks,
                             onChatLogChange: () {
                               setState(() {}); // trigger a rebuild...
                             },

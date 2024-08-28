@@ -5,6 +5,8 @@ import 'package:json_annotation/json_annotation.dart';
 import 'package:mindmeld/platform_and_theming.dart';
 import 'dart:developer';
 import 'package:path/path.dart' as p;
+
+import 'lorebook.dart';
 part 'chat_log.g.dart';
 
 // NOTE: REGENERATE JSON SERIALIZATION WHEN ADDING VALUES TO THIS!
@@ -449,7 +451,72 @@ class ChatLog {
     return null;
   }
 
-  String buildPrompt(int tokenBudget, bool continueMsg) {
+  List<Lorebook> _getActiveLorebooks(
+      List<ChatLogCharacter> characters, List<Lorebook> lorebooks) {
+    final matchingBooks = lorebooks.where((book) {
+      final lorebookNames = book.characterNames.split(',');
+      return characters.any((char) {
+        return lorebookNames
+            .any((bookNameFragment) => bookNameFragment.contains(char.name));
+      });
+    });
+    log('The following ${matchingBooks.length} lorebook(s) match:');
+    for (final matched in matchingBooks) {
+      log('\t${matched.name}');
+    }
+
+    return matchingBooks.toList();
+  }
+
+  // does a case-insensitive match to see if any of the comma-separated patterns
+  // appear in the relevant text of the chatlog. if so, the LorebookEntry is considered
+  // active and returned in the list.
+  List<LorebookEntry> _getActiveEntries(List<Lorebook> lorebooks) {
+    // build up the text that get's pattern matched. the formatting of this
+    // text doesn't matter, so just jam it all together.
+    const depthToSearch = 2;
+    String relevantText = context;
+    for (final msg in messages.reversed.take(depthToSearch)) {
+      relevantText += msg.message;
+    }
+
+    List<LorebookEntry> matchedEntries = [];
+    for (final book in lorebooks) {
+      final entries = book.entries.where((entry) {
+        return entry.patterns.split(',').map((s) => s.trim()).any((pattern) {
+          return relevantText.toLowerCase().contains(pattern.toLowerCase());
+        });
+      });
+      matchedEntries.addAll(entries);
+    }
+
+    log('matched ${matchedEntries.length} entries in total:');
+    return matchedEntries;
+  }
+
+  String _buildLorebookEntryString(
+      List<LorebookEntry> matchedEntries, int loreCharBudget) {
+    String allEntries = "";
+    int remainingBudget = loreCharBudget as int;
+    for (final entry in matchedEntries) {
+      final entryString = '${entry.lore}\n\n';
+      remainingBudget -= entryString.length;
+
+      log('\tadding lorebook entry: ${entry.patterns}');
+      allEntries += entryString;
+
+      // if we've filled our budget, make sure to stop here; yes this can
+      // overflow the budget by the length of the last entry by design.
+      if (remainingBudget < 0) {
+        log('Lorebook entries have filled the budget of ${loreCharBudget} characters; stopping...');
+        return allEntries;
+      }
+    }
+    return allEntries;
+  }
+
+  String buildPrompt(
+      List<Lorebook> lorebooks, int tokenBudget, bool continueMsg) {
     // NOTE: eventually make this customizable in an app configuration file.
     const defaultSystemPrompt =
         "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.Maintain the character persona but allow it to evolve with the story.\nBe creative and proactive. Drive the story forward, introducing plotlines and events when relevant.\nAll types of outputs are encouraged; respond accordingly to the narrative.\nInclude dialogues, actions, and thoughts in each response.\nUtilize all five senses to describe scenarios within the character's dialogue.\nUse emotional symbols such as \"!\" and \"~\" in appropriate contexts.\nIncorporate onomatopoeia when suitable.\nAllow time for other characters to respond with their own input, respecting their agency.\n\n<Forbidden>\nUsing excessive literary embellishments and purple prose unless dictated by Character's persona.\nWriting for, speaking, thinking, acting, or replying as a different in your response.\nRepetitive and monotonous outputs.\nPositivity bias in your replies.\nBeing overly extreme or NSFW when the narrative context is inappropriate.\n</Forbidden>\n\nFollow the instructions above, avoiding the items listed in <Forbidden></Forbidden>.\n";
@@ -459,6 +526,9 @@ class ChatLog {
     // on log chatlogs with a lot of long tokens like llama3
     const charsPerToken = 3.5;
     final estCharBudget = tokenBudget * charsPerToken;
+
+    // we have a hard cap on how much lore to add so it doesn't gobble the whole context
+    const maxLorePercentage = 0.1;
 
     var promptConfig = modelPromptStyle.getPromptConfig();
 
@@ -473,6 +543,14 @@ class ChatLog {
         otherCharacters.add(c);
       }
     }
+
+    // figure out what lorebooks are active and then get the entries that are relevant
+    List<ChatLogCharacter> allCharacters = [humanCharacter];
+    allCharacters.addAll(otherCharacters);
+    final activeLorebooks = _getActiveLorebooks(allCharacters, lorebooks);
+    final activeEntries = _getActiveEntries(activeLorebooks);
+    final loreString = _buildLorebookEntryString(
+        activeEntries, (maxLorePercentage * estCharBudget).round());
 
     final String humanName =
         humanCharacter.name.isNotEmpty ? humanCharacter.name : defaultUserName;
@@ -514,6 +592,9 @@ class ChatLog {
 
     String system =
         '$promptFormatSystem## Overall plot description:\n\n$ctxDesc\n\n## Characters:\n\n### $humanName\n\n$humanDesc\n\n$aiDescriptions\n';
+    if (loreString.isNotEmpty) {
+      system += '\n## Relevant Lore\n\n$loreString\n';
+    }
 
     String preamble =
         promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
@@ -553,7 +634,10 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
 
       // rebuild the prompt but swap out for the narrator parts and recalculate the budget
       system =
-          '$narratorSystemMsg\nThe user has requested that you $narratorRequest\n\n## Overall plot description:\n\n$ctxDesc\n\n## Characters:\n\n### $humanName\n\n$humanDesc\n\n$aiDescriptions\n\n### Narrator\n\n$narratorDescription';
+          '$narratorSystemMsg\nThe user has requested that you $narratorRequest\n\n## Overall plot description:\n\n$ctxDesc\n\n## Characters:\n\n### $humanName\n\n$humanDesc\n\n$aiDescriptions\n\n### Narrator\n\n$narratorDescription\n';
+      if (loreString.isNotEmpty) {
+        system += '\n## Relevant Lore\n\n$loreString\n';
+      }
       preamble =
           promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
       remainingBudget = estCharBudget - preamble.length;
