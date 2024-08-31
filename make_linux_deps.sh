@@ -7,7 +7,7 @@ SCRIPT_DIR=$PWD
 cd packages/woolydart/src
 rm -rf build-linux
 cmake -B build-linux -DGGML_CUDA=On woolycore
-cmake --build build --config Release -j 4
+cmake --build build-linux --config Release -j 4
 
 # Jump back to our project dir
 cd "$SCRIPT_DIR"
