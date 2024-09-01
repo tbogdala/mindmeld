@@ -16,6 +16,7 @@ import 'package:format/format.dart';
 
 import 'chat_log.dart';
 import 'config_models.dart';
+import 'edit_lorebooks_page.dart';
 import 'lorebook.dart';
 
 class ChatLogPage extends StatefulWidget {
@@ -50,6 +51,25 @@ class _ChatLogPageState extends State<ChatLogPage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(title: Text(widget.chatLog.name), actions: [
+          IconButton(
+            tooltip: 'Configure lorebooks',
+            icon: const Icon(Icons.inventory),
+            onPressed: () async {
+              await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => EditLorebooksPage(
+                            isFullPage: true,
+                            lorebooks: widget.lorebooks,
+                            selectedChatLog: widget.chatLog,
+                          )));
+
+              // save out all the lorebooks, but no UI state update should be needed
+              for (final book in widget.lorebooks) {
+                await book.saveToFile();
+              }
+            },
+          ),
           IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () async {

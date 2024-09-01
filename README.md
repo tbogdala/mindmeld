@@ -2,8 +2,8 @@
 
 A simple-to-use GUI for local AI chat.
 
-Supported platforms: iOS, Android, MacOS
-In-Development platforms: Windows, Linux
+Supported platforms: iOS, Android, MacOS, Linux
+In-Development platforms: Windows
 
 
 ## Getting the source code
@@ -21,26 +21,32 @@ To update it, remember to recurse the submodules as well:
 git pull --recurse-submodules
 ```
 
+
 ## Build Instructions
 
-Each platform is a little bit different with Flutter. For MacOS and iOS, the native binaries
+Each platform is a little bit different with Flutter. For MacOS, iOS and Linux, the native binaries
 for the upstream [woolycore](https://github.com/tbogdala/woolycore) library must be built, while
 for Android they're built automatically.
 
 In both iOS and Android cases, you must have an existing [Flutter](https://flutter.dev/) development
-setup operational. That should take care of a lot of pain points. Make sure `flutter doctor` runs clean.
+setup operational with the additional components necessary for the chosen mobile ecosystem. 
+That should take care of a lot of pain points. Make sure `flutter doctor` runs clean.
 
 
 ### iOS Build Instructions
 
 Before running the app in the simulator or on device, you will need to build binaries manually
 for either the simulator or the on-device version. They build to separate directories, but ultimately
-*one* binary gets copied to the iOS framework folder, so these scripts will have to be re-run
+*one* binary gets copied to the iOS framework folder, so these scripts will *have to be re-run*
 whenever changing from simulator to device or vice versa.
 
 To build simulator binaries: `./make_ios_simulator_deps.sh`
 
 To build the on-device binaries: `./make_ios_deps.sh`
+
+Simulator performance on MacOS is sensitive to thread count; using a Thread Count of 4 in the chat log
+configuration helps performance **immensely**, because simulator binaries are not built with
+Metal enabled.
 
 
 ### MacOS Build Instructions
@@ -49,17 +55,28 @@ Much like the iOS Build Instructions above, the MacOS framework binary has to be
 This can be done by running `./make_macos_deps.sh`.
 
 
+### Linux Build Instructions
+
+Similar to most other build targets, you have to run a script to compile the
+dependencies before running the program. This can be done by running `./make_linux_deps.sh`.
+
+The program can be run with the desktop launcher by running `flutter run --release`.
+
+
 ### Android Build Instructions
 
 The Android system shouldn't need any extra steps once the whole ecosystem for Android support
 in flutter is setup. `android/app/build.gradle` has some minimums. It's expecting the compiler
 to be SDK 35, and the NDK used is "27.0.12077973". The Android SDK CMake version was pinned
-to "3.22.1" as well.
+to "3.22.1" as well. You'll want to make sure you have those downloaded in the Android SDK Manager.
 
 When compiling the project it will compile the upstream [woolycore](https://github.com/tbogdala/woolycore)
 and [llama.cpp](https://github.com/ggerganov/llama.cpp) code for Android use.
 
 To do a full clean Android build, besides running `flutter clean` you need to `rm -rf android/app/.cxx`.
+
+Note: The Android build of upstream [woolycore](https://github.com/tbogdala/woolycore) is not
+hardware accelerated and running anything bigger than say TinyLlama-1.1B at Q4_K_M will be super slow.
 
 
 #### Dev Notes
@@ -128,7 +145,6 @@ https://github.com/lmstudio-ai/configs
 * BUG: make sure chat logs with duplicate names can't be made
 * Should have copy icon next to chat log settings to copy scenario/desc and then paste icons in the sections.
   Should confirm the pastes with a bottom sheet so that there's not accidental overrides.
-* Long press of send button should 'impersonate' the AI instead if there's a message in the text box?
 * Have a help icon for ChatLog Configuration to explain settings verbosely.
 * Confirm that not supplying a ConfigModelSetting context size uses -1 or auto for default.
 * BUG: ConfigModelSettings that are nullable might not be picking good defaults. 
@@ -138,10 +154,13 @@ https://github.com/lmstudio-ai/configs
     eventually provide a way to supply a custom system message to help users customize things further.
 * NOTE: /narrator replies cannot be continued as the narrator, currently.
 * BUG: any file can be added as a model, such as `img.png`. :(
+* Streaming text generation.
+* More efficiently pack prompt by tokenizing things first.
 
 ### Road to Github upload:
 
-1) Lore book support
-2) More models to auto-download with option to supply a URL to a GGUF
-3) Setup 'safe' defaults for models when using the auto-download option. 
+1) More models to auto-download with option to supply a URL to a GGUF
+2) When creating a first log, fill in some default settings and use Vox for a default character.
+3) Setup 'safe' defaults for models when using the auto-download option.
+4) Ensure first-run experience is satisfactory for a first dev version release.
 

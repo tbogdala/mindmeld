@@ -347,18 +347,19 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
     if (selectedLorebook == null) {
       return const SizedBox(height: 1);
     } else {
-      return ListView(
-          shrinkWrap: true,
-          children: selectedLorebook!.entries.map((entry) {
-            return LorebookEntryWidget(
-                key: ValueKey('${entry.patterns}${entry.lore}'),
-                entry: entry,
-                onDelete: (entry) {
-                  if (selectedLorebook != null) {
-                    _doDeleteEntry(selectedLorebook!, entry);
-                  }
-                });
-          }).toList());
+      return Column(
+          children: selectedLorebook!.entries.asMap().entries.map((mapEntry) {
+        final entryIndex = mapEntry.key;
+        final entry = mapEntry.value;
+        return LorebookEntryWidget(
+            key: ValueKey('$entryIndex:${entry.patterns}${entry.lore}'),
+            entry: entry,
+            onDelete: (entry) {
+              if (selectedLorebook != null) {
+                _doDeleteEntry(selectedLorebook!, entry);
+              }
+            });
+      }).toList());
     }
   }
 
@@ -441,24 +442,24 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
               },
             )),
       if (selectedLorebook != null) const SizedBox(height: 16),
+      if (selectedLorebook != null) _buildEntryList(context),
+      if (selectedLorebook != null) const SizedBox(height: 16),
       if (selectedLorebook != null)
-        SingleChildScrollView(
-          child: _buildEntryList(context),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Tooltip(
+                message: 'Add a new entry to the selected lorebook',
+                child: FilledButton(
+                  onPressed: _areLorebooksPresent()
+                      ? () => _doAddNewEntry(selectedLorebook!)
+                      : null,
+                  child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [Icon(Icons.add), Text('Add Entry')]),
+                )),
+          ]),
         ),
-      if (selectedLorebook != null) const SizedBox(height: 8),
-      if (selectedLorebook != null)
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Tooltip(
-              message: 'Add a new entry to the selected lorebook',
-              child: FilledButton(
-                onPressed: _areLorebooksPresent()
-                    ? () => _doAddNewEntry(selectedLorebook!)
-                    : null,
-                child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [Icon(Icons.add), Text('Add Entry')]),
-              )),
-        ]),
     ]);
   }
 
@@ -470,14 +471,15 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
           title: const Text('Edit Lorebooks'),
         ),
         body: Padding(
-          padding: const EdgeInsets.all(16),
-          child: SingleChildScrollView(
-            child: buildInner(context),
-          ),
+          padding: const EdgeInsets.all(8),
+          child: SingleChildScrollView(child: buildInner(context)),
         ),
       );
     } else {
-      return buildInner(context);
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: buildInner(context),
+      );
     }
   }
 }
