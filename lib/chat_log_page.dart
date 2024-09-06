@@ -224,6 +224,13 @@ class ChatLogWidgetState extends State<ChatLogWidget>
       return await _showErrorForMissingModel();
     }
 
+    // run the text inference in an isolate ... so make sure our
+    // prognosticator object is all setup...
+    if (prognosticator == null) {
+      log("prognosticator was not initialized yet, skipping _generateAIMessage...");
+      return;
+    }
+
     var modelFilepath = (!p.isAbsolute(currentModelConfig.modelFilepath)
         ? p.join(await ConfigModelFiles.getModelsFolderpath(),
             currentModelConfig.modelFilepath)
@@ -247,8 +254,8 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     int tokenBudget = (currentModelConfig.contextSize ?? 2048) -
         targetChatlog.hyperparmeters.tokens;
     final promptConfig = targetChatlog.modelPromptStyle.getPromptConfig();
-    final prompt =
-        targetChatlog.buildPrompt(widget.lorebooks, tokenBudget, continueMsg);
+    final prompt = prognosticator!
+        .buildPrompt(targetChatlog, widget.lorebooks, tokenBudget, continueMsg);
     log("Token budget: $tokenBudget");
     log("Prompt Built:");
     log(prompt);
@@ -266,11 +273,6 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     // throw in the narrator's name as well
     stopPhrases.add('Narrator:');
 
-    // run the text inference in an isolate
-    if (prognosticator == null) {
-      log("prognosticator was not initialized yet, skipping _generateAIMessage...");
-      return;
-    }
     PredictReplyRequest request = PredictReplyRequest(modelFilepath,
         currentModelConfig, prompt, stopPhrases, targetChatlog.hyperparmeters);
     var predictedOutput = await prognosticator!.predictText(request);
