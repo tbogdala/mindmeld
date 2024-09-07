@@ -69,6 +69,8 @@ class _ChatLogPageState extends State<ChatLogPage> {
           IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () async {
+                final originalSelectedModel = widget.chatLog.modelName;
+
                 await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -86,8 +88,11 @@ class _ChatLogPageState extends State<ChatLogPage> {
                 await widget.configModelFiles.saveJsonToConfigFile();
 
                 setState(() {
-                  // now we dump the currently loaded model
-                  chatLogWidgetState.currentState?.closePrognosticatorModel();
+                  // now we dump the currently loaded model if the model name changed
+                  if (originalSelectedModel != widget.chatLog.modelName) {
+                    log("New model file selected, closing previous one...");
+                    chatLogWidgetState.currentState?.closePrognosticatorModel();
+                  }
 
                   // let the parent context know something might have changed.
                   widget.onChatLogWidgetChange();

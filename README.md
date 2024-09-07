@@ -1,6 +1,6 @@
 # MindMeld
 
-A simple-to-use GUI for local AI chat.
+A simple-to-use, open source GUI for local AI chat.
 
 Supported platforms: iOS, Android, MacOS, Linux
 In-Development platforms: Windows
@@ -92,6 +92,16 @@ To do a full clean Android build, besides running `flutter clean` you need to `r
 
 Note: The Android build of upstream [woolycore](https://github.com/tbogdala/woolycore) is not
 hardware accelerated and running anything bigger than say TinyLlama-1.1B at Q4_K_M will be super slow.
+
+
+## License
+
+This project is licensed under the GPL v3 terms, as specified in the `LICENSE` file.
+
+The project is built around [woolycore](https://github.com/tbogdala/woolycore), 
+[woolydart](https://github.com/tbogdala/woolydart) for the language bindings and of course the 
+great [llama.cpp](https://github.com/ggerganov/llama.cpp) library. All three of these libraries
+are licensed under the MIT license.
 
 
 #### Dev Notes
