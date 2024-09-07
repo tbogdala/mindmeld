@@ -153,6 +153,13 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
                               tooltip: 'Configure chatlog settings',
                               icon: const Icon(Icons.settings),
                               onPressed: () async {
+                                // store original settings so we can compare for changes
+                                final originalSelectedModel =
+                                    selectedLog.modelName;
+                                final originalModelSettings = configModelFiles!
+                                    .modelFiles[originalSelectedModel]!
+                                    .clone();
+
                                 await showDialog(
                                     context: context,
                                     builder: (BuildContext context) {
@@ -180,10 +187,19 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
                                 // same with the models configuration file
                                 await configModelFiles?.saveJsonToConfigFile();
 
-                                // now we dump the currently loaded model
+                                // now we dump the currently loaded model if the model selection changed
+                                // or any values that would invalide that model state.
                                 setState(() {
-                                  chatLogWidgetState.currentState
-                                      ?.closePrognosticatorModel();
+                                  if ((selectedLog.modelName !=
+                                          originalSelectedModel) ||
+                                      (configModelFiles!
+                                          .modelFiles[selectedLog.modelName]!
+                                          .doChangesRequireReload(
+                                              originalModelSettings))) {
+                                    log("New model file selected, closing previous one...");
+                                    chatLogWidgetState.currentState
+                                        ?.closePrognosticatorModel();
+                                  }
                                 });
                               },
                             ),

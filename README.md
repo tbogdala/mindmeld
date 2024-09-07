@@ -8,7 +8,7 @@ In-Development platforms: Windows
 
 ## Features
 
-* Based on Llama.cpp and supports any model supported by that project in GGUF form.
+* Based on [llama.cpp](https://github.com/ggerganov/llama.cpp) and supports any model supported by that project in GGUF form.
 * Graphical user interface, tailored towards chatting with AI, which is mobile compatible.
 * Create multiple chat logs, each with their own parameters, story context and characters
 * Customizable character portrait images.

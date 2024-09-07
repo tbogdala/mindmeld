@@ -69,7 +69,11 @@ class _ChatLogPageState extends State<ChatLogPage> {
           IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () async {
+                // store original settings so we can compare for changes
                 final originalSelectedModel = widget.chatLog.modelName;
+                final originalModelSettings = widget
+                    .configModelFiles.modelFiles[originalSelectedModel]!
+                    .clone();
 
                 await Navigator.push(
                     context,
@@ -89,7 +93,11 @@ class _ChatLogPageState extends State<ChatLogPage> {
 
                 setState(() {
                   // now we dump the currently loaded model if the model name changed
-                  if (originalSelectedModel != widget.chatLog.modelName) {
+                  // or any values that would invalide that model state.
+                  if ((widget.chatLog.modelName != originalSelectedModel) ||
+                      (widget.configModelFiles!
+                          .modelFiles[widget.chatLog.modelName]!
+                          .doChangesRequireReload(originalModelSettings))) {
                     log("New model file selected, closing previous one...");
                     chatLogWidgetState.currentState?.closePrognosticatorModel();
                   }
@@ -286,7 +294,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
         currentModelConfig, prompt, stopPhrases, targetChatlog.hyperparmeters);
     var predictedOutput = await prognosticator!.predictText(request);
 
-    log("Returned prediction length: ${predictedOutput.message.length}");
+    log("Returned prediction length in characters: ${predictedOutput.message.length}");
     for (final anti in stopPhrases) {
       if (predictedOutput.message.endsWith(anti)) {
         predictedOutput.message = predictedOutput.message

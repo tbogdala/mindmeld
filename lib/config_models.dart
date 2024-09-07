@@ -31,6 +31,45 @@ class ConfigModelSettings {
       this.flashAttention,
       this.promptFormat);
 
+  ConfigModelSettings clone() => ConfigModelSettings(
+      modelFilepath,
+      gpuLayers,
+      contextSize,
+      threadCount,
+      batchSize,
+      promptCache,
+      ignoreEos,
+      flashAttention,
+      promptFormat);
+
+  // returns true if current values are different than the original ones
+  // in fields where a model reload would be necessary.
+  bool doChangesRequireReload(ConfigModelSettings original) {
+    if (modelFilepath.compareTo(original.modelFilepath) != 0) {
+      return true;
+    }
+    if (gpuLayers != original.gpuLayers) {
+      return true;
+    }
+    if (contextSize != original.contextSize) {
+      return true;
+    }
+    if (threadCount != original.threadCount) {
+      return true;
+    }
+    if (batchSize != original.batchSize) {
+      return true;
+    }
+    if (promptCache != original.promptCache) {
+      return true;
+    }
+    if (flashAttention != original.flashAttention) {
+      return true;
+    }
+
+    return false;
+  }
+
   factory ConfigModelSettings.fromJson(Map<String, dynamic> json) {
     return _$ConfigModelSettingsFromJson(json);
   }
