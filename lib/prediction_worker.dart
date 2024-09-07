@@ -34,6 +34,34 @@ class PredictReplyRequest {
       this.antipromptStrings, this.hyperparameters);
 }
 
+class GetTokenCountRequest {
+  String promptString;
+
+  GetTokenCountRequest(this.promptString);
+}
+
+class GetTokenCountResult {
+  String promptString;
+  int tokenCount;
+
+  GetTokenCountResult(this.promptString, this.tokenCount);
+}
+
+class EnsureModelLoadedRequest {
+  String modelFilepath;
+  ConfigModelSettings modelSettings;
+  ChatLogHyperparameters hyperparameters;
+
+  EnsureModelLoadedRequest(
+      this.modelFilepath, this.modelSettings, this.hyperparameters);
+}
+
+class EnsureModelLoadedResult {
+  bool success;
+
+  EnsureModelLoadedResult(this.success);
+}
+
 class CloseModelRequest {}
 
 class PredictionWorker {
@@ -41,7 +69,9 @@ class PredictionWorker {
   late ReceivePort _fromIsoPort;
   SendPort? _toIsoPort;
   Completer<void> _isoReady = Completer.sync();
-  Completer<PredictReplyResult> _isoResponse = Completer();
+  Completer<PredictReplyResult> _isoResponsePrediction = Completer();
+  Completer<GetTokenCountResult> _isoResponseTokenCount = Completer();
+  Completer<EnsureModelLoadedResult> _isoResponseEnsureLoaded = Completer();
 
   static Future<PredictionWorker> spawn() async {
     log('PredictionWorker: spawning...');
@@ -56,7 +86,9 @@ class PredictionWorker {
   Future<void> closeModel() async {
     log('PredictionWorker: close model...');
     await _isoReady.future;
-    _isoResponse = Completer();
+    _isoResponsePrediction = Completer();
+    _isoResponseTokenCount = Completer();
+    _isoResponseEnsureLoaded = Completer();
     _toIsoPort!.send(CloseModelRequest());
   }
 
@@ -66,14 +98,32 @@ class PredictionWorker {
     _fromIsoPort.close();
     _toIsoPort = null;
     _isoReady = Completer.sync();
-    _isoResponse = Completer();
+    _isoResponsePrediction = Completer();
+    _isoResponseTokenCount = Completer();
+    _isoResponseEnsureLoaded = Completer();
   }
 
   Future<PredictReplyResult> predictText(PredictReplyRequest request) async {
     await _isoReady.future;
-    _isoResponse = Completer();
+    _isoResponsePrediction = Completer();
     _toIsoPort!.send(request);
-    return _isoResponse.future;
+    return _isoResponsePrediction.future;
+  }
+
+  Future<GetTokenCountResult> getTokenCount(
+      GetTokenCountRequest request) async {
+    await _isoReady.future;
+    _isoResponseTokenCount = Completer();
+    _toIsoPort!.send(request);
+    return _isoResponseTokenCount.future;
+  }
+
+  Future<EnsureModelLoadedResult> ensureModelLoaded(
+      EnsureModelLoadedRequest request) async {
+    await _isoReady.future;
+    _isoResponseEnsureLoaded = Completer();
+    _toIsoPort!.send(request);
+    return _isoResponseEnsureLoaded.future;
   }
 
   void _handleResponsesFromIsolate(dynamic message) {
@@ -83,7 +133,13 @@ class PredictionWorker {
       _isoReady.complete();
     } else if (message is PredictReplyResult) {
       log('PredictionWorker: _handleResponseFromIsolate() got a prediction reply');
-      _isoResponse.complete(message);
+      _isoResponsePrediction.complete(message);
+    } else if (message is GetTokenCountResult) {
+      log('PredictionWorker: _handleResponseFromIsolate() got a token count reply');
+      _isoResponseTokenCount.complete(message);
+    } else if (message is EnsureModelLoadedResult) {
+      log('PredictionWorker: _handleResponseFromIsolate() got an ensure model loaded reply');
+      _isoResponseEnsureLoaded.complete(message);
     } else {
       log("PredictionWorker: _handleResponseFromIsolate() got an unknown message: $message");
     }
@@ -118,6 +174,18 @@ class PredictionWorker {
           final result = _predictReply(llamaModel!, message);
           port.send(result);
           log('PredictionWorker: Finished reply prediction request...');
+        } else if (message is GetTokenCountRequest) {
+          final result = _getTokenCount(llamaModel!, message);
+          port.send(result);
+          log('PredictionWorker: Finished get token count request...');
+        } else if (message is EnsureModelLoadedRequest) {
+          final result = _ensureModelIsLoaded(
+              llamaModel!,
+              message.modelFilepath,
+              message.modelSettings,
+              message.hyperparameters);
+          port.send(result);
+          log('PredictionWorker: Finished ensure model loaded request...');
         } else if (message is CloseModelRequest) {
           if (llamaModel!.isModelLoaded()) {
             log("PredictionWorker: Worker is closing the loaded model...");
@@ -135,30 +203,46 @@ class PredictionWorker {
     }
   }
 
+  static EnsureModelLoadedResult _ensureModelIsLoaded(
+    LlamaModel llamaModel,
+    String modelFilepath,
+    ConfigModelSettings modelSettings,
+    ChatLogHyperparameters hyperparameters,
+  ) {
+    if (!llamaModel.isModelLoaded()) {
+      final modelParams = llamaModel.getDefaultModelParams()
+        ..n_gpu_layers = modelSettings.gpuLayers
+        ..use_mmap = isRunningOnDesktop() ? true : false;
+      final contextParams = llamaModel.getDefaultContextParams()
+        ..seed = hyperparameters.seed
+        ..n_threads = modelSettings.threadCount ?? -1
+        ..flash_attn = true
+        ..n_ctx = modelSettings.contextSize ?? 2048;
+
+      log("PredictionWorker: Attempting to load model: $modelFilepath");
+
+      // we make the upstream llamacpp code 'chatty' in the log for debug builds
+      final bool loadedResult = llamaModel.loadModel(
+          modelFilepath, modelParams, contextParams, !kDebugMode);
+
+      return EnsureModelLoadedResult(loadedResult);
+    }
+    return EnsureModelLoadedResult(true);
+  }
+
+  static GetTokenCountResult _getTokenCount(
+      LlamaModel llamaModel, GetTokenCountRequest args) {
+    final count = llamaModel.getTokenCount(args.promptString, false, true);
+    return GetTokenCountResult(args.promptString, count);
+  }
+
   static PredictReplyResult _predictReply(
       LlamaModel llamaModel, PredictReplyRequest args) {
     wooly_gpt_params? params;
     try {
-      if (!llamaModel.isModelLoaded()) {
-        final modelParams = llamaModel.getDefaultModelParams()
-          ..n_gpu_layers = args.modelSettings.gpuLayers
-          ..use_mmap = isRunningOnDesktop() ? true : false;
-        final contextParams = llamaModel.getDefaultContextParams()
-          ..seed = args.hyperparameters.seed
-          ..n_threads = args.modelSettings.threadCount ?? -1
-          ..flash_attn = true
-          ..n_ctx = args.modelSettings.contextSize ?? 2048;
-
-        log("PredictionWorker: Attempting to load model: ${args.modelFilepath}");
-
-        // we make the upstream llamacpp code 'chatty' in the log for debug builds
-        final bool loadedResult = llamaModel.loadModel(
-            args.modelFilepath, modelParams, contextParams, !kDebugMode);
-        if (loadedResult == false) {
-          return PredictReplyResult(
-              false, '<Error: Failed to load the GGUF model.>', 0.0);
-        }
-      }
+      // make sure our model is loaded
+      _ensureModelIsLoaded(llamaModel, args.modelFilepath, args.modelSettings,
+          args.hyperparameters);
 
       params = llamaModel.getTextGenParams()
         ..seed = args.hyperparameters.seed
@@ -214,17 +298,11 @@ class PredictionWorker {
     }
   }
 
-  String buildPrompt(ChatLog chatlog, List<Lorebook> lorebooks, int tokenBudget,
-      bool continueMsg) {
+  Future<String> buildPrompt(ChatLog chatlog, List<Lorebook> lorebooks,
+      int tokenBudget, bool continueMsg) async {
     // NOTE: eventually make this customizable in an app configuration file.
     const defaultSystemPrompt =
         "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.Maintain the character persona but allow it to evolve with the story.\nBe creative and proactive. Drive the story forward, introducing plotlines and events when relevant.\nAll types of outputs are encouraged; respond accordingly to the narrative.\nInclude dialogues, actions, and thoughts in each response.\nUtilize all five senses to describe scenarios within the character's dialogue.\nUse emotional symbols such as \"!\" and \"~\" in appropriate contexts.\nIncorporate onomatopoeia when suitable.\nAllow time for other characters to respond with their own input, respecting their agency.\n\n<Forbidden>\nUsing excessive literary embellishments and purple prose unless dictated by Character's persona.\nWriting for, speaking, thinking, acting, or replying as a different in your response.\nRepetitive and monotonous outputs.\nPositivity bias in your replies.\nBeing overly extreme or NSFW when the narrative context is inappropriate.\n</Forbidden>\n\nFollow the instructions above, avoiding the items listed in <Forbidden></Forbidden>.\n";
-
-    // ballpark esimating for building up a prompt
-    // conservative... raising it much above 3.5 trips up verboase prompt formats
-    // on log chatlogs with a lot of long tokens like llama3
-    const charsPerToken = 3.5;
-    final estCharBudget = tokenBudget * charsPerToken;
 
     // we have a hard cap on how much lore to add so it doesn't gobble the whole context
     const maxLorePercentage = 0.1;
@@ -248,8 +326,9 @@ class PredictionWorker {
     allCharacters.addAll(otherCharacters);
     final activeLorebooks = _getActiveLorebooks(allCharacters, lorebooks);
     final activeEntries = _getActiveEntries(chatlog, activeLorebooks);
-    final loreString = _buildLorebookEntryString(
-        activeEntries, (maxLorePercentage * estCharBudget).round());
+    final (loreString, loreTokenCount) = await _buildLorebookEntryString(
+        activeEntries, (maxLorePercentage * tokenBudget).round());
+    log("A total of $loreTokenCount tokens used for lorebook entries.");
 
     final String humanName = humanCharacter.name.isNotEmpty
         ? humanCharacter.name
@@ -300,7 +379,9 @@ class PredictionWorker {
         promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
 
     // start keeping a running estimate of how many characters we have left to use
-    var remainingBudget = estCharBudget - preamble.length;
+    final preambleTokenCountResp =
+        await getTokenCount(GetTokenCountRequest(preamble));
+    var remainingBudget = tokenBudget - preambleTokenCountResp.tokenCount;
 
     // messages are added in reverse order
     var reversedMessages = chatlog.messages.reversed;
@@ -340,13 +421,18 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
       }
       preamble =
           promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
-      remainingBudget = estCharBudget - preamble.length;
+      final preambleTokenCountResp =
+          await getTokenCount(GetTokenCountRequest(preamble));
+      remainingBudget = tokenBudget - preambleTokenCountResp.tokenCount;
 
       // we put the Narrator's name in parens here because it also gets added as an antiprompt,
       // which will halt all generation if included as is. This is the compromise. May have
       // to adjust it later if results are poor.
       slashCommandFooter =
           "${promptConfig.userPrefix}Narrator, $narratorRequest${promptConfig.userSuffix}${promptConfig.aiPrefix}(Narrator): ";
+      final footerTokenCountResp =
+          await getTokenCount(GetTokenCountRequest(slashCommandFooter));
+      remainingBudget -= footerTokenCountResp.tokenCount;
     }
 
     List<String> msgBuffer = [];
@@ -366,12 +452,15 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
         }
       }
 
-      if (remainingBudget - formattedMsg.length < 0) {
+      final msgTokenCountResp =
+          await getTokenCount(GetTokenCountRequest(formattedMsg));
+
+      if (remainingBudget - msgTokenCountResp.tokenCount < 0) {
         break;
       }
 
       // update our remaining budget
-      remainingBudget -= formattedMsg.length;
+      remainingBudget -= msgTokenCountResp.tokenCount;
 
       // and push a new message onto the list
       msgBuffer.add(formattedMsg);
@@ -401,6 +490,7 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
 
     final prompt = preamble + budgettedChatlog;
 
+    log("Remaining token budget: $remainingBudget (max of $tokenBudget)");
     return prompt;
   }
 
@@ -448,24 +538,27 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
     return matchedEntries;
   }
 
-  String _buildLorebookEntryString(
-      List<LorebookEntry> matchedEntries, int loreCharBudget) {
+  Future<(String, int)> _buildLorebookEntryString(
+      List<LorebookEntry> matchedEntries, int loreTokenBudget) async {
     String allEntries = "";
-    int remainingBudget = loreCharBudget as int;
+    int usedTokens = 0;
     for (final entry in matchedEntries) {
       final entryString = '${entry.lore}\n\n';
-      remainingBudget -= entryString.length;
+      final entryStringTokenCount =
+          await getTokenCount(GetTokenCountRequest(entryString));
 
-      log('\tadding lorebook entry: ${entry.patterns}');
+      usedTokens += entryStringTokenCount.tokenCount;
+
+      log('\tadding lorebook entry (using ${entryStringTokenCount.tokenCount} tokens): ${entry.patterns}');
       allEntries += entryString;
 
       // if we've filled our budget, make sure to stop here; yes this can
       // overflow the budget by the length of the last entry by design.
-      if (remainingBudget < 0) {
-        log('Lorebook entries have filled the budget of ${loreCharBudget} characters; stopping...');
-        return allEntries;
+      if (usedTokens >= loreTokenBudget) {
+        log('Lorebook entries have filled the budget of $loreTokenBudget tokens; stopping...');
+        return (allEntries, usedTokens);
       }
     }
-    return allEntries;
+    return (allEntries, usedTokens);
   }
 }

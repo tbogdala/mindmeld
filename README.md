@@ -6,6 +6,21 @@ Supported platforms: iOS, Android, MacOS, Linux
 In-Development platforms: Windows
 
 
+## Features
+
+* Based on Llama.cpp and supports any model supported by that project in GGUF form.
+* Graphical user interface, tailored towards chatting with AI, which is mobile compatible.
+* Create multiple chat logs, each with their own parameters, story context and characters
+* Customizable character portrait images.
+* Automatic model downloading from HuggingFace.
+* Built-in 'narrator' using the slash-command '/narrator' at the start of a message.
+* Lorebook support: customizable lists of 'lore' text that gets added behind the scenes
+  to the LLM prompt when a pattern is matched in the chat log context or recent messages.
+  Lorebooks are active across all chats and are enabled if a character name from the chat
+  log pattern matches.
+* Fast regeneration of AI chat replies with prompt caching.
+
+
 ## Getting the source code
 
 Make sure to check out the repository while being mindful of the submodules. The 
@@ -152,15 +167,19 @@ https://github.com/lmstudio-ai/configs
 * Show overall T/s or TG & PP T/s?
 * Some 'empty' replies have been traced to a generic system prompt for the prompt formatting rules. Should
     eventually provide a way to supply a custom system message to help users customize things further.
-* NOTE: /narrator replies cannot be continued as the narrator, currently.
+* BUG: /narrator replies cannot be continued as the narrator, currently.
 * BUG: any file can be added as a model, such as `img.png`. :(
 * Streaming text generation.
-* More efficiently pack prompt by tokenizing things first.
+* Hitting esc on edit should cancel edit; or have a cancel button
+* Setup quantization for KV cache
+* Configurable switch to select between prompt caching for regeneration and prompt caching for continuation
 
-### Road to Github upload:
+
+### Road to Github release:
 
 1) More models to auto-download with option to supply a URL to a GGUF
 2) When creating a first log, fill in some default settings and use Vox for a default character.
 3) Setup 'safe' defaults for models when using the auto-download option.
 4) Ensure first-run experience is satisfactory for a first dev version release.
+5) Debug window that shows the prompt and the response data from the llm with a 'copy to clipboard' button.
 

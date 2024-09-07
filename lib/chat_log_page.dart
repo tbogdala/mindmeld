@@ -250,11 +250,15 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     // for generation, the message will still get added to this log.
     final targetChatlog = widget.chatLog;
 
+    // make sure our model is loaded
+    await prognosticator!.ensureModelLoaded(EnsureModelLoadedRequest(
+        modelFilepath, currentModelConfig, targetChatlog.hyperparmeters));
+
     // build the prompt to send off to the ai
     int tokenBudget = (currentModelConfig.contextSize ?? 2048) -
         targetChatlog.hyperparmeters.tokens;
     final promptConfig = targetChatlog.modelPromptStyle.getPromptConfig();
-    final prompt = prognosticator!
+    final prompt = await prognosticator!
         .buildPrompt(targetChatlog, widget.lorebooks, tokenBudget, continueMsg);
     log("Token budget: $tokenBudget");
     log("Prompt Built:");
@@ -277,7 +281,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
         currentModelConfig, prompt, stopPhrases, targetChatlog.hyperparmeters);
     var predictedOutput = await prognosticator!.predictText(request);
 
-    log("Returned prection length: ${predictedOutput.message.length}");
+    log("Returned prediction length: ${predictedOutput.message.length}");
     for (final anti in stopPhrases) {
       if (predictedOutput.message.endsWith(anti)) {
         predictedOutput.message = predictedOutput.message
