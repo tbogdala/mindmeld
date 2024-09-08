@@ -95,7 +95,7 @@ class _ChatLogPageState extends State<ChatLogPage> {
                   // now we dump the currently loaded model if the model name changed
                   // or any values that would invalide that model state.
                   if ((widget.chatLog.modelName != originalSelectedModel) ||
-                      (widget.configModelFiles!
+                      (widget.configModelFiles
                           .modelFiles[widget.chatLog.modelName]!
                           .doChangesRequireReload(originalModelSettings))) {
                     log("New model file selected, closing previous one...");

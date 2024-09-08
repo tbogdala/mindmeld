@@ -312,18 +312,18 @@ class PredictionWorker {
     // sort out the human and 'other' characters
     assert(chatlog.characters.isNotEmpty);
     late ChatLogCharacter humanCharacter;
-    List<ChatLogCharacter> otherCharacters = [];
+    Map<String, ChatLogCharacter> otherCharacters = {};
     for (final c in chatlog.characters) {
       if (c.isUserControlled) {
         humanCharacter = c;
       } else {
-        otherCharacters.add(c);
+        otherCharacters[c.name] = c;
       }
     }
 
     // figure out what lorebooks are active and then get the entries that are relevant
     List<ChatLogCharacter> allCharacters = [humanCharacter];
-    allCharacters.addAll(otherCharacters);
+    allCharacters.addAll(otherCharacters.values);
     final activeLorebooks = _getActiveLorebooks(allCharacters, lorebooks);
     final activeEntries = _getActiveEntries(chatlog, activeLorebooks);
     final (loreString, loreTokenCount) = await _buildLorebookEntryString(
@@ -337,16 +337,14 @@ class PredictionWorker {
         ? humanCharacter.description
         : ChatLog.defaultUserDesc;
 
-    //TODO: provide better defaults for when the strings are empty in the characters
     String aiNames = '';
     String aiDescriptions = '';
     assert(otherCharacters.isNotEmpty);
-    for (var i = 0; i < otherCharacters.length; i++) {
-      final oc = otherCharacters.elementAt(i);
+    for (final oc in otherCharacters.values) {
       final ocName = oc.name.isNotEmpty ? oc.name : ChatLog.defaultAiName;
 
       // we build a string of names to be used for the context if the user doesn't supply one.
-      if (i == otherCharacters.length - 1) {
+      if (aiNames.isNotEmpty) {
         aiNames += ' and $ocName';
       } else {
         aiNames += ', $ocName';
@@ -428,8 +426,12 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
       // we put the Narrator's name in parens here because it also gets added as an antiprompt,
       // which will halt all generation if included as is. This is the compromise. May have
       // to adjust it later if results are poor.
+      final userPrefix =
+          promptConfig.getWithSubsitutions(promptConfig.userPrefix, null);
+      final aiPrefix =
+          promptConfig.getWithSubsitutions(promptConfig.aiPrefix, null);
       slashCommandFooter =
-          "${promptConfig.userPrefix}Narrator, $narratorRequest${promptConfig.userSuffix}${promptConfig.aiPrefix}(Narrator): ";
+          "${userPrefix}Narrator, $narratorRequest${promptConfig.userSuffix}$aiPrefix(Narrator): ";
       final footerTokenCountResp =
           await getTokenCount(GetTokenCountRequest(slashCommandFooter));
       remainingBudget -= footerTokenCountResp.tokenCount;
@@ -440,10 +442,14 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
       var formattedMsg = "";
 
       if (m.humanSent) {
+        final userPrefix = promptConfig.getWithSubsitutions(
+            promptConfig.userPrefix, humanCharacter);
         formattedMsg =
-            "${promptConfig.userPrefix}$humanName: ${m.message}${promptConfig.userSuffix}";
+            "$userPrefix$humanName: ${m.message}${promptConfig.userSuffix}";
       } else {
-        formattedMsg = "${promptConfig.aiPrefix}${m.senderName}: ${m.message}";
+        final aiPrefix = promptConfig.getWithSubsitutions(
+            promptConfig.aiPrefix, otherCharacters[m.senderName]);
+        formattedMsg = "$aiPrefix${m.senderName}: ${m.message}";
         // if we're trying to continue the chatlog, then for the first message we
         // encounter here, make sure not to include the suffix because it's been
         // deemed incomplete by the user and we want _moar_ ...
@@ -478,11 +484,13 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
       // if we don't have a special override due to a slash command, then build
       // the AI character prompt normally
       if (slashCommandFooter == null) {
-        final firstOther = otherCharacters.first;
+        final firstOther = otherCharacters.values.first;
         final ocName = firstOther.name.isNotEmpty
             ? firstOther.name
             : ChatLog.defaultAiName;
-        budgettedChatlog += "${promptConfig.aiPrefix}$ocName:";
+        final aiPrefix =
+            promptConfig.getWithSubsitutions(promptConfig.aiPrefix, firstOther);
+        budgettedChatlog += "$aiPrefix$ocName:";
       } else {
         budgettedChatlog += slashCommandFooter;
       }

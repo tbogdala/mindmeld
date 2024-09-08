@@ -112,7 +112,7 @@ const _$ModelPromptStyleEnumMap = {
   ModelPromptStyle.gemma: 'gemma',
   ModelPromptStyle.llama3: 'llama3',
   ModelPromptStyle.mistralInstruct: 'mistralInstruct',
-  ModelPromptStyle.opusV12: 'opusV12',
+  ModelPromptStyle.opusV14: 'opusV14',
   ModelPromptStyle.phi3: 'phi3',
   ModelPromptStyle.tinyllama: 'tinyllama',
   ModelPromptStyle.vicuna: 'vicuna',

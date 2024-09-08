@@ -6,7 +6,6 @@ import 'package:mindmeld/platform_and_theming.dart';
 import 'dart:developer';
 import 'package:path/path.dart' as p;
 
-import 'lorebook.dart';
 part 'chat_log.g.dart';
 
 // NOTE: REGENERATE JSON SERIALIZATION WHEN ADDING VALUES TO THIS!
@@ -16,7 +15,7 @@ enum ModelPromptStyle {
   gemma,
   llama3,
   mistralInstruct,
-  opusV12,
+  opusV14,
   phi3,
   tinyllama,
   vicuna,
@@ -36,8 +35,8 @@ extension ModelPromptStyleExtension on ModelPromptStyle {
         return ModelPromptConfig.gemmaInstruct();
       case ModelPromptStyle.llama3:
         return ModelPromptConfig.llama3();
-      case ModelPromptStyle.opusV12:
-        return ModelPromptConfig.opusV12();
+      case ModelPromptStyle.opusV14:
+        return ModelPromptConfig.opusV14();
       case ModelPromptStyle.mistralInstruct:
         return ModelPromptConfig.mistralInstruct();
       case ModelPromptStyle.phi3:
@@ -126,14 +125,15 @@ class ModelPromptConfig {
     stopPhrases = ["<|start_header_id|>", "<|eot_id|>"];
   }
 
-  ModelPromptConfig.opusV12() {
-    name = "Llama3";
+  ModelPromptConfig.opusV14() {
+    name = "OpusV14";
     system = "";
     preSystemPrefix = "<|start_header_id|>system<|end_header_id|>\n\n";
     preSystemSuffix = "\n<|eot_id|>\n";
     userPrefix = "<|start_header_id|>user<|end_header_id|>\n\n";
     userSuffix = "<|eot_id|>\n";
-    aiPrefix = "<|start_header_id|>writer<|end_header_id|>\n\n";
+    aiPrefix =
+        "<|start_header_id|>writer{{ character:char}}<|end_header_id|>\n\n";
     aiSuffix = "<|eot_id|>\n";
     stopPhrases = ["<|start_header_id|>", "<|eot_id|>"];
   }
@@ -199,6 +199,14 @@ class ModelPromptConfig {
     aiPrefix = "<|assistant|>\n";
     aiSuffix = "<|endoftext|>\n";
     stopPhrases = ["<|system|>", "<|user|>", "<|endoftext|>"];
+  }
+
+  String getWithSubsitutions(String prefix, ChatLogCharacter? character) {
+    String result = prefix;
+    result = result.replaceAll('{{char}}', character?.name ?? '');
+    result = result.replaceAll('{{ character:char}}',
+        character == null ? "" : ' character: ${character.name}');
+    return result;
   }
 }
 
