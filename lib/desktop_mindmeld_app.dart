@@ -157,8 +157,8 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
                                 final originalSelectedModel =
                                     selectedLog.modelName;
                                 final originalModelSettings = configModelFiles!
-                                    .modelFiles[originalSelectedModel]!
-                                    .clone();
+                                    .modelFiles[originalSelectedModel]
+                                    ?.clone();
 
                                 await showDialog(
                                     context: context,
@@ -192,10 +192,11 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
                                 setState(() {
                                   if ((selectedLog.modelName !=
                                           originalSelectedModel) ||
-                                      (configModelFiles!
-                                          .modelFiles[selectedLog.modelName]!
-                                          .doChangesRequireReload(
-                                              originalModelSettings))) {
+                                      (originalModelSettings != null &&
+                                          configModelFiles!.modelFiles[
+                                                  selectedLog.modelName]!
+                                              .doChangesRequireReload(
+                                                  originalModelSettings))) {
                                     log("New model file selected, closing previous one...");
                                     chatLogWidgetState.currentState
                                         ?.closePrognosticatorModel();

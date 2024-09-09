@@ -325,10 +325,14 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                       // delete the file because we consider it 'ours' and managed. Other
                       // file paths are not managed by the app and we should therefore
                       // just remove the lhe entry in our model configs file.
-                      if (p.isRelative(currentModelFilepath)) {
-                        await File(p.join(
-                                await ConfigModelFiles.getModelsFolderpath(),
-                                currentModelFilepath))
+                      log('Removing model filepath: $currentModelFilepath');
+                      final appModelFolder =
+                          await ConfigModelFiles.getModelsFolderpath();
+                      if (p.isWithin(appModelFolder, currentModelFilepath)) {
+                        await File(currentModelFilepath).delete();
+                        log('Model was deleted on the filesystem: $currentModelFilepath');
+                      } else if (p.isRelative(currentModelFilepath)) {
+                        await File(p.join(appModelFolder, currentModelFilepath))
                             .delete();
                         log('Model was deleted on the filesystem: $currentModelFilepath');
                       }

@@ -9,22 +9,63 @@ import 'dart:developer';
 
 import 'config_models.dart';
 
-enum AutoDLModels { opusV12Llama3_8B, tinyllama }
+enum AutoDLModels {
+  gemma2bInstruct,
+  gemma9bInstruct,
+  llama31V8bInstruct,
+  mistral7bV03Instruct,
+  mistralNemo2407,
+  phi35MiniInstruct,
+  stablelmZephyr3b,
+  tinyDolphin,
+  tinyLlama
+}
 
 extension AutoDLModelsExtension on AutoDLModels {
   String nameAsString() {
     switch (this) {
-      case AutoDLModels.opusV12Llama3_8B:
-        return 'Opus-v1.2-llama-3-8b';
+      case AutoDLModels.gemma2bInstruct:
+        return 'Gemma-2-2b-it';
+      case AutoDLModels.gemma9bInstruct:
+        return 'Gemma-2-9b-it';
+      case AutoDLModels.llama31V8bInstruct:
+        return 'Llama-3.1-8B-Instruct';
+      case AutoDLModels.mistral7bV03Instruct:
+        return 'Mistral-7B-Instruct-v0.3';
+      case AutoDLModels.mistralNemo2407:
+        return 'Mistral-Nemo-Instruct';
+      case AutoDLModels.phi35MiniInstruct:
+        return 'Phi-3.5-mini-instruct';
+      case AutoDLModels.stablelmZephyr3b:
+        return 'Stablelm-zephyr-3b';
+      case AutoDLModels.tinyDolphin:
+        return 'TinyDolphin-2.8-1.1b';
       default:
         return 'TinyLlama-1.1B-Chat-v1.0';
     }
   }
 
+  // Should return a valid URL to download models from. As a standard, this should
+  // point to the Q4_K_M.
+  // Favored providers of quants are TheBloke (RIP) and bartowski.
   String getModelURL() {
     switch (this) {
-      case AutoDLModels.opusV12Llama3_8B:
-        return 'https://huggingface.co/mradermacher/opus-v1.2-llama-3-8b-instruct-run3.5-epoch2.5-GGUF/resolve/main/opus-v1.2-llama-3-8b-instruct-run3.5-epoch2.5.IQ4_XS.gguf';
+      case AutoDLModels.gemma2bInstruct:
+        return 'https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf';
+      case AutoDLModels.gemma9bInstruct:
+        return 'https://huggingface.co/bartowski/gemma-2-9b-it-GGUF/resolve/main/gemma-2-9b-it-Q4_K_M.gguf';
+      case AutoDLModels.llama31V8bInstruct:
+        return 'https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf';
+      case AutoDLModels.mistral7bV03Instruct:
+        return 'https://huggingface.co/bartowski/Mistral-7B-Instruct-v0.3-GGUF/resolve/main/Mistral-7B-Instruct-v0.3-Q4_K_M.gguf';
+      case AutoDLModels.mistralNemo2407:
+        return 'https://huggingface.co/bartowski/Mistral-Nemo-Instruct-2407-GGUF/resolve/main/Mistral-Nemo-Instruct-2407-Q4_K_M.gguf';
+      case AutoDLModels.phi35MiniInstruct:
+        return 'https://huggingface.co/bartowski/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf';
+      case AutoDLModels.stablelmZephyr3b:
+        return 'https://huggingface.co/TheBloke/stablelm-zephyr-3b-GGUF/resolve/main/stablelm-zephyr-3b.Q4_K_M.gguf';
+      case AutoDLModels.tinyDolphin:
+        return 'https://huggingface.co/tsunemoto/TinyDolphin-2.8-1.1b-GGUF/resolve/main/tinydolphin-2.8-1.1b.Q4_K_M.gguf';
       default:
         return 'https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf';
     }
@@ -32,8 +73,22 @@ extension AutoDLModelsExtension on AutoDLModels {
 
   String getModelFilename() {
     switch (this) {
-      case AutoDLModels.opusV12Llama3_8B:
-        return 'opus-v1.2-llama-3-8b-instruct-run3.5-epoch2.5.IQ4_XS.gguf';
+      case AutoDLModels.gemma2bInstruct:
+        return 'gemma-2-2b-it-Q4_K_M.gguf';
+      case AutoDLModels.gemma9bInstruct:
+        return 'gemma-2-9b-it-Q4_K_M.gguf';
+      case AutoDLModels.llama31V8bInstruct:
+        return 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf';
+      case AutoDLModels.mistral7bV03Instruct:
+        return 'Mistral-7B-Instruct-v0.3-Q4_K_M.gguf';
+      case AutoDLModels.mistralNemo2407:
+        return 'Mistral-Nemo-Instruct-2407-Q4_K_M.gguf';
+      case AutoDLModels.phi35MiniInstruct:
+        return 'Phi-3.5-mini-instruct-Q4_K_M.gguf';
+      case AutoDLModels.stablelmZephyr3b:
+        return 'stablelm-zephyr-3b.Q4_K_M.gguf';
+      case AutoDLModels.tinyDolphin:
+        return 'tinydolphin-2.8-1.1b.Q4_K_M.gguf';
       default:
         return 'tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf';
     }
@@ -45,12 +100,33 @@ extension AutoDLModelsExtension on AutoDLModels {
         ? p.join(modelFolderpath, getModelFilename())
         : getModelFilename();
     switch (this) {
-      case AutoDLModels.opusV12Llama3_8B:
+      case AutoDLModels.gemma2bInstruct:
         return ConfigModelSettings(
-            filepath, 100, null, null, null, true, false, true, 'opusV12');
+            filepath, 100, 8192, null, null, true, false, false, 'gemma');
+      case AutoDLModels.gemma9bInstruct:
+        return ConfigModelSettings(
+            filepath, 100, 8192, null, null, true, false, false, 'gemma');
+      case AutoDLModels.llama31V8bInstruct:
+        return ConfigModelSettings(
+            filepath, 100, 8192, null, null, true, false, true, 'llama3');
+      case AutoDLModels.mistral7bV03Instruct:
+        return ConfigModelSettings(filepath, 100, 8192, null, null, true, false,
+            true, 'mistralInstruct');
+      case AutoDLModels.mistralNemo2407:
+        return ConfigModelSettings(filepath, 100, 8192, null, null, true, false,
+            true, 'mistralInstruct');
+      case AutoDLModels.phi35MiniInstruct:
+        return ConfigModelSettings(
+            filepath, 100, 8192, null, null, true, false, true, 'phi3');
+      case AutoDLModels.stablelmZephyr3b:
+        return ConfigModelSettings(
+            filepath, 100, 4096, null, null, true, false, true, 'zephyr');
+      case AutoDLModels.tinyDolphin:
+        return ConfigModelSettings(
+            filepath, 100, 4096, null, null, true, false, true, 'chatml');
       default:
         return ConfigModelSettings(
-            filepath, 100, null, null, null, true, false, true, 'tinyllama');
+            filepath, 100, 2048, null, null, true, false, true, 'tinyllama');
     }
   }
 }

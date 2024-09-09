@@ -72,8 +72,8 @@ class _ChatLogPageState extends State<ChatLogPage> {
                 // store original settings so we can compare for changes
                 final originalSelectedModel = widget.chatLog.modelName;
                 final originalModelSettings = widget
-                    .configModelFiles.modelFiles[originalSelectedModel]!
-                    .clone();
+                    .configModelFiles.modelFiles[originalSelectedModel]
+                    ?.clone();
 
                 await Navigator.push(
                     context,
@@ -95,9 +95,10 @@ class _ChatLogPageState extends State<ChatLogPage> {
                   // now we dump the currently loaded model if the model name changed
                   // or any values that would invalide that model state.
                   if ((widget.chatLog.modelName != originalSelectedModel) ||
-                      (widget.configModelFiles
-                          .modelFiles[widget.chatLog.modelName]!
-                          .doChangesRequireReload(originalModelSettings))) {
+                      (originalModelSettings != null &&
+                          widget.configModelFiles
+                              .modelFiles[widget.chatLog.modelName]!
+                              .doChangesRequireReload(originalModelSettings))) {
                     log("New model file selected, closing previous one...");
                     chatLogWidgetState.currentState?.closePrognosticatorModel();
                   }

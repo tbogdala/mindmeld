@@ -172,11 +172,7 @@ https://github.com/lmstudio-ai/configs
   Should confirm the pastes with a bottom sheet so that there's not accidental overrides.
 * Have a help icon for ChatLog Configuration to explain settings verbosely.
 * Confirm that not supplying a ConfigModelSetting context size uses -1 or auto for default.
-* BUG: ConfigModelSettings that are nullable might not be picking good defaults. 
-    ThreadCount to -1 causes crash for example so 1 is hardcoded in as a default if not supplied.
 * Show overall T/s or TG & PP T/s?
-* Some 'empty' replies have been traced to a generic system prompt for the prompt formatting rules. Should
-    eventually provide a way to supply a custom system message to help users customize things further.
 * BUG: /narrator replies cannot be continued as the narrator, currently.
 * BUG: any file can be added as a model, such as `img.png`. :(
 * Streaming text generation.

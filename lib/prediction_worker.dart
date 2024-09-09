@@ -216,7 +216,7 @@ class PredictionWorker {
       final contextParams = llamaModel.getDefaultContextParams()
         ..seed = hyperparameters.seed
         ..n_threads = modelSettings.threadCount ?? -1
-        ..flash_attn = true
+        ..flash_attn = modelSettings.flashAttention
         ..n_ctx = modelSettings.contextSize ?? 2048;
 
       log("PredictionWorker: Attempting to load model: $modelFilepath");
@@ -246,7 +246,7 @@ class PredictionWorker {
 
       params = llamaModel.getTextGenParams()
         ..seed = args.hyperparameters.seed
-        ..n_threads = args.modelSettings.threadCount ?? 1
+        ..n_threads = args.modelSettings.threadCount ?? -1
         ..n_predict = args.hyperparameters.tokens
         ..top_k = args.hyperparameters.topK
         ..top_p = args.hyperparameters.topP
@@ -255,9 +255,9 @@ class PredictionWorker {
         ..typical_p = args.hyperparameters.typicalP
         ..penalty_repeat = args.hyperparameters.repeatPenalty
         ..penalty_last_n = args.hyperparameters.repeatLastN
-        ..ignore_eos = false
-        ..flash_attn = true
-        ..prompt_cache_all = true
+        ..ignore_eos = args.modelSettings.ignoreEos
+        ..flash_attn = args.modelSettings.flashAttention
+        ..prompt_cache_all = args.modelSettings.promptCache
         ..n_batch = args.modelSettings.batchSize ?? 128;
       params.setPrompt(args.promptString);
       params.setAntiprompts(args.antipromptStrings);
