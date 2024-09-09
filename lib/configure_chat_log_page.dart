@@ -209,6 +209,9 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
   }
 
   Widget _buildModelPage(BuildContext context) {
+    final currentModelName = widget.chatLog.modelName;
+    final currentModelConfig =
+        widget.configModelFiles.modelFiles[currentModelName];
     Widget innerConntent(BuildContext context) {
       return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
         ListTile(
@@ -411,7 +414,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                 currentModelConfig.gpuLayers = int.tryParse(text) ?? 0;
               },
             )),
-        const SizedBox(height: 8),
+        //const SizedBox(height: 8),
         ListTile(
             leading: const Icon(Icons.list),
             title: TextField(
@@ -427,7 +430,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                     text.isEmpty ? null : int.tryParse(text);
               },
             )),
-        const SizedBox(height: 8),
+        //const SizedBox(height: 8),
         ListTile(
             leading: const Icon(Icons.list),
             title: TextField(
@@ -443,7 +446,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                     text.isEmpty ? null : int.tryParse(text);
               },
             )),
-        const SizedBox(height: 8),
+        //const SizedBox(height: 8),
         ListTile(
             leading: const Icon(Icons.list),
             title: TextField(
@@ -459,10 +462,42 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                     text.isEmpty ? null : int.tryParse(text);
               },
             )),
-
-        // bool promptCache;
-        // bool ignoreEos;
-        // bool flashAttention;
+        //const SizedBox(height: 8),
+        CheckboxListTile(
+          title: const Text('Flash Attention'),
+          value: currentModelConfig!.flashAttention,
+          onChanged: (bool? value) {
+            if (value != null) {
+              setState(() {
+                currentModelConfig.flashAttention = value;
+              });
+            }
+          },
+        ),
+        //const SizedBox(height: 8),
+        CheckboxListTile(
+          title: const Text('Ignore EOS'),
+          value: currentModelConfig!.ignoreEos,
+          onChanged: (bool? value) {
+            if (value != null) {
+              setState(() {
+                currentModelConfig.ignoreEos = value;
+              });
+            }
+          },
+        ),
+        //const SizedBox(height: 8),
+        CheckboxListTile(
+          title: const Text('Cache Prompt'),
+          value: currentModelConfig!.promptCache,
+          onChanged: (bool? value) {
+            if (value != null) {
+              setState(() {
+                currentModelConfig.promptCache = value;
+              });
+            }
+          },
+        )
       ]);
     }
 

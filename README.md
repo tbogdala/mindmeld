@@ -138,7 +138,7 @@ are licensed under the MIT license.
     entitlement.
 
 
-Steps to get iOS going
+Steps used to get iOS going, initially:
 * `vtool -show ios/Frameworks/libllama.framework/libllama ios/Frameworks/libllama.framework/libllama` shows minos version needed
 * right click 'ios' in vs code, open in Xcode
 * Select Runner in project navigator view on the left
@@ -149,20 +149,6 @@ Steps to get iOS going
 * Upped minimum deployments to iOS 16 with a target of iOS 17.
 * Added reference to Accelerate and Metal frameworks.
 * Can verify what's exported with `nm -gU ios/Frameworks/libllama.framework/libllama`.
-
-
-#### Models to explore for mobile devices:
-
-https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF   (tinychat)
-https://huggingface.co/stabilityai/stablelm-zephyr-3b           (zephyr)
-https://huggingface.co/NousResearch/Nous-Capybara-3B-V1.9       (chatml)
-https://huggingface.co/tsunemoto/TinyDolphin-2.8-1.1b-GGUF      (chatml probably)
-https://huggingface.co/rhysjones/phi-2-orange-v2                (chatml)
-https://huggingface.co/cognitivecomputations/dolphin-2_6-phi-2  (chatml)
-https://huggingface.co/BeaverAI/Cream-Phi-3-4B-v1.1-GGUF        (phi3?)
-
-Configurations can be consulted from the LM Studio repo:
-https://github.com/lmstudio-ai/configs
 
 
 #### TODO
@@ -183,9 +169,7 @@ https://github.com/lmstudio-ai/configs
 
 ### Road to Github release:
 
-1) More models to auto-download with option to supply a URL to a GGUF
-2) When creating a first log, fill in some default settings and use Vox for a default character.
-3) Setup 'safe' defaults for models when using the auto-download option.
-4) Ensure first-run experience is satisfactory for a first dev version release.
-5) Debug window that shows the prompt and the response data from the llm with a 'copy to clipboard' button.
+1) When creating a first log, fill in some default settings and use Vox for a default character.
+2) Ensure first-run experience is satisfactory for a first dev version release.
+3) Debug window that shows the prompt and the response data from the llm with a 'copy to clipboard' button.
 
