@@ -165,6 +165,7 @@ Steps used to get iOS going, initially:
 * Hitting esc on edit should cancel edit; or have a cancel button
 * Setup quantization for KV cache
 * Configurable switch to select between prompt caching for regeneration and prompt caching for continuation
+* BUG: long-pressing send button while editing does weird behavior.
 
 
 ### Road to Github release:
