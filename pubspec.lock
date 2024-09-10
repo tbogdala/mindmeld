@@ -50,10 +50,10 @@ packages:
     dependency: "direct main"
     description:
       name: background_downloader
-      sha256: "5323dfc5519d7a646f7e61adee31f44f2ede54861d5318dfd451a8e38a285538"
+      sha256: "6a945db1a1c7727a4bc9c1d7c882cfb1a819f873b77e01d5e5dd6a3fb231cb28"
       url: "https://pub.dev"
     source: hosted
-    version: "8.5.3"
+    version: "8.5.5"
   boolean_selector:
     dependency: transitive
     description:
@@ -202,10 +202,10 @@ packages:
     dependency: transitive
     description:
       name: dart_style
-      sha256: "99e066ce75c89d6b29903d788a7bb9369cf754f7b24bf70bf4b6d6d6b26853b9"
+      sha256: "7856d364b589d1f08986e140938578ed36ed948581fbc3bc9aef1805039ac5ab"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.6"
+    version: "2.3.7"
   fake_async:
     dependency: transitive
     description:

@@ -44,7 +44,7 @@ dependencies:
   json_serializable: ^6.8.0
   json_annotation: ^4.9.0
   build_runner: ^2.4.12
-  background_downloader: ^8.5.3
+  background_downloader: ^8.5.5
   window_manager: ^0.4.2
   profile_photo: ^1.0.3
 
