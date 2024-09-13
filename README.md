@@ -5,6 +5,7 @@ A simple-to-use, open source GUI for local AI chat.
 Supported platforms: iOS, Android, MacOS, Linux
 In-Development platforms: Windows
 
+![Example of Mindmeld in action - chatting with the default character, Vox](docs/images/demo_240913A.png)
 
 ## Features
 
@@ -167,11 +168,3 @@ Steps used to get iOS going, initially:
 * Setup quantization for KV cache
 * Configurable switch to select between prompt caching for regeneration and prompt caching for continuation
 * BUG: long-pressing send button while editing does weird behavior.
-
-
-### Road to Github release:
-
-1) When creating a first log, fill in some default settings and use Vox for a default character.
-2) Ensure first-run experience is satisfactory for a first dev version release.
-3) Debug window that shows the prompt and the response data from the llm with a 'copy to clipboard' button.
-
