@@ -3,6 +3,7 @@
 A simple-to-use, open source GUI for local AI chat.
 
 Supported platforms: iOS, Android, MacOS, Linux
+
 In-Development platforms: Windows
 
 ![Example of Mindmeld in action - chatting with the default character, Vox](docs/images/demo_240913A.png)
