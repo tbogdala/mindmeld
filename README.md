@@ -1,4 +1,4 @@
-# MindMeld
+# MindMeld (Alpha Release)
 
 A simple-to-use, open source GUI for local AI chat.
 
@@ -161,6 +161,7 @@ Steps used to get iOS going, initially:
 * Show overall T/s or TG & PP T/s?
 * BUG: /narrator replies cannot be continued as the narrator, currently.
 * BUG: any file can be added as a model, such as `img.png`. :(
+* Use the LLMs to create characters for the chat log.
 * Streaming text generation.
 * Hitting esc on edit should cancel edit; or have a cancel button
 * Setup quantization for KV cache

@@ -278,12 +278,21 @@ class _MobileMindmeldAppState extends State<MobileMindmeldApp> {
   }
 
   void updateConfigModelFiles(ConfigModelFiles newConfigModelFiles) async {
-    // update our internal variable first
-    configModelFiles = newConfigModelFiles;
+    final firstModelName = newConfigModelFiles.modelFiles.keys.first;
+    final firstModel = newConfigModelFiles.modelFiles[firstModelName];
 
-    // now write the new data out to our configuration file
-    await configModelFiles!.saveJsonToConfigFile();
+    // we should have a model configured now, so lets create a default chatlog
+    final newChatlog = ChatLog.buildDefaultChatLog(firstModelName,
+        modelPromptStyleFromString(firstModel?.promptFormat ?? "chatml"));
 
-    log('Saved ConfigModelFiles out to JSON config file.');
+    setState(() {
+      chatLogs.add(newChatlog);
+      newChatlog.saveToFile();
+
+      newConfigModelFiles.saveJsonToConfigFile().then((_) {
+        configModelFiles = newConfigModelFiles;
+        log('Saved ConfigModelFiles out to JSON config file.');
+      });
+    });
   }
 }

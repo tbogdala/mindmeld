@@ -62,8 +62,18 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
       ));
     }
     if (configModelFiles == null) {
-      newConfigCallback(newConfigModelFiles) {
+      newConfigCallback(ConfigModelFiles newConfigModelFiles) {
+        final firstModelName = newConfigModelFiles.modelFiles.keys.first;
+        final firstModel = newConfigModelFiles.modelFiles[firstModelName];
+
+        // we should have a model configured now, so lets create a default chatlog
+        final newChatlog = ChatLog.buildDefaultChatLog(firstModelName,
+            modelPromptStyleFromString(firstModel?.promptFormat ?? "chatml"));
+
         setState(() {
+          chatLogs.add(newChatlog);
+          newChatlog.saveToFile();
+
           newConfigModelFiles.saveJsonToConfigFile().then((_) {
             configModelFiles = newConfigModelFiles;
           });

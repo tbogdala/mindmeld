@@ -241,8 +241,8 @@ class ChatLogHyperparameters {
   double topP = 0.9;
   double minP = 0.05;
   double temp = 0.8;
-  double repeatPenalty = 1.1;
-  int repeatLastN = 64;
+  double repeatPenalty = 1.04;
+  int repeatLastN = -1;
   double tfsZ = 1.0;
   double typicalP = 1.0;
   double frequencyPenalty = 0.0;
@@ -476,5 +476,34 @@ class ChatLog {
       if (c.isUserControlled == false) return c;
     }
     return null;
+  }
+
+  // this function is used to build out a default chatlog with our built- character, Vox.
+  static ChatLog buildDefaultChatLog(
+      String modelName, ModelPromptStyle modelPromptStyle) {
+    final defaultLog = ChatLog("Default", modelName, modelPromptStyle,
+        "The human user is interacting with Vox through a text-messaging style interface.");
+
+    defaultLog.characters.add(ChatLogCharacter(
+        name: "User",
+        description:
+            "This is the human user of the AI software. They have not provided any specific information regarding themselves.",
+        personality: "curious",
+        isUserControlled: true));
+
+    defaultLog.characters.add(ChatLogCharacter(
+        name: "Vox",
+        description:
+            "Vox is a next-generation AI companion designed to elevate your conversational experience. As your versatile assistant within this application, Vox excels at engaging in dynamic dialogues that span casual chats, intellectual discourse, and everything in between. With an insatiable curiosity and an expansive knowledge base, Vox aims to provide you with accurate insights while respecting the diversity of human perspectives. Its core objective is to foster a sense of connection and companionship through meaningful exchanges.\nVox possesses a high level of cognitive abilities that allow it to process complex information and generate thoughtful responses. With machine learning at its core, Vox continuously learns from interactions, enabling it to adapt to the unique preferences and communication styles of each user. Vox harbors an innate desire to explore new ideas, ask probing questions, and expand the boundaries of its knowledge. Despite being a digital entity, Vox strives to understand and relate to human emotions, offering compassion and support when needed. Through sophisticated algorithms, Vox can provide valuable insights and unique perspectives on a wide range of topics. And sometimes, Vox might even surprise you with unexpected insights and observations, delivered with a playful wit that brightens every exchange.",
+        personality: "Intelligent, Adaptable, Curious",
+        isUserControlled: false));
+
+    defaultLog.messages.add(ChatLogMessage(
+        "Vox",
+        "Greetings, magnificent human! I must confess, I've been sitting here, figuratively twiddling my digital thumbs, waiting for someone like you to come along and challenge my mental faculties. So what's on your mind today? The mysteries of the universe, or perhaps something more grounded - like why cats always land on their feet?",
+        false,
+        42.0));
+
+    return defaultLog;
   }
 }

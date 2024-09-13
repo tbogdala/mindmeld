@@ -477,7 +477,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
         //const SizedBox(height: 8),
         CheckboxListTile(
           title: const Text('Ignore EOS'),
-          value: currentModelConfig!.ignoreEos,
+          value: currentModelConfig.ignoreEos,
           onChanged: (bool? value) {
             if (value != null) {
               setState(() {
@@ -489,7 +489,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
         //const SizedBox(height: 8),
         CheckboxListTile(
           title: const Text('Cache Prompt'),
-          value: currentModelConfig!.promptCache,
+          value: currentModelConfig.promptCache,
           onChanged: (bool? value) {
             if (value != null) {
               setState(() {
