@@ -70,13 +70,24 @@ The above screenshot shows the default character setup for the default chatlog w
 At this point, feel free to adjust the 'Your Name' and 'Your Description' fields to match
 yourself and make any edits to Vox you feel are necessary.
 
-Pressing the `Parameters` tab at the top of the configuration page will show all
-of the hyperparameters that can be changed to control how tokens are sampled from the LLM
-(i.e. how the words are chosen one at a time).
+Custom profile pictures can be set for the user and characters by tapping the default picture on 
+mobile or clicking once with your left mouse button on desktop. This will bring up a
+file browser to choose an image. Once chosen, this picture will be copied to the `chatlogs/pfps` 
+folder in the application's folder and it will appear next to all message sent by that
+character.
+
+To remove the custom profile picture and restore the default image long-press the picture on
+the mobile app or long-press with the left mouse button on the desktop app. This will also
+delete the copy of the profile picture in the `chatlogs/pfps` folder.
+
 
 ### Parameter Settings
 
 ![Screenshot of the parameters configuration page for Mindmeld](images/ug_cfg_params_01.jpg)
+
+Pressing the `Parameters` tab at the top of the configuration page will show all
+of the hyperparameters that can be changed to control how tokens are sampled from the LLM
+(i.e. how the words are chosen one at a time).
 
 The default settings should be reasonable as a generic starting point.
 

@@ -6,3 +6,4 @@ Welcome to the main documentation page for the **Mindmeld** project.
 
 * [Building the Project](build.md)
 * [First Run Quick Start](first_run.md)
+* [Developer Notes](notes.md)
