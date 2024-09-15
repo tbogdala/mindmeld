@@ -1,12 +1,9 @@
-# Mindmeld User Guide
+# Mindmeld Quick Start Guide
 
 Welcome to **Mindmeld**, an easy-to-use application to chat with AI characters
 using large language models (LLMs) that are run **locally** and do not require
 internet access for cloud services. No telemetry is involved and all of your
 conversations stay completely on your computer.
-
-{:toc}
-
 
 ## First Time Running
 
