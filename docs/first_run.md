@@ -57,8 +57,6 @@ using the developer's default test character, Vox. Vox is setup to be an enthusi
 'assistant' type of AI and should be customizable easily enough to take on any details
 you add to them.
 
-### Character Settings
-
 ![Screenshot of the default chat log with Vox](images/ug_post_model_import_01.jpg)
 
 If you've imported your LLM file manually, make sure to hit the gear in the top right
@@ -67,7 +65,7 @@ At present, Mindmeld *does not* automatically set the number of layers to offloa
 to the GPU automatically and if you do not have enough VRAM to hold them, the app
 *will crash*.
 
-### Parameter Settings
+### Character Settings
 
 ![Screenshot of the character configuration page for Mindmeld](images/ug_cfg_chars_01.jpg)
 
@@ -79,8 +77,7 @@ Pressing the `Parameters` tab at the top of the configuration page will show all
 of the hyperparameters that can be changed to control how tokens are sampled from the LLM
 (i.e. how the words are chosen one at a time).
 
-
-### Model Settings
+### Parameter Settings
 
 ![Screenshot of the parameters configuration page for Mindmeld](images/ug_cfg_params_01.jpg)
 
@@ -88,6 +85,8 @@ The default settings should be reasonable as a generic starting point.
 
 Finally, pressing the `Model` tab at the top of the configuration page will show the
 settings for the model you imported or downloaded automatically when first running the application.
+
+### Model Settings
 
 ![Screenshot of the model settings page for Mindmeld](images/ug_cfg_model_01.jpg)
 
@@ -219,7 +218,7 @@ This operation can be handy for when you want to add a reply to the log, but the
 a Narrator slash-command before the AI character responds.
 
 With that action described in a message, we can choose to send another reply to Vox if we want that is all
-dialog, like normal. For the sake of this tutorial we'll just have Vox do the next reply instead of us. 
+dialog, like normal. For the sake of this tutorial we'll just force Vox write another message. 
 This can be done by long-pressing the `send` button at the bottom-right of the application when the 
 text field for the message is blank and still shows the "Write message..." hint text.
 
