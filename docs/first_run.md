@@ -15,7 +15,7 @@ language model (hereafter referred to as a LLM). This file is the 'brain' of the
 AI and you can find many available to choose from on sites like
 [huggingface](https://huggingface.co/models?pipeline_tag=text-generation).
 
-![Screenshot of the first time running mindmeld, showing new LLM setup](docs/images/ug_first_run_01.jpg)
+![Screenshot of the first time running mindmeld, showing new LLM setup](images/ug_first_run_01.jpg)
 
 ### Importing Existing Models
 
@@ -59,7 +59,7 @@ you add to them.
 
 ### Character Settings
 
-![Screenshot of the default chat log with Vox](docs/images/ug_post_model_import_01.jpg)
+![Screenshot of the default chat log with Vox](images/ug_post_model_import_01.jpg)
 
 If you've imported your LLM file manually, make sure to hit the gear in the top right
 of the application to configure the chatlog settings, including the model settings.
@@ -69,7 +69,7 @@ to the GPU automatically and if you do not have enough VRAM to hold them, the ap
 
 ### Parameter Settings
 
-![Screenshot of the character configuration page for Mindmeld](docs/images/ug_cfg_chars_01.jpg)
+![Screenshot of the character configuration page for Mindmeld](images/ug_cfg_chars_01.jpg)
 
 The above screenshot shows the default character setup for the default chatlog with Vox.
 At this point, feel free to adjust the 'Your Name' and 'Your Description' fields to match
@@ -82,14 +82,14 @@ of the hyperparameters that can be changed to control how tokens are sampled fro
 
 ### Model Settings
 
-![Screenshot of the parameters configuration page for Mindmeld](docs/images/ug_cfg_params_01.jpg)
+![Screenshot of the parameters configuration page for Mindmeld](images/ug_cfg_params_01.jpg)
 
 The default settings should be reasonable as a generic starting point.
 
 Finally, pressing the `Model` tab at the top of the configuration page will show the
 settings for the model you imported or downloaded automatically when first running the application.
 
-![Screenshot of the model settings page for Mindmeld](docs/images/ug_cfg_model_01.jpg)
+![Screenshot of the model settings page for Mindmeld](images/ug_cfg_model_01.jpg)
 
 The `Model` dropdown will show any imported or downloaded models known to the application and
 the `Import` button can be pressed to add more. The `Remove` button will remove the selected
@@ -131,7 +131,7 @@ have to navigate backwards by pressing the back arrow at the top-left of the scr
 With the chatlog configured to use your imported or automatically downloaded LLM model, you should
 now be back to the main chatlog interface.
 
-![Screenshot of the default chat log with Vox](docs/images/ug_post_model_import_01.jpg)
+![Screenshot of the default chat log with Vox](images/ug_post_model_import_01.jpg)
 
 At the bottom of the window there's a text field with the `Write message...` hint text that you can
 click or tap on and start typing a message. What you want to tell Vox is up to you. For this
@@ -139,7 +139,7 @@ quick start guide, we'll just choose to introduce ourselves.
 
 ### Basic Chatting Workflow
 
-![Screenshot of the first message being typed to Vox](docs/images/ug_first_msg_01.jpg)
+![Screenshot of the first message being typed to Vox](images/ug_first_msg_01.jpg)
 
 As you can see, the message was typed in a single paragraph and the text field expands to accommodate
 the length of the text. On mobile, hitting 'Enter' key on the keyboard will insert a new line. For
@@ -149,7 +149,7 @@ To send the message to Vox, desktop users can hit `Enter` on the keyboard and mo
 tap the `send` button in the lower-right of the application next to the message being typed. A progress
 indicator will bounce back and forth on the bottom of the screen as the AI's reply is being created.
 
-![Screenshot of the first message received from Vox to the previous message](docs/images/ug_first_reply_01.jpg)
+![Screenshot of the first message received from Vox to the previous message](images/ug_first_reply_01.jpg)
 
 We got our first reply from Vox! With the default parameters for the chatlog, only 128 'tokens' 
 (which are pieces of words, not necessarily each a word) are generated as a response. You can see that
@@ -157,7 +157,7 @@ Vox did not end their final sentence, suggesting that they were not finished wit
 response can be continued by long-pressing on the message on the mobile app or holding down the left mouse
 button in a long click on the message on the desktop app.
 
-![Screenshot of the context menu that pops up on long-press of a message in Mindmeld](docs/images/ug_msg_longpress.jpg)
+![Screenshot of the context menu that pops up on long-press of a message in Mindmeld](images/ug_msg_longpress.jpg)
 
 The options provided are fairly self explanatory: `Delete Message` removes the message from the chat log
 permanently, `Edit Message` puts the whole message into the text field on the bottom of the app for the
@@ -167,7 +167,7 @@ regenerate the reply and is only visible when long-pressing the last message in 
 For right now, choose `Continue Message` - also only visible when long-pressing on the last message of the log - to
 have Vox continue their previous thought.
 
-![Screenshot of the continuation of the first message received from Vox](docs/images/ug_second_reply_01.jpg)
+![Screenshot of the continuation of the first message received from Vox](images/ug_second_reply_01.jpg)
 
 You can see that another 128 tokens wasn't enough for Vox to stop talking. At this point, it might be wise
 to edit the message by long-pressing on Vox's reply, selecting `Edit Message`, removing the trailing " My" at
@@ -185,7 +185,7 @@ that are configured in the chat log. Invoking the narrator is done by starting a
 slash command. The text following the slash command should be typed in such a way that it feels natural
 when completing the following sentence: "The user has requested that you ". Let's try an example. 
 
-![Screenshot of a sample slash command to invoke the Narrator in Mindmeld.](docs/images/ug_narrator_cmd_01.jpg)
+![Screenshot of a sample slash command to invoke the Narrator in Mindmeld.](images/ug_narrator_cmd_01.jpg)
 
 You may find that 128 token responses are a little short for the creative work the 'Narrator' wants to do. Pressing
 the `gear` icon in the top-right of the app to open the chat log configuration page, press the `parameters` tab
@@ -196,7 +196,7 @@ on the mobile app.
 Try typing the following command into the text field at the bottom of the app, "/narrator describe the scene between Vox and the User in a virtual reality environment in which this whole conversation is taking place.", and then the
 reply by pressing the `send` button in the lower-right of the app or pressing `Enter` on the desktop app.
 
-![Screenshot of a sample reply from the Narrator in Mindmeld.](docs/images/ug_narrator_reply_01.jpg)
+![Screenshot of a sample reply from the Narrator in Mindmeld.](images/ug_narrator_reply_01.jpg)
 
 Notice that no profile picture is used for that text message, which is the indicator that the Narrator
 is the one that generated it. Feel free to long-press the Narrator's response to `Regenerate Message` until you
@@ -213,7 +213,7 @@ in, we can put a message in the log that is just our actions and **not** have Vo
 so, type in a message using a role-playing convention of putting actions between asterisks and then long-press
 the `send` button to add it to the log without generating a reply.
 
-![Screenshot of a user message in which Vox doesn't automatically reply.](docs/images/ug_longpress_user_01.jpg)
+![Screenshot of a user message in which Vox doesn't automatically reply.](images/ug_longpress_user_01.jpg)
 
 This operation can be handy for when you want to add a reply to the log, but then want to follow it up with
 a Narrator slash-command before the AI character responds.
@@ -223,7 +223,7 @@ dialog, like normal. For the sake of this tutorial we'll just have Vox do the ne
 This can be done by long-pressing the `send` button at the bottom-right of the application when the 
 text field for the message is blank and still shows the "Write message..." hint text.
 
-![Screenshot of a forced-reply message from Vox using a long-press action on the send button.](docs/images/ug_longpress_reply_01.jpg)
+![Screenshot of a forced-reply message from Vox using a long-press action on the send button.](images/ug_longpress_reply_01.jpg)
 
 
 ## Lorebook Usage

@@ -25,7 +25,7 @@ In-Development platforms: Windows
 
 ## Instructions
 
-See the documentation for the [user guide](docs/user_guide.md).
+See the documentation for the [quick start guide](docs/first_run.md).
 
 
 ## Building From Source
