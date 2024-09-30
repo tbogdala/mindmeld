@@ -91,8 +91,8 @@ can be built manually using the CLI: `flutter build windows --release`
 
 The Android system shouldn't need any extra steps once the whole ecosystem for Android support
 in flutter is setup. `android/app/build.gradle` has some minimums. It's expecting the compiler
-to be SDK 35, and the NDK used is "27.0.12077973". The Android SDK CMake version was pinned
-to "3.22.1" as well. You'll want to make sure you have those downloaded in the Android SDK Manager.
+to be SDK 35, and the NDK used is "27.0.12297006". The Android SDK CMake version was pinned
+to "3.30.3" as well. You'll want to make sure you have those downloaded in the Android SDK Manager.
 
 When compiling the project it will compile the upstream [woolycore](https://github.com/tbogdala/woolycore)
 and [llama.cpp](https://github.com/ggerganov/llama.cpp) code for Android use.
@@ -100,4 +100,9 @@ and [llama.cpp](https://github.com/ggerganov/llama.cpp) code for Android use.
 To do a full clean Android build, besides running `flutter clean` you need to `rm -rf android/app/.cxx`.
 
 Note: The Android build of upstream [woolycore](https://github.com/tbogdala/woolycore) is not
-hardware accelerated and running anything bigger than say TinyLlama-1.1B at Q4_K_M will be super slow.
+hardware accelerated. This project is configured out of the box to support the specialized ARM
+quantizations for GGUF files. The `Q4_0_4_8` type should be supported in general, with SVE enabled
+and LLAMAFILE disabled, as they are in my build scripts. I set the [-march flag](https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html)
+to enable the i8mm extensions. However, there are **TWO** caveats to doing all of this:
+    1) `Q4_0_4_4` no longer seem to run and will crash the app; nothing I did got `Q4_0_8_8` working
+    2) Setting threads less than 4 seems to crash the app, though leaving the field blank still autodetects fine ...
