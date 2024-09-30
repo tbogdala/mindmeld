@@ -69,6 +69,24 @@ dependencies before running the program. This can be done by running `./make_lin
 The program can be run with the desktop launcher by running `flutter run --release`.
 
 
+### Windows Build Instructions
+
+There's a build script that can be run, if you have the capability on your system to execute
+shell scripts, called `./make_windows_deps.sh`. If you don't want to run the script, look into
+it to find the appropriate steps. Basically it changes into a dependency folder and runs
+cmake with CUDA support flags that will work on windows for the [woolydart](https://github.com/tbogdala/woolydart)
+library. After that the script just manually copies the compiled DLL files to the main
+build folder for convenience.
+
+Unlike the MacOS and Linux 'build deps' script, the Windows version doesn't automatically
+delete the build folder before attempting to recompile. CUDA builds take a lot longer. If
+a completely fresh dependency build is needed, make sure to delete 
+`./packages/woolydart/src/build-windows` by hand.
+
+Once the `./make_windows_deps.sh` script was run, or manually executed, the runner
+can be built manually using the CLI: `flutter build windows --release`
+
+
 ### Android Build Instructions
 
 The Android system shouldn't need any extra steps once the whole ecosystem for Android support

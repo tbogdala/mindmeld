@@ -165,6 +165,8 @@ class PredictionWorker {
         } else {
           lib = "libwoolycore.so";
         }
+      } else if (Platform.isWindows) {
+        lib = "woolycore.dll";
       }
       log("PredictionWorker: Library loaded through DynamicLibrary.");
       llamaModel = LlamaModel(lib);

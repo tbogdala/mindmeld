@@ -3,7 +3,7 @@
 # Store the project root for convenience
 SCRIPT_DIR=$PWD
 
-# Build the woolydart package for MacOS
+# Build the woolydart package for Linux
 cd packages/woolydart/src
 rm -rf build-linux
 cmake -B build-linux -DGGML_CUDA=On woolycore
