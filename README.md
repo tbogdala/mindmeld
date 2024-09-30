@@ -31,6 +31,18 @@ See the documentation for the [quick start guide](docs/first_run.md).
 See the documentation for the [build instructions](docs/build.md) for all supported platforms.
 
 
+## Downloading Official Builds
+
+Currently shipping the first [official release binaries](https://github.com/tbogdala/mindmeld/releases) 
+off to the right hand side of the main page or via that Link.
+
+The author is new at shipping apps with more complicated, non-static library dependencies,
+the first attempt at deploying an AppImage for Linux builds and this is the first major deployment 
+of a Flutter app for them, so if you try a releasebinary and it doesn't work, 
+**please create an [issue](https://github.com/tbogdala/mindmeld/issues) 
+or start a [discussion](https://github.com/tbogdala/mindmeld/discussions)!**
+
+
 ## License
 
 This project is licensed under the GPL v3 terms, as specified in the `LICENSE` file.
