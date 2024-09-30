@@ -86,6 +86,10 @@ a completely fresh dependency build is needed, make sure to delete
 Once the `./make_windows_deps.sh` script was run, or manually executed, the runner
 can be built manually using the CLI: `flutter build windows --release`
 
+For the posted release build on windows, I specifically went into 
+`packages/woolydart/src/woolycore/llama.cpp/ggml/src/CMakeLists.txt` and delete the section
+for `GGML_AVX512` under MSVC because disabling it via CLI at configure time wasn't cutting
+it.
 
 ### Android Build Instructions
 
