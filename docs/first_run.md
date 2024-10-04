@@ -5,6 +5,22 @@ using large language models (LLMs) that are run **locally** and do not require
 internet access for cloud services. No telemetry is involved and all of your
 conversations stay completely on your computer.
 
+Topics covered in this guide:
+1) [First Time Running](#first-time-running)
+2) [Importing Existing Models](#importing-existing-models)
+3) [Automatically Downloading Models](#automatically-downloading-models)
+4) [Your First Chatlog: Vox](#your-first-chatlog-vox)
+5) [Character Settings](#character-settings)
+6) [Parameter Settings](#parameter-settings)
+7) [Model Settings](#model-settings)
+8) [Chatting With Vox](#chatting-with-vox)
+9) [Basic Chatting Workflow](#basic-chatting-workflow)
+10) [Using the Built-In Narrator](#using-the-built-in-narrator)
+11) [Extra Send Button Actions](#extra-send-button-actions)
+12) [Lorebook Usage](#lorebook-usage)
+13) [Chatlog Management](#chatlog-management)
+
+
 ## First Time Running
 
 When Mindmeld is started for the first time, you will need to set up a large
