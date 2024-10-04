@@ -38,7 +38,7 @@ off to the right hand side of the main page or via that Link.
 
 The author is new at shipping apps with more complicated, non-static library dependencies,
 the first attempt at deploying an AppImage for Linux builds and this is the first major deployment 
-of a Flutter app for them, so if you try a releasebinary and it doesn't work, 
+of a Flutter app for them, so if you try a release binary and it doesn't work, 
 **please create an [issue](https://github.com/tbogdala/mindmeld/issues) 
 or start a [discussion](https://github.com/tbogdala/mindmeld/discussions)!**
 

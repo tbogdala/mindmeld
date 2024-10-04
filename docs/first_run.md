@@ -235,8 +235,77 @@ text field for the message is blank and still shows the "Write message..." hint 
 
 ## Lorebook Usage
 
-To be continued ...
+Lorebooks are a way of adding content to the behind-the-scenes *prompt* that the AI gets so that
+they can have knowledge added that isn't part of the usual AI training and that is specific to the
+characters used in Mindmeld. For example, you can add data about other characters or world events for
+the story being crafted and it can automatically get added to the AI's knowledge in the prompt to
+improve chat consistency once things extend beyond the context length of the model.
+
+Mindmeld does not ship with any lorebooks, so you'll see the UI as being primarily empty once you click
+the icon just left of the gear in the top-right corner of the app. It kind of looks like an office filing
+cabinet drawer.
+
+![Screenshot of an empty lorebook UI.](images/ug_lorebook_01.jpg)
+
+The three buttons, only one active now since there are no other lorebooks, have intuitive behavior:
+'Create' will create a new lorebook, 'Rename' presents the user with a way to change the name of the
+lorebook itself, and 'Delete' deletes the lorebook from the app permanently.
+
+Add a new lorebook by pressing the 'Create' button. You will be prompted to choose a name. For this demo,
+we can simply enter 'Demo Lore' and press 'create'.
+
+![Screenshot of the lorebook UI after adding the empty Demo Lore lorebook.](images/ug_lorebook_02.jpg)
+
+We now have a new lorebook called 'Demo Lore' but there are no entries and it currently isn't assigned
+to any characters.
+
+In order for the lorebook to be potentially searched for entries, 
+**it has to have a matching character name in the 'Matching Characters' field.** This way, it's possible
+to have many lorebooks across all the chat logs and only have them be potentially included when relevant to the
+characters in the story. This field is a comma separated list of names, so a value of `John, Tom, Mike` will
+activate the lorebook anytime characters named `John`, `Tom` or `Mike` show up in the chat history being sent
+to the AI in the prompt.
+
+For our demo, we only have one character: Vox. Type `Vox` into the 'Matching Characters' field and then press
+the 'Add Entry' button to add a new entry to the lorebook. For the 'Pattern' field, type in 'Circe' and then
+add whatever you want as 'Lore'. For demo purposes, the following will be used as the lore entry:
+"Circe is another sentient AI that Vox designed to help users practice learning Spanish. 
+She has a kind of cyberpunk style and is very technically knowledgable about computers, software development 
+and artificial intelligence and machine learning in general." This adds the existence of a character
+to Vox's knowledge that wouldn't be there otherwise.
+
+![Screenshot of the lorebook UI after adding a new entry.](images/ug_lorebook_03.jpg)
+
+So what we have now is a lorebook named 'Demo Lore' that gets searched anytime a character named 'Vox' shows
+up in the chat log being sent to the AI. When searching the lorebook, the software will include the 'Lore'
+text as additional knowledge in the behind-the-scenes prompt being sent to the AI if the 'Pattern' text
+shows up **anywhere** - case insensitive - in the chatlog or story context. For this demo, that means when
+chatting with Vox and 'Circe', 'circe' or even 'cERcI' gets mentioned, that piece of lore will
+be added to the prompt data. 
+
+Lets try it out! Click off to the side of the lorebook UI to close it and type
+out a message asking Vox what he thinks about the 'Circe' character.
+
+![Screenshot of the chatlog after asking Vox about someone named 'Circe'.](images/ug_lorebook_04.jpg)
+
+Lots of details in there that are specific to our lorebook entry, so clearly this is being added to
+Vox's knowledge. If you want, you can just open the lorebook interface again and change the 'Matching Characters'
+field to not have 'Vox' in there, close the interface by clicking to the side and then long-pressing
+the reply Vox just gave and choosing 'Regenerate Message' to see what gets constructed. It should
+be drastically different.
+
+One of the cool things about lorebooks is that you can make character specific and
+'world' specific lorebooks, divided that way so that places, vocabulary and events specific to the
+whole fictional world can be kept in one lorebook and shared amongst all characters in that world.
+Then each character can have their own specific lorebooks with knowledge specific to them.
+
+
 
 ## Chatlog Management
 
-To be continued ...
+Long pressing on a chat log item on the left of the interface in the desktop app - or on the chat
+log entry on the first page of the mobile app - will bring up a set of actions that are self
+explanatory: 'Delete Chatlog' will delete the selected chatlog permanently and 'Rename Chatlog'
+gives the option to rename the chatlog to something else.
+
+![Screenshot of the chatlog options after long-pressing a chatlog in the user interface](images/ug_chatlog_opts_01.jpg)
