@@ -216,7 +216,6 @@ class PredictionWorker {
         ..n_gpu_layers = modelSettings.gpuLayers
         ..use_mmap = isRunningOnDesktop() ? true : false;
       final contextParams = llamaModel.getDefaultContextParams()
-        ..seed = hyperparameters.seed
         ..n_threads = modelSettings.threadCount ?? -1
         ..flash_attn = modelSettings.flashAttention
         ..n_ctx = modelSettings.contextSize ?? 2048;
