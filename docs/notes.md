@@ -33,7 +33,7 @@
 
 
 Steps used to get iOS going, initially:
-* `vtool -show ios/Frameworks/libllama.framework/libllama ios/Frameworks/libllama.framework/libllama` shows minos version needed
+* `vtool -show ios/Frameworks/libllama.framework/libllama` shows minos version needed
 * right click 'ios' in vs code, open in Xcode
 * Select Runner in project navigator view on the left
 * In 'build settings' change minimum deployments to 14.0 (There might have been one more place I changed that.)
