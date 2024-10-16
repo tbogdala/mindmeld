@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:profile_photo/profile_photo.dart';
 import 'dart:developer';
 import 'package:format/format.dart';
+import 'package:woolydart/woolydart.dart';
 
 import 'chat_log.dart';
 import 'config_models.dart';
@@ -153,6 +154,17 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   // set this to non-null when a messages is getting edited
   ChatLogMessage? messageBeingEdited;
 
+  // if this is set to a string, this is the current prediction in process
+  // as it comes in piece by piece. it should be nulled out when finished...
+  String? inFlightMessage;
+
+  // this is the current speed of prediction in tokens per second
+  double inFlightTokensPerSec = 0.0;
+
+  // should be set to true if the current inFlightMessage is being
+  // generated as a continuation of a previous message.
+  bool isContinuingMessage = false;
+
   PredictionWorker? prognosticator;
 
   @override
@@ -229,6 +241,14 @@ class ChatLogWidgetState extends State<ChatLogWidget>
             ));
   }
 
+  // call this when message generation ends to reset internal data structures
+  void _resetMessageGenerationState() {
+    messageGenerationInProgress = false;
+    isContinuingMessage = false;
+    inFlightMessage = null;
+    inFlightTokensPerSec = 0.0;
+  }
+
   Future<void> _generateAIMessage(bool continueMsg) async {
     // get the model filepath for the selected model. right now this is a
     // relative path, so we have to combine it with our documents folder
@@ -255,7 +275,9 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     // turn the busy flag and animation on
     setState(() {
       messageGenerationInProgress = true;
+      isContinuingMessage = continueMsg;
       closeModelAfterGeneration = false;
+      inFlightTokensPerSec = 0.0;
       circularProgresAnimController.repeat(reverse: true);
     });
 
@@ -291,46 +313,85 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     // throw in the narrator's name as well
     stopPhrases.add('Narrator:');
 
-    PredictReplyRequest request = PredictReplyRequest(modelFilepath,
-        currentModelConfig, prompt, stopPhrases, targetChatlog.hyperparmeters);
-    var predictedOutput = await prognosticator!.predictText(request);
+    final stopwatch = Stopwatch();
 
-    log("Returned prediction length in characters: ${predictedOutput.message.length}");
-    for (final anti in stopPhrases) {
-      if (predictedOutput.message.endsWith(anti)) {
-        predictedOutput.message = predictedOutput.message
-            .substring(0, predictedOutput.message.length - anti.length)
-            .trim();
-        break;
-      }
-    }
+    // start the prediction stream, which will ingest the prompt. the response will
+    // tell us how many tokens were processed which we use for speed metrics.
+    stopwatch.start();
+    StartPredictionStreamRequest request = StartPredictionStreamRequest(modelFilepath,
+         currentModelConfig, prompt, stopPhrases, targetChatlog.hyperparmeters);
+    var streamStartResult = await prognosticator!.startPredictionStream(request);
+    stopwatch.stop();
 
-    setState(() {
-      if (!continueMsg) {
-        // check for a slash command that might alter how we add the returned
-        // data to the chatlog
-        if (targetChatlog.messages.last.message.startsWith('/narrator ')) {
-          // if we ran a narrator command, add the prediction in under the 'Narrator' character
-          targetChatlog.messages.add(ChatLogMessage(
-              'Narrator',
-              predictedOutput.message.trimLeft(),
-              false,
-              predictedOutput.generationSpeedTPS));
-        } else {
-          targetChatlog.messages.add(ChatLogMessage(
-              targetChatlog.getAICharacter()!.name,
-              predictedOutput.message.trimLeft(),
-              false,
-              predictedOutput.generationSpeedTPS));
+    // at this point we can kill our animations, record our prompt metrics and get
+    circularProgresAnimController.reset();
+    circularProgresAnimController.stop();
+    final promptTokensProcessed = streamStartResult.promptTokenCount;
+    final promptProcessingMs = stopwatch.elapsedMilliseconds;
+    final promptTokensPerSecond = promptTokensProcessed / (promptProcessingMs /  1000);
+    stopwatch.reset();
+    log("Prompt processing speed: $promptTokensProcessed in ${promptProcessingMs}ms (${promptTokensPerSecond.toStringAsFixed(2)}t/s)");
+
+    // but if we faild the start of the prediction, we actually just stop here
+    if (!streamStartResult.success) {
+      log('Failed to start the prediction stream: ${streamStartResult.errorMessage}');
+        _resetMessageGenerationState();
+      return;
+    } else {
+      // now that the stream is started, keep rolling until we hit our desired
+      // count in tokens or the model finds antiprompt or eog tokens.
+      stopwatch.start();
+      TokenList predictions = [];
+      inFlightMessage = "";
+      while (predictions.length <= targetChatlog.hyperparmeters.tokens) {
+        var stepResult = await prognosticator!.continuePredictionStream(ContinuePredictionStreamRequest());
+        if (stepResult.errorMessage != null) {
+          log('Failed to continue the prediction stream.\n${stepResult.errorMessage}');
+          break;
         }
-      } else {
-        targetChatlog.messages.last.message += predictedOutput.message;
-      }
 
-      messageGenerationInProgress = false;
-      circularProgresAnimController.reset();
-      circularProgresAnimController.stop();
-    });
+        // update our in-flight speeds
+        final elapsedMs = stopwatch.elapsedMilliseconds;
+        final tps = (predictions.length+1) / (elapsedMs / 1000);
+
+        setState(() {
+          inFlightMessage = stepResult.predictionSoFar ?? "";
+          inFlightTokensPerSec = tps;
+        });
+
+        // finally, add our new token to the list and see if the model hit an antiprompt or eog token
+        predictions.add(stepResult.nextToken);
+        if (stepResult.isComplete) {
+          log('Completed prediction stream.');
+          break;
+        }
+      }
+      stopwatch.stop();
+
+      setState(() {
+        // check to see if we're creating a new message
+        if (!continueMsg) {
+          var newChatMsgName = targetChatlog.getAICharacter()!.name;
+          // check for a slash command that might alter how we add the returned
+          // data to the chatlog
+          if (targetChatlog.messages.last.message.startsWith('/narrator ')) {
+            // if we ran a narrator command, add the prediction in under the 'Narrator' character
+            newChatMsgName = 'Narrator';
+          }
+
+          targetChatlog.messages.add(ChatLogMessage(
+              newChatMsgName,
+              inFlightMessage!.trimLeft(),
+              false,
+              inFlightTokensPerSec));
+        } else {
+          // just continuing the last message, so append the new prediction
+          targetChatlog.messages.last.message += inFlightMessage!;
+        }
+
+        _resetMessageGenerationState();
+      });
+    }
 
     await targetChatlog.saveToFile();
     if (closeModelAfterGeneration) {
@@ -436,8 +497,16 @@ class ChatLogWidgetState extends State<ChatLogWidget>
       itemCount: widget.chatLog.messages.length,
       shrinkWrap: true,
       itemBuilder: (context, index) {
-        final msg =
-            reverseMessages.elementAt(index); // widget.chatLog.messages[index];
+        ChatLogMessage msg; 
+        if (inFlightMessage != null && isContinuingMessage == false){
+            if (index > 0) {
+              msg = reverseMessages.elementAt(index-1);
+            } else {
+              msg = ChatLogMessage(aiCharacter.name, inFlightMessage!, false, inFlightTokensPerSec);
+            }
+        } else {
+            msg = reverseMessages.elementAt(index);
+        }
         final msgTimeDiff = now.difference(msg.messageCreatedAt);
         final timeDiffString = _formatDurationString(msgTimeDiff.inSeconds);
         final isHumanSent = msg.senderName == humanCharacter.name;
@@ -497,7 +566,9 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                                 context, !msg.humanSent),
                           ),
                           padding: const EdgeInsets.all(16),
-                          child: Text(msg.message)),
+                          child: (index == 0 && inFlightMessage != null && isContinuingMessage == true) ?
+                            Text(msg.message + inFlightMessage!) :
+                            Text(msg.message)),
                     ),
                     (isHumanSent
                         ? Container(
@@ -642,7 +713,11 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   Widget build(BuildContext context) {
     return Column(children: [
       Expanded(child: _buildMessageList(context)),
-      if (messageGenerationInProgress)
+      // we only show the progress indicator while the prediction is getting
+      // started in the prefill stage. if we show it while the in-flight
+      // message is shown in a chat bubble, it's obnoxious when tokens-per-second
+      // is really fast and causes a jarring experience...
+      if (messageGenerationInProgress && inFlightMessage == null)
         CircularProgressIndicator(
           value: circularProgresAnimController.value,
           semanticsLabel: 'generating reply for AI',

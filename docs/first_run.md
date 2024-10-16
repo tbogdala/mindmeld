@@ -171,6 +171,7 @@ desktop version of the app, hit `ctrl-Enter` to insert a new line.
 To send the message to Vox, desktop users can hit `Enter` on the keyboard and mobile users can 
 tap the `send` button in the lower-right of the application next to the message being typed. A progress
 indicator will bounce back and forth on the bottom of the screen as the AI's reply is being created.
+Once the AI is set to start replying, you will see the message appear in real-time.
 
 ![Screenshot of the first message received from Vox to the previous message](images/ug_first_reply_01.jpg)
 

@@ -19,6 +19,7 @@ Supported platforms: iOS, Android (un-accelerated), Windows, MacOS, Linux
   Lorebooks are active across all chats and are enabled if a character name from the chat
   log pattern matches.
 * Fast regeneration of AI chat replies with prompt caching.
+* Steaming responses so you can see the AI generate it's response in real-time.
 
 
 ## Instructions
