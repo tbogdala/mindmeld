@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.2.0
+## v1.1.0
 
 * update: upstream woolycore and woolydart libraries and updated build scripts to work with the newer versions.
 * feature: tokens are now showed 'in flight' as they're getting predicted.
