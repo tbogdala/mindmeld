@@ -1,4 +1,4 @@
-# Changelog
+# Change Log
 
 ## v1.1.0
 
