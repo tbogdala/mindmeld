@@ -23,7 +23,7 @@ class PredictionStreamState {
 
   // the sampler returned from the prompt processing and should be used for
   // generating new tokens. this resource must be free'd when it's no longer needed.
-  GptSampler sampler;
+  GptSampler? sampler;
 
   // this keeps track of the predicted tokens
   TokenList predictions = [];
@@ -35,15 +35,31 @@ class PredictionStreamState {
   // this is the prompt used to start the prediction stream
   String prompt;
 
-  PredictionStreamState(this.params, this.prompt, this.promptTokenCount, this.sampler, this.promptCache);
+  PredictionStreamState(this.params, this.prompt, this.promptTokenCount,
+      this.sampler, this.promptCache);
+
+  // free the memory associated with the frozen state, but needs a
+  // LlamaModel to do so for the FFI call.
+  void disposeCache(LlamaModel llamaModel) {
+    // get rid of any state that we started out with
+    if (promptCache != null) {
+      llamaModel.freeFrozenState(promptCache!);
+      promptCache = null;
+    }
+    if (sampler != null) {
+      llamaModel.freeGptSampler(sampler!);
+      sampler = null;
+    }
+  }
 }
 
-class StartPredictionStreamResult{
+class StartPredictionStreamResult {
   bool success;
   int promptTokenCount;
   String? errorMessage;
 
-  StartPredictionStreamResult(this.success, this.promptTokenCount, this.errorMessage);
+  StartPredictionStreamResult(
+      this.success, this.promptTokenCount, this.errorMessage);
 }
 
 class StartPredictionStreamRequest {
@@ -53,8 +69,8 @@ class StartPredictionStreamRequest {
   List<String> antipromptStrings;
   ChatLogHyperparameters hyperparameters;
 
-  StartPredictionStreamRequest(this.modelFilepath, this.modelSettings, this.promptString,
-      this.antipromptStrings, this.hyperparameters);
+  StartPredictionStreamRequest(this.modelFilepath, this.modelSettings,
+      this.promptString, this.antipromptStrings, this.hyperparameters);
 }
 
 class ContinuePredictionStreamResult {
@@ -63,11 +79,11 @@ class ContinuePredictionStreamResult {
   final String? errorMessage;
   final String? predictionSoFar;
 
-  ContinuePredictionStreamResult(this.nextToken, this.isComplete, this.errorMessage, this.predictionSoFar);
+  ContinuePredictionStreamResult(
+      this.nextToken, this.isComplete, this.errorMessage, this.predictionSoFar);
 }
 
-class ContinuePredictionStreamRequest {
-}
+class ContinuePredictionStreamRequest {}
 
 class GetTokenCountRequest {
   String promptString;
@@ -104,8 +120,10 @@ class PredictionWorker {
   late ReceivePort _fromIsoPort;
   SendPort? _toIsoPort;
   Completer<void> _isoReady = Completer.sync();
-  Completer<ContinuePredictionStreamResult> _isoResponseContinuePredictionStream = Completer();
-  Completer<StartPredictionStreamResult> _isoResponsePredictionStreamStart = Completer();
+  Completer<ContinuePredictionStreamResult>
+      _isoResponseContinuePredictionStream = Completer();
+  Completer<StartPredictionStreamResult> _isoResponsePredictionStreamStart =
+      Completer();
   Completer<GetTokenCountResult> _isoResponseTokenCount = Completer();
   Completer<EnsureModelLoadedResult> _isoResponseEnsureLoaded = Completer();
 
@@ -141,21 +159,21 @@ class PredictionWorker {
     _isoResponseEnsureLoaded = Completer();
   }
 
-  Future<StartPredictionStreamResult> startPredictionStream(StartPredictionStreamRequest request) async {
+  Future<StartPredictionStreamResult> startPredictionStream(
+      StartPredictionStreamRequest request) async {
     await _isoReady.future;
     _isoResponsePredictionStreamStart = Completer();
     _toIsoPort!.send(request);
     return _isoResponsePredictionStreamStart.future;
   }
 
-
-  Future<ContinuePredictionStreamResult> continuePredictionStream(ContinuePredictionStreamRequest request) async {
+  Future<ContinuePredictionStreamResult> continuePredictionStream(
+      ContinuePredictionStreamRequest request) async {
     await _isoReady.future;
     _isoResponseContinuePredictionStream = Completer();
     _toIsoPort!.send(request);
     return _isoResponseContinuePredictionStream.future;
   }
-
 
   Future<GetTokenCountResult> getTokenCount(
       GetTokenCountRequest request) async {
@@ -228,45 +246,50 @@ class PredictionWorker {
       workerReceivePort.listen((dynamic message) async {
         if (message is ContinuePredictionStreamRequest) {
           if (predictionStreamState != null) {
-            final result =_continuePredictionStream(llamaModel!, predictionStreamState!, message);
+            final result = _continuePredictionStream(
+                llamaModel!, predictionStreamState!, message);
             port.send(result);
-            //log('PredictionWorker: Finished continue prediction stream request...'); 
+            //log('PredictionWorker: Finished continue prediction stream request...');
           } else {
-            port.send(ContinuePredictionStreamResult(0, false, 'No prediction stream state established. Perform a StartPredictionStreamRequest first.', null));
+            port.send(ContinuePredictionStreamResult(
+                0,
+                false,
+                'No prediction stream state established. Perform a StartPredictionStreamRequest first.',
+                null));
           }
-        } else if (message is StartPredictionStreamRequest) {     
+        } else if (message is StartPredictionStreamRequest) {
           if (predictionStreamState != null) {
-            if (predictionStreamState!.promptCache != null){
+            if (predictionStreamState!.promptCache != null) {
               if (predictionStreamState!.prompt == message.promptString) {
                 // special case scenario, we have a cached prompt state and matching prompts
                 // first we free our resources
-                llamaModel!.freeGptSampler(predictionStreamState!.sampler);
+                llamaModel!.freeGptSampler(predictionStreamState!.sampler!);
 
                 // then dethaw the state and set the modified state appropriately
                 var params = _buildTextGenParams(llamaModel, message);
                 final (defrostedTokenCount, newSampler) =
-                  llamaModel.defrostFrozenState(params, predictionStreamState!.promptCache!); 
-                assert(defrostedTokenCount == predictionStreamState!.promptTokenCount);
+                    llamaModel.defrostFrozenState(
+                        params, predictionStreamState!.promptCache!);
+                assert(defrostedTokenCount ==
+                    predictionStreamState!.promptTokenCount);
                 predictionStreamState!.params = params;
                 predictionStreamState!.predictions = [];
                 predictionStreamState!.sampler = newSampler;
 
-                port.send(StartPredictionStreamResult(true, defrostedTokenCount, null));
+                port.send(StartPredictionStreamResult(
+                    true, defrostedTokenCount, null));
                 log('PredictionWorker: Finished start prediction stream request for a frozen prompt...');
                 return;
               } else {
                 // get rid of any state that we started out with
-                if (predictionStreamState!.promptCache != null) {
-                  llamaModel!.freeFrozenState(predictionStreamState!.promptCache!);
-                }
-                llamaModel!.freeGptSampler(predictionStreamState!.sampler);
-                predictionStreamState!.promptCache = null;
+                predictionStreamState!.disposeCache(llamaModel!);
               }
             }
           }
 
           // create a new prediction stream state
-          final (result, streamState) = _startPredictionStream(llamaModel!, message);
+          final (result, streamState) =
+              _startPredictionStream(llamaModel!, message);
           predictionStreamState = streamState;
           port.send(result);
           log('PredictionWorker: Finished start prediction stream request...');
@@ -283,6 +306,9 @@ class PredictionWorker {
           port.send(result);
           log('PredictionWorker: Finished ensure model loaded request...');
         } else if (message is CloseModelRequest) {
+          if (predictionStreamState != null) {
+            predictionStreamState!.disposeCache(llamaModel!);
+          }
           if (llamaModel!.isModelLoaded()) {
             log("PredictionWorker: Worker is closing the loaded model...");
             llamaModel.freeModel();
@@ -336,33 +362,35 @@ class PredictionWorker {
     return GetTokenCountResult(args.promptString, count);
   }
 
-  static wooly_gpt_params _buildTextGenParams(LlamaModel llamaModel, StartPredictionStreamRequest args) {
+  static wooly_gpt_params _buildTextGenParams(
+      LlamaModel llamaModel, StartPredictionStreamRequest args) {
     wooly_gpt_params params = llamaModel.getTextGenParams()
-        ..seed = args.hyperparameters.seed
-        ..temp = args.hyperparameters.temp
-        ..n_threads = args.modelSettings.threadCount ?? -1
-        ..n_predict = args.hyperparameters.tokens
-        ..top_k = args.hyperparameters.topK
-        ..top_p = args.hyperparameters.topP
-        ..min_p = args.hyperparameters.minP
-        ..tfs_z = args.hyperparameters.tfsZ
-        ..typical_p = args.hyperparameters.typicalP
-        ..penalty_freq = args.hyperparameters.frequencyPenalty
-        ..penalty_present = args.hyperparameters.presencePenalty
-        ..penalty_repeat = args.hyperparameters.repeatPenalty
-        ..penalty_last_n = args.hyperparameters.repeatLastN
-        ..ignore_eos = args.modelSettings.ignoreEos
-        ..flash_attn = args.modelSettings.flashAttention
-        ..prompt_cache_all = args.modelSettings.promptCache
-        ..n_batch = args.modelSettings.batchSize ?? 128;
+      ..seed = args.hyperparameters.seed
+      ..temp = args.hyperparameters.temp
+      ..n_threads = args.modelSettings.threadCount ?? -1
+      ..n_predict = args.hyperparameters.tokens
+      ..top_k = args.hyperparameters.topK
+      ..top_p = args.hyperparameters.topP
+      ..min_p = args.hyperparameters.minP
+      ..tfs_z = args.hyperparameters.tfsZ
+      ..typical_p = args.hyperparameters.typicalP
+      ..penalty_freq = args.hyperparameters.frequencyPenalty
+      ..penalty_present = args.hyperparameters.presencePenalty
+      ..penalty_repeat = args.hyperparameters.repeatPenalty
+      ..penalty_last_n = args.hyperparameters.repeatLastN
+      ..ignore_eos = args.modelSettings.ignoreEos
+      ..flash_attn = args.modelSettings.flashAttention
+      ..prompt_cache_all = args.modelSettings.promptCache
+      ..n_batch = args.modelSettings.batchSize ?? 128;
     params.setPrompt(args.promptString);
     params.setAntiprompts(args.antipromptStrings);
     log('_buildTextGenParams: A total of ${args.antipromptStrings.length} antiprompt strings: ${args.antipromptStrings.join(",")}');
     return params;
   }
 
-  static (StartPredictionStreamResult, PredictionStreamState?) _startPredictionStream(
-      LlamaModel llamaModel, StartPredictionStreamRequest args) {
+  static (StartPredictionStreamResult, PredictionStreamState?)
+      _startPredictionStream(
+          LlamaModel llamaModel, StartPredictionStreamRequest args) {
     wooly_gpt_params? params;
     try {
       // make sure our model is loaded
@@ -374,7 +402,11 @@ class PredictionWorker {
       // start the prompt processing for the stream to do all the prefill.
       var (promptTokenCount, sampler) = llamaModel.processPrompt(params);
       if (promptTokenCount <= 0) {
-        return (StartPredictionStreamResult(false, 0, '<Error while starting prediction stream. Error code: $promptTokenCount>'), null);
+        return (
+          StartPredictionStreamResult(false, 0,
+              '<Error while starting prediction stream. Error code: $promptTokenCount>'),
+          null
+        );
       }
 
       // now, if prompt caching is enabled, we freeze the model's state
@@ -384,41 +416,56 @@ class PredictionWorker {
       }
 
       // everything worked, so return our response and a new prediction state
-      return (StartPredictionStreamResult(true, promptTokenCount, null), 
-        PredictionStreamState(params, args.promptString, promptTokenCount, sampler, frozenPrompt));
+      return (
+        StartPredictionStreamResult(true, promptTokenCount, null),
+        PredictionStreamState(
+            params, args.promptString, promptTokenCount, sampler, frozenPrompt)
+      );
     } catch (e) {
       var errormsg = e.toString();
       log("PredictionWorker: Caught exception trying to start predict stream: $errormsg");
-      return (StartPredictionStreamResult(false, 0, '<Error: $errormsg>'), null);
+      return (
+        StartPredictionStreamResult(false, 0, '<Error: $errormsg>'),
+        null
+      );
     } finally {
       params?.dispose();
     }
   }
 
   static ContinuePredictionStreamResult _continuePredictionStream(
-    LlamaModel llamaModel, PredictionStreamState streamState, ContinuePredictionStreamRequest args)
-  {
+      LlamaModel llamaModel,
+      PredictionStreamState streamState,
+      ContinuePredictionStreamRequest args) {
     // start by sampling the next token
-    Token nextToken = llamaModel.sampleNextToken(streamState.sampler);
+    Token nextToken = llamaModel.sampleNextToken(streamState.sampler!);
 
     // check to see if it should stop the text prediction process
-    if (llamaModel.checkEogAndAntiprompt(streamState.params, streamState.sampler)) {
+    if (llamaModel.checkEogAndAntiprompt(
+        streamState.params, streamState.sampler!)) {
       log('PredictionWorker: End of generation or antiprompt token encountered - halting prediction...');
-      var finalResponse = llamaModel.detokenizeToText(streamState.predictions, false);
-      return ContinuePredictionStreamResult(nextToken, true, null, finalResponse);
+      var finalResponse =
+          llamaModel.detokenizeToText(streamState.predictions, false);
+      return ContinuePredictionStreamResult(
+          nextToken, true, null, finalResponse);
     }
 
     // run the model to calculate the next logits for the next token prediction,
     // but only do this if it's not the last iteration of the loop
-    final success = llamaModel.processNextToken(
-        nextToken, streamState.promptTokenCount + streamState.predictions.length);
+    final success = llamaModel.processNextToken(nextToken,
+        streamState.promptTokenCount + streamState.predictions.length);
     if (!success) {
-      return ContinuePredictionStreamResult(nextToken, false, 'PredictionWorker failed to process the next token for token: $nextToken)', null);
+      return ContinuePredictionStreamResult(
+          nextToken,
+          false,
+          'PredictionWorker failed to process the next token for token: $nextToken)',
+          null);
     }
 
     // to spare the client from having to call our isolate back to detokenize the prediction,
     // we just do it now and attatch it to the stream result
-    var detokenized = llamaModel.detokenizeToText(streamState.predictions, false);
+    var detokenized =
+        llamaModel.detokenizeToText(streamState.predictions, false);
 
     streamState.predictions.add(nextToken);
     return ContinuePredictionStreamResult(nextToken, false, null, detokenized);
