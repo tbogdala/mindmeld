@@ -330,6 +330,16 @@ class ChatLog {
 
   ChatLog(this.name, this.modelName, this.modelPromptStyle, this.context);
 
+  ChatLog copy() {
+    var clone = ChatLog(name, modelName, modelPromptStyle, context)
+      ..version = version
+      ..hyperparmeters = hyperparmeters
+      ..characters = List<ChatLogCharacter>.from(characters)
+      ..messages = List<ChatLogMessage>.from(messages);
+
+    return clone;
+  }
+
   static Future<String> getLogsFolder() async {
     final directory = await getOurDocumentsDirectory();
     return p.join(directory, 'chatlogs');
@@ -457,6 +467,31 @@ class ChatLog {
       // now save the chatlog to file so the new name is preserved
       await saveToFile();
     }
+  }
+
+  // Makes a copy of the chatlog with `dupName` as the new name
+  Future<ChatLog> duplicate(String dupName) async {
+    // make sure to create a new object right away
+    var dupeLog = copy();
+
+    int dupCounter = 0;
+    dupeLog.name = dupName;
+    String dupFilepath = await dupeLog.getLogFilepath();
+    File dupChatlogFile = File(dupFilepath);
+
+    // make sure the name is unique, if it's not incrementally add
+    // a counter to the end until it is.
+    while (await dupChatlogFile.exists()) {
+      dupCounter += 1;
+      dupeLog.name = '$dupName$dupCounter';
+      dupFilepath = await dupeLog.getLogFilepath();
+      dupChatlogFile = File(dupFilepath);
+    }
+
+    // now that we have a name that works, save it out to the file system
+    await dupeLog.saveToFile();
+
+    return dupeLog;
   }
 
   // returns the first character in the chatlog that is user controlled

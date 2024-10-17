@@ -325,6 +325,42 @@ class _DesktopChatLogListViewState extends State<DesktopChatLogListView> {
     );
   }
 
+  Future<String?> _showDuplicateChatlogDialog(String initialName) async {
+    TextEditingController newNameFieldController = TextEditingController();
+    newNameFieldController.text = "$initialName Copy";
+    return showDialog<String?>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Enter duplicate chatlog name:'),
+          content: TextField(
+            controller: newNameFieldController,
+            decoration:
+                const InputDecoration(hintText: "Duplicate Chatlog Name"),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(null);
+              },
+            ),
+            TextButton(
+              child: const Text(
+                'Duplicate',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(newNameFieldController.text);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showModalLongPressMessageBottomSheet(
       BuildContext context, ChatLog chatlog) {
     showModalBottomSheet(
@@ -365,6 +401,27 @@ class _DesktopChatLogListViewState extends State<DesktopChatLogListView> {
                         setState(() {
                           log('New chatlog name chosen by user: $newChatlogName');
                           chatlog.rename(newChatlogName);
+                        });
+                      }
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.file_copy),
+                    label: Text("Duplicate Chatlog",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    onPressed: () async {
+                      var dupChatlogName =
+                          await _showDuplicateChatlogDialog(chatlog.name);
+                      if (dupChatlogName != null) {
+                        log('Duplicate the ${chatlog.name} chatlog name to $dupChatlogName');
+                        var newDupeLog =
+                            await chatlog.duplicate(dupChatlogName);
+                        setState(() {
+                          widget.chatLogs.add(newDupeLog);
                         });
                       }
                       if (context.mounted) {
