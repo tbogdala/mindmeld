@@ -154,6 +154,9 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   // set this to non-null when a messages is getting edited
   ChatLogMessage? messageBeingEdited;
 
+  // this should be set to the chatlog that's generating a message
+  ChatLog? inFlightChatLog;
+
   // if this is set to a string, this is the current prediction in process
   // as it comes in piece by piece. it should be nulled out when finished...
   String? inFlightMessage;
@@ -249,17 +252,19 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   void _resetMessageGenerationState() {
     messageGenerationInProgress = false;
     isContinuingMessage = false;
+    inFlightChatLog = null;
     inFlightMessage = null;
     inFlightTokensPerSec = 0.0;
   }
 
   // call this when starting message generation to reset the local data
   // structures necessary
-  void _initMessageInFlightState(bool continueMsg) {
+  void _initMessageInFlightState(ChatLog targetChatlog, bool continueMsg) {
     messageGenerationInProgress = true;
     isContinuingMessage = continueMsg;
     closeModelAfterGeneration = false;
     inFlightTokensPerSec = 0.0;
+    inFlightChatLog = targetChatlog;
     inFlightMessage = "";
     inFlightCharacterName = "";
   }
@@ -289,13 +294,15 @@ class ChatLogWidgetState extends State<ChatLogWidget>
 
     // turn the busy flag and animation on
     setState(() {
-      _initMessageInFlightState(continueMsg);
+      _initMessageInFlightState(widget.chatLog, continueMsg);
       circularProgresAnimController.repeat(reverse: true);
     });
 
     // store a reference to the chatlog used for generation so that
     // if the user switches the 'current' chatlog up while waiting
     // for generation, the message will still get added to this log.
+    // this is the same as inFlightChatLog, but local to this function
+    // and of use after the in-flight status gets reset.
     final targetChatlog = widget.chatLog;
 
     // make sure our model is loaded
@@ -514,6 +521,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
         ChatLogMessage msg;
         if (inFlightMessage != null &&
             inFlightMessage!.isNotEmpty &&
+            widget.chatLog.name == inFlightChatLog?.name &&
             isContinuingMessage == false) {
           if (index > 0) {
             msg = reverseMessages.elementAt(index - 1);
@@ -737,6 +745,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
       // message is shown in a chat bubble, it's obnoxious when tokens-per-second
       // is really fast and causes a jarring experience...
       if (messageGenerationInProgress &&
+          widget.chatLog.name == inFlightChatLog?.name &&
           (inFlightMessage == null || inFlightMessage!.isEmpty))
         CircularProgressIndicator(
           value: circularProgresAnimController.value,

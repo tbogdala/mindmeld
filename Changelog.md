@@ -11,3 +11,4 @@
 * bugfix: fixed a bug where the temperature, frequency and presence penalties settings for the chatlog wasn't being used.
 * bugfix: new prediction functions seem to fix a mysterious bug where llama3 or gemma models had to get changed
   to the chatml prompt format in order to generate a response.
+* bugfix: only show the progress circle when the matching chatlog is selected and shown while generating a message.
