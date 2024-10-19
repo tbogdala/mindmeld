@@ -433,7 +433,7 @@ class _EditLorebooksPageState extends State<EditLorebooksPage> {
             leading: const Icon(Icons.psychology),
             title: TextField(
               controller: matchingCharactersController,
-              keyboardType: TextInputType.number,
+              keyboardType: TextInputType.text,
               decoration: const InputDecoration(
                 labelText: "Matching Characters",
               ),
