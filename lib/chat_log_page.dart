@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:path/path.dart' as p;
 import 'package:profile_photo/profile_photo.dart';
@@ -455,6 +456,16 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                         messageBeingEdited = msg;
                         newMessgeController.text = msg.message;
                       });
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.edit),
+                    label: Text("Copy Message",
+                        style: Theme.of(context).textTheme.titleLarge),
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: msg.message));
                       Navigator.pop(context);
                     },
                   ),
