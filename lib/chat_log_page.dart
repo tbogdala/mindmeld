@@ -169,6 +169,9 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   // this is the current speed of prediction in tokens per second
   double inFlightTokensPerSec = 0.0;
 
+  // set this to true to stop the generation of the response.
+  bool stopInFlightMessage = false;
+
   // should be set to true if the current inFlightMessage is being
   // generated as a continuation of a previous message.
   bool isContinuingMessage = false;
@@ -253,6 +256,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   void _resetMessageGenerationState() {
     messageGenerationInProgress = false;
     isContinuingMessage = false;
+    stopInFlightMessage = false;
     inFlightChatLog = null;
     inFlightMessage = null;
     inFlightTokensPerSec = 0.0;
@@ -263,6 +267,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   void _initMessageInFlightState(ChatLog targetChatlog, bool continueMsg) {
     messageGenerationInProgress = true;
     isContinuingMessage = continueMsg;
+    stopInFlightMessage = false;
     closeModelAfterGeneration = false;
     inFlightTokensPerSec = 0.0;
     inFlightChatLog = targetChatlog;
@@ -375,7 +380,8 @@ class ChatLogWidgetState extends State<ChatLogWidget>
       // count in tokens or the model finds antiprompt or eog tokens.
       stopwatch.start();
       TokenList predictions = [];
-      while (predictions.length <= targetChatlog.hyperparmeters.tokens) {
+      while (predictions.length <= targetChatlog.hyperparmeters.tokens &&
+          !stopInFlightMessage) {
         var stepResult = await prognosticator!
             .continuePredictionStream(ContinuePredictionStreamRequest());
         if (stepResult.errorMessage != null) {
@@ -511,6 +517,20 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                         await _generateAIMessage(false);
                       },
                     ),
+                  if (messageGenerationInProgress && msg.isTemporary)
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.cancel),
+                      label: Text("Stop AI Response",
+                          style: Theme.of(context).textTheme.titleLarge),
+                      onPressed: () async {
+                        setState(() {
+                          stopInFlightMessage = true;
+                        });
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      },
+                    ),
                 ],
               ));
         });
@@ -539,6 +559,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
           } else {
             msg = ChatLogMessage(inFlightCharacterName ?? '',
                 inFlightMessage!.trimLeft(), false, inFlightTokensPerSec);
+            msg.isTemporary = true;
           }
         } else {
           msg = reverseMessages.elementAt(index);

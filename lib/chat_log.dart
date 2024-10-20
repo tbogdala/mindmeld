@@ -217,6 +217,11 @@ class ChatLogMessage {
   bool humanSent;
   DateTime messageCreatedAt = DateTime.now();
 
+  // this value should indicate if the message is considered a 'temporary'
+  // message. (e.g. a message representing the 'in-flight' text generation)
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  bool isTemporary = false;
+
   // how long it took to generate the message in tokens / s
   // null if the message wasn't generated with AI
   double? generationSpeedTPS;

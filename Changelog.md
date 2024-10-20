@@ -8,6 +8,7 @@
 * feature: speed of generation is shown dynamically, 'in flight'.
 * feature: chatlogs can be duplicated by long-pressing on them and choosing 'Duplicate Chatlog'.
 * feature: added 'Copy Message' to the long-press menu on messages which copies the text to the clipboard.
+* feature: added 'Stop AI Response'  to the long-press menu on the in-flight message which stops the reply.
 
 * bugfix: fixed an error code 7 type error on prediction that was related to bos tokens.
 * bugfix: fixed a problem where changing chat logs didn't necessarily load a new model if they differed in what they used.
