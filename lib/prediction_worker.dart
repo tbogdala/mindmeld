@@ -444,6 +444,7 @@ class PredictionWorker {
     if (llamaModel.checkEogAndAntiprompt(
         streamState.params, streamState.sampler!)) {
       log('PredictionWorker: End of generation or antiprompt token encountered - halting prediction...');
+      streamState.predictions.add(nextToken);
       var finalResponse =
           llamaModel.detokenizeToText(streamState.predictions, false);
       return ContinuePredictionStreamResult(

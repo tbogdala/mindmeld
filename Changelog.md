@@ -4,7 +4,7 @@
 
 * update: upstream woolycore and woolydart libraries and updated build scripts to work with the newer versions.
 
-* feature: tokens are now showed 'in flight' as they're getting predicted.
+* feature: tokens are now shown 'in flight' as they're getting predicted.
 * feature: speed of generation is shown dynamically, 'in flight'.
 * feature: chatlogs can be duplicated by long-pressing on them and choosing 'Duplicate Chatlog'.
 * feature: added 'Copy Message' to the long-press menu on messages which copies the text to the clipboard.

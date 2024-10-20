@@ -407,6 +407,19 @@ class ChatLogWidgetState extends State<ChatLogWidget>
       }
       stopwatch.stop();
 
+      // now that we're done with the message generation, check the in-flight message
+      // to see if it ends with any of the anti-prompts. If so, trim it out.
+      if (inFlightMessage != null) {
+        for (final stopper in stopPhrases) {
+          if (inFlightMessage!.endsWith(stopper)) {
+            log("message ended with the antiprompt '$stopper', so that will be trimmed out...");
+            inFlightMessage = inFlightMessage!
+                .substring(0, inFlightMessage!.length - stopper.length)
+                .trimRight();
+          }
+        }
+      }
+
       setState(() {
         // check to see if we're creating a new message
         if (!continueMsg) {
