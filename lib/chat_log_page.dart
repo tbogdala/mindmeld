@@ -530,7 +530,9 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                         await _generateAIMessage(false);
                       },
                     ),
-                  if (messageGenerationInProgress && msg.isTemporary)
+                  if (messageGenerationInProgress && msg.isTemporary ||
+                      (isContinuingMessage &&
+                          msg == widget.chatLog.messages.last))
                     OutlinedButton.icon(
                       icon: const Icon(Icons.cancel),
                       label: Text("Stop AI Response",
