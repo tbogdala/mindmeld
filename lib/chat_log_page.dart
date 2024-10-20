@@ -227,6 +227,63 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     }
   }
 
+  void showAlertDialog(BuildContext context, String title, String content) {
+    // set up the button
+    Widget okButton = TextButton(
+      child: const Text("OK"),
+      onPressed: () {
+        Navigator.of(context).pop(true);
+      },
+    );
+
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: Text(title),
+      content: Text(content),
+      actions: [
+        okButton,
+      ],
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  Future<void> _showAlertDialog(String title, String content) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(content),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text(
+                'Close',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> closePrognosticatorModel() async {
     if (messageGenerationInProgress) {
       closeModelAfterGeneration = true;
@@ -312,8 +369,15 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     final targetChatlog = widget.chatLog;
 
     // make sure our model is loaded
-    await prognosticator!.ensureModelLoaded(EnsureModelLoadedRequest(
-        modelFilepath, currentModelConfig, targetChatlog.hyperparmeters));
+    var ensureResult = await prognosticator!.ensureModelLoaded(
+        EnsureModelLoadedRequest(
+            modelFilepath, currentModelConfig, targetChatlog.hyperparmeters));
+    if (!ensureResult.success) {
+      _showAlertDialog("Error",
+          "Failed to load the selected model: ${targetChatlog.modelName}. Make sure it still exists and is a proper GGUF file!");
+      _resetMessageGenerationState();
+      return;
+    }
 
     // build the prompt to send off to the ai
     int tokenBudget = (currentModelConfig.contextSize ?? 2048) -

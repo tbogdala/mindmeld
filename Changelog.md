@@ -17,3 +17,5 @@
   to the chatml prompt format in order to generate a response.
 * bugfix: only show the progress circle when the matching chatlog is selected and shown while generating a message.
 * bugfix: fixed keyboard type being set to 'number' for the 'matching characters' textfield of a lorebook.
+* bugfix: show an error message instead of crashing when a model is selected for the chatlog that no longer exists
+  and the user tries to generate a response.
