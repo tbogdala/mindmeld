@@ -332,12 +332,18 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                       final appModelFolder =
                           await ConfigModelFiles.getModelsFolderpath();
                       if (p.isWithin(appModelFolder, currentModelFilepath)) {
-                        await File(currentModelFilepath).delete();
-                        log('Model was deleted on the filesystem: $currentModelFilepath');
+                        var f = File(currentModelFilepath);
+                        if (await f.exists()) {
+                          await f.delete();
+                          log('Model was deleted on the filesystem: $currentModelFilepath');
+                        }
                       } else if (p.isRelative(currentModelFilepath)) {
-                        await File(p.join(appModelFolder, currentModelFilepath))
-                            .delete();
-                        log('Model was deleted on the filesystem: $currentModelFilepath');
+                        var f =
+                            File(p.join(appModelFolder, currentModelFilepath));
+                        if (await f.exists()) {
+                          f.delete();
+                          log('Model was deleted on the filesystem: $currentModelFilepath');
+                        }
                       }
                       setState(() {
                         widget.configModelFiles.modelFiles

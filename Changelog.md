@@ -19,3 +19,4 @@
 * bugfix: fixed keyboard type being set to 'number' for the 'matching characters' textfield of a lorebook.
 * bugfix: show an error message instead of crashing when a model is selected for the chatlog that no longer exists
   and the user tries to generate a response.
+* bugfix: fixed a crash when trying to remove models that no longer exist under the mindmeld model's folder.
