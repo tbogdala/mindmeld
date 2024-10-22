@@ -17,6 +17,7 @@ enum ModelPromptStyle {
   mistralInstruct,
   opusV14,
   phi3,
+  plainText,
   tinyllama,
   vicuna,
   zephyr
@@ -41,6 +42,8 @@ extension ModelPromptStyleExtension on ModelPromptStyle {
         return ModelPromptConfig.mistralInstruct();
       case ModelPromptStyle.phi3:
         return ModelPromptConfig.phi3();
+      case ModelPromptStyle.plainText:
+        return ModelPromptConfig.plainText();
       case ModelPromptStyle.tinyllama:
         return ModelPromptConfig.tinyllama();
       case ModelPromptStyle.vicuna:
@@ -160,6 +163,18 @@ class ModelPromptConfig {
     aiPrefix = "<|assistant|>\n";
     aiSuffix = "<|end|>\n";
     stopPhrases = ["<|end|>", "<|user|>"];
+  }
+
+  ModelPromptConfig.plainText() {
+    name = "Plain Text";
+    system = "";
+    preSystemPrefix = "";
+    preSystemSuffix = "";
+    userPrefix = "\n\n";
+    userSuffix = "";
+    aiPrefix = "\n\n";
+    aiSuffix = "";
+    stopPhrases = [];
   }
 
   ModelPromptConfig.tinyllama() {
