@@ -12,6 +12,8 @@ import 'config_models.dart';
 enum AutoDLModels {
   gemma2bInstruct,
   gemma9bInstruct,
+  llama32V1bInstruct,
+  llama32V3bInstruct,
   llama31V8bInstruct,
   mistral7bV03Instruct,
   mistralNemo2407,
@@ -28,6 +30,10 @@ extension AutoDLModelsExtension on AutoDLModels {
         return 'Gemma-2-2b-it';
       case AutoDLModels.gemma9bInstruct:
         return 'Gemma-2-9b-it';
+      case AutoDLModels.llama32V1bInstruct:
+        return 'Llama-3.2-1B-Instruct';
+      case AutoDLModels.llama32V3bInstruct:
+        return 'Llama-3.2-3B-Instruct';
       case AutoDLModels.llama31V8bInstruct:
         return 'Llama-3.1-8B-Instruct';
       case AutoDLModels.mistral7bV03Instruct:
@@ -54,6 +60,10 @@ extension AutoDLModelsExtension on AutoDLModels {
         return 'https://huggingface.co/bartowski/gemma-2-2b-it-GGUF/resolve/main/gemma-2-2b-it-Q4_K_M.gguf';
       case AutoDLModels.gemma9bInstruct:
         return 'https://huggingface.co/bartowski/gemma-2-9b-it-GGUF/resolve/main/gemma-2-9b-it-Q4_K_M.gguf';
+      case AutoDLModels.llama32V1bInstruct:
+        return 'https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf';
+      case AutoDLModels.llama32V3bInstruct:
+        return 'https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf';
       case AutoDLModels.llama31V8bInstruct:
         return 'https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf';
       case AutoDLModels.mistral7bV03Instruct:
@@ -77,6 +87,10 @@ extension AutoDLModelsExtension on AutoDLModels {
         return 'gemma-2-2b-it-Q4_K_M.gguf';
       case AutoDLModels.gemma9bInstruct:
         return 'gemma-2-9b-it-Q4_K_M.gguf';
+      case AutoDLModels.llama32V1bInstruct:
+        return 'Llama-3.2-1B-Instruct-Q4_K_M.gguf';
+      case AutoDLModels.llama32V3bInstruct:
+        return 'Llama-3.2-3B-Instruct-Q4_K_M.gguf';
       case AutoDLModels.llama31V8bInstruct:
         return 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf';
       case AutoDLModels.mistral7bV03Instruct:
@@ -106,6 +120,12 @@ extension AutoDLModelsExtension on AutoDLModels {
       case AutoDLModels.gemma9bInstruct:
         return ConfigModelSettings(
             filepath, 100, 8192, null, null, true, false, false, 'gemma');
+      case AutoDLModels.llama32V1bInstruct:
+        return ConfigModelSettings(
+            filepath, 100, 8192, null, null, true, false, true, 'llama3');
+      case AutoDLModels.llama32V3bInstruct:
+        return ConfigModelSettings(
+            filepath, 100, 8192, null, null, true, false, true, 'llama3');
       case AutoDLModels.llama31V8bInstruct:
         return ConfigModelSettings(
             filepath, 100, 8192, null, null, true, false, true, 'llama3');

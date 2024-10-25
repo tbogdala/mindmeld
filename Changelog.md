@@ -10,6 +10,7 @@
 * feature: added 'Copy Message' to the long-press menu on messages which copies the text to the clipboard.
 * feature: added 'Stop AI Response'  to the long-press menu on the in-flight message which stops the reply.
 * feature: added 'plainText' prompt formatting for using base models (non-instruct tuned).
+* feature: added llama 3.2 3B & 1B models.
 
 * bugfix: fixed an error code 7 type error on prediction that was related to bos tokens.
 * bugfix: fixed a problem where changing chat logs didn't necessarily load a new model if they differed in what they used.
