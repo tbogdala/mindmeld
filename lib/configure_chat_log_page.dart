@@ -38,12 +38,20 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
   final hpTopKController = TextEditingController();
   final hpTopPController = TextEditingController();
   final hpMinPController = TextEditingController();
+  final hpXtcProbController = TextEditingController();
+  final hpXtcThreshController = TextEditingController();
+  final hpDynatempRangeController = TextEditingController();
+  final hpDynatempExpoController = TextEditingController();
   final hpTypicalPController = TextEditingController();
   final hpTFSController = TextEditingController();
   final hpRepPenController = TextEditingController();
   final hpRepPenRangeController = TextEditingController();
   final hpFreqPenController = TextEditingController();
   final hpPresencePenController = TextEditingController();
+  final hpDryMultiController = TextEditingController();
+  final hpDryBaseController = TextEditingController();
+  final hpDryLengthController = TextEditingController();
+  final hpDryPenaltyController = TextEditingController();
   final hpSeedController = TextEditingController();
 
   late List<String> modelFileOptions;
@@ -69,12 +77,20 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
     hpTopKController.dispose();
     hpTopPController.dispose();
     hpMinPController.dispose();
+    hpXtcProbController.dispose();
+    hpXtcThreshController.dispose();
+    hpDynatempRangeController.dispose();
+    hpDynatempExpoController.dispose();
     hpTypicalPController.dispose();
     hpTFSController.dispose();
     hpRepPenController.dispose();
     hpRepPenRangeController.dispose();
     hpFreqPenController.dispose();
     hpPresencePenController.dispose();
+    hpDryMultiController.dispose();
+    hpDryBaseController.dispose();
+    hpDryLengthController.dispose();
+    hpDryPenaltyController.dispose();
     hpSeedController.dispose();
 
     modelGpuLayersController.dispose();
@@ -107,6 +123,14 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
     hpTopKController.text = widget.chatLog.hyperparmeters.topK.toString();
     hpTopPController.text = widget.chatLog.hyperparmeters.topP.toString();
     hpMinPController.text = widget.chatLog.hyperparmeters.minP.toString();
+    hpXtcProbController.text =
+        widget.chatLog.hyperparmeters.xtcProbability.toString();
+    hpXtcThreshController.text =
+        widget.chatLog.hyperparmeters.xtcThreshold.toString();
+    hpDynatempRangeController.text =
+        widget.chatLog.hyperparmeters.dynatempRange.toString();
+    hpDynatempExpoController.text =
+        widget.chatLog.hyperparmeters.dynatempExponent.toString();
     hpTypicalPController.text =
         widget.chatLog.hyperparmeters.typicalP.toString();
     hpTFSController.text = widget.chatLog.hyperparmeters.tfsZ.toString();
@@ -118,6 +142,13 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
         widget.chatLog.hyperparmeters.frequencyPenalty.toString();
     hpPresencePenController.text =
         widget.chatLog.hyperparmeters.presencePenalty.toString();
+    hpDryMultiController.text =
+        widget.chatLog.hyperparmeters.dryMultiplier.toString();
+    hpDryBaseController.text = widget.chatLog.hyperparmeters.dryBase.toString();
+    hpDryLengthController.text =
+        widget.chatLog.hyperparmeters.dryAllowedLength.toString();
+    hpDryPenaltyController.text =
+        widget.chatLog.hyperparmeters.dryPenaltyLastN.toString();
     hpSeedController.text = widget.chatLog.hyperparmeters.seed.toString();
 
     // build the data for the model dropdown to select already imported models
@@ -795,6 +826,110 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
               },
             )),
         ListTile(
+            leading: const Icon(Icons.not_interested),
+            title: TextField(
+              controller: hpDryMultiController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "DRY Multiplier",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.dryMultiplier =
+                    double.tryParse(text) ?? 0.0;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.not_interested),
+            title: TextField(
+              controller: hpDryBaseController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "DRY Base",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.dryBase =
+                    double.tryParse(text) ?? 0.0;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.not_interested),
+            title: TextField(
+              controller: hpDryLengthController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "DRY Allowed Length",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.dryAllowedLength =
+                    int.tryParse(text) ?? 2;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.not_interested),
+            title: TextField(
+              controller: hpDryPenaltyController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "DRY Penalty Range",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.dryPenaltyLastN =
+                    int.tryParse(text) ?? -1;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.storm),
+            title: TextField(
+              controller: hpDynatempRangeController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Dynamic Temp Range",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.dynatempRange =
+                    double.tryParse(text) ?? 0.0;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.storm),
+            title: TextField(
+              controller: hpDynatempExpoController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "Dynamic Temp Exponent",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.dynatempExponent =
+                    double.tryParse(text) ?? 1.0;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.alt_route),
+            title: TextField(
+              controller: hpXtcProbController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "XTC Probability",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.xtcProbability =
+                    double.tryParse(text) ?? 0.0;
+              },
+            )),
+        ListTile(
+            leading: const Icon(Icons.alt_route),
+            title: TextField(
+              controller: hpXtcThreshController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: "XTC Threshold",
+              ),
+              onChanged: (text) {
+                widget.chatLog.hyperparmeters.xtcThreshold =
+                    double.tryParse(text) ?? 0.1;
+              },
+            )),
+        ListTile(
             leading: const Icon(Icons.trending_down),
             title: TextField(
               keyboardType: TextInputType.number,
@@ -860,7 +995,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
               },
             )),
         ListTile(
-            leading: const Icon(Icons.shuffle),
+            leading: const Icon(Icons.casino),
             title: TextField(
               controller: hpSeedController,
               keyboardType: TextInputType.number,

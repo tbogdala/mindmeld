@@ -20,7 +20,8 @@ Supported platforms: iOS, Android (un-accelerated), Windows, MacOS, Linux
   log pattern matches.
 * Fast regeneration of AI chat replies with prompt caching.
 * Steaming responses so you can see the AI generate it's response in real-time.
-
+* Extensive set of AI samplers: temp, top-k, top-p, min-p, tail free sampling, locally typical sampling, 
+  dynamic temperature, DRY and XTC.
 
 ## Instructions
 

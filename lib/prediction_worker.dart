@@ -372,12 +372,20 @@ class PredictionWorker {
       ..top_k = args.hyperparameters.topK
       ..top_p = args.hyperparameters.topP
       ..min_p = args.hyperparameters.minP
+      ..xtc_probability = args.hyperparameters.xtcProbability
+      ..xtc_threshold = args.hyperparameters.xtcThreshold
+      ..dynatemp_range = args.hyperparameters.dynatempRange
+      ..dynatemp_exponent = args.hyperparameters.dynatempExponent
       ..tfs_z = args.hyperparameters.tfsZ
       ..typical_p = args.hyperparameters.typicalP
       ..penalty_freq = args.hyperparameters.frequencyPenalty
       ..penalty_present = args.hyperparameters.presencePenalty
       ..penalty_repeat = args.hyperparameters.repeatPenalty
       ..penalty_last_n = args.hyperparameters.repeatLastN
+      ..dry_multiplier = args.hyperparameters.dryMultiplier
+      ..dry_base = args.hyperparameters.dryBase
+      ..dry_allowed_length = args.hyperparameters.dryAllowedLength
+      ..dry_penalty_last_n = args.hyperparameters.dryPenaltyLastN
       ..ignore_eos = args.modelSettings.ignoreEos
       ..flash_attn = args.modelSettings.flashAttention
       ..prompt_cache_all = args.modelSettings.promptCache
@@ -453,8 +461,7 @@ class PredictionWorker {
 
     // run the model to calculate the next logits for the next token prediction,
     // but only do this if it's not the last iteration of the loop
-    final success = llamaModel.processNextToken(nextToken,
-        streamState.promptTokenCount + streamState.predictions.length);
+    final success = llamaModel.processNextToken(nextToken);
     if (!success) {
       return ContinuePredictionStreamResult(
           nextToken,
