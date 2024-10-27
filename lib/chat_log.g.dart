@@ -28,19 +28,27 @@ ChatLogHyperparameters _$ChatLogHyperparametersFromJson(
     ChatLogHyperparameters()
       ..seed = (json['seed'] as num).toInt()
       ..tokens = (json['tokens'] as num).toInt()
-      ..topK = (json['topK'] as num).toInt()
-      ..topP = (json['topP'] as num).toDouble()
-      ..minP = (json['minP'] as num).toDouble()
-      ..temp = (json['temp'] as num).toDouble()
-      ..repeatPenalty = (json['repeatPenalty'] as num).toDouble()
-      ..repeatLastN = (json['repeatLastN'] as num).toInt()
-      ..tfsZ = (json['tfsZ'] as num).toDouble()
-      ..typicalP = (json['typicalP'] as num).toDouble()
-      ..frequencyPenalty = (json['frequencyPenalty'] as num).toDouble()
-      ..presencePenalty = (json['presencePenalty'] as num).toDouble()
-      ..mirostatType = (json['mirostatType'] as num).toInt()
-      ..mirostatEta = (json['mirostatEta'] as num).toDouble()
-      ..mirostatTau = (json['mirostatTau'] as num).toDouble();
+      ..topK = (json['topK'] as num?)?.toInt()
+      ..topP = (json['topP'] as num?)?.toDouble()
+      ..minP = (json['minP'] as num?)?.toDouble()
+      ..xtcProbability = (json['xtcProbability'] as num?)?.toDouble()
+      ..xtcThreshold = (json['xtcThreshold'] as num?)?.toDouble()
+      ..temp = (json['temp'] as num?)?.toDouble()
+      ..dynatempRange = (json['dynatempRange'] as num?)?.toDouble()
+      ..dynatempExponent = (json['dynatempExponent'] as num?)?.toDouble()
+      ..repeatPenalty = (json['repeatPenalty'] as num?)?.toDouble()
+      ..repeatLastN = (json['repeatLastN'] as num?)?.toInt()
+      ..tfsZ = (json['tfsZ'] as num?)?.toDouble()
+      ..typicalP = (json['typicalP'] as num?)?.toDouble()
+      ..frequencyPenalty = (json['frequencyPenalty'] as num?)?.toDouble()
+      ..presencePenalty = (json['presencePenalty'] as num?)?.toDouble()
+      ..dryMultiplier = (json['dryMultiplier'] as num?)?.toDouble()
+      ..dryBase = (json['dryBase'] as num?)?.toDouble()
+      ..dryAllowedLength = (json['dryAllowedLength'] as num?)?.toInt()
+      ..dryPenaltyLastN = (json['dryPenaltyLastN'] as num?)?.toInt()
+      ..mirostatType = (json['mirostatType'] as num?)?.toInt()
+      ..mirostatEta = (json['mirostatEta'] as num?)?.toDouble()
+      ..mirostatTau = (json['mirostatTau'] as num?)?.toDouble();
 
 Map<String, dynamic> _$ChatLogHyperparametersToJson(
         ChatLogHyperparameters instance) =>
@@ -50,13 +58,21 @@ Map<String, dynamic> _$ChatLogHyperparametersToJson(
       'topK': instance.topK,
       'topP': instance.topP,
       'minP': instance.minP,
+      'xtcProbability': instance.xtcProbability,
+      'xtcThreshold': instance.xtcThreshold,
       'temp': instance.temp,
+      'dynatempRange': instance.dynatempRange,
+      'dynatempExponent': instance.dynatempExponent,
       'repeatPenalty': instance.repeatPenalty,
       'repeatLastN': instance.repeatLastN,
       'tfsZ': instance.tfsZ,
       'typicalP': instance.typicalP,
       'frequencyPenalty': instance.frequencyPenalty,
       'presencePenalty': instance.presencePenalty,
+      'dryMultiplier': instance.dryMultiplier,
+      'dryBase': instance.dryBase,
+      'dryAllowedLength': instance.dryAllowedLength,
+      'dryPenaltyLastN': instance.dryPenaltyLastN,
       'mirostatType': instance.mirostatType,
       'mirostatEta': instance.mirostatEta,
       'mirostatTau': instance.mirostatTau,

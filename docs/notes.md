@@ -52,14 +52,11 @@ Steps used to get iOS going, initially:
   Should confirm the pastes with a bottom sheet so that there's not accidental overrides.
 * Have a help icon for ChatLog Configuration to explain settings verbosely.
 * Confirm that not supplying a ConfigModelSetting context size uses -1 or auto for default.
-* Show overall T/s or TG & PP T/s?
 * BUG: /narrator replies cannot be continued as the narrator, currently.
 * BUG: any file can be added as a model, such as `img.png`. :(
 * Use the LLMs to create characters for the chat log.
-* Streaming text generation.
 * Hitting esc on edit should cancel edit; or have a cancel button
 * Setup quantization for KV cache
 * Configurable switch to select between prompt caching for regeneration and prompt caching for continuation
-* BUG: long-pressing send button while editing does weird behavior.
 * Consider ignoring '/narrator' slash-commands when not the last one in the log while
   building the prompt so they they don't have to be deleted.

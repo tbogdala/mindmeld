@@ -365,28 +365,42 @@ class PredictionWorker {
 
   static wooly_gpt_params _buildTextGenParams(
       LlamaModel llamaModel, StartPredictionStreamRequest args) {
+    // we create a 'defaults' object here since the class has all the
+    // 'normal' default values initialized in the members; avoids duplication
+    final defaults = ChatLogHyperparameters();
     wooly_gpt_params params = llamaModel.getTextGenParams()
       ..seed = args.hyperparameters.seed
-      ..temp = args.hyperparameters.temp
+      ..temp = args.hyperparameters.temp ?? defaults.temp!
       ..n_threads = args.modelSettings.threadCount ?? -1
       ..n_predict = args.hyperparameters.tokens
-      ..top_k = args.hyperparameters.topK
-      ..top_p = args.hyperparameters.topP
-      ..min_p = args.hyperparameters.minP
-      ..xtc_probability = args.hyperparameters.xtcProbability
-      ..xtc_threshold = args.hyperparameters.xtcThreshold
-      ..dynatemp_range = args.hyperparameters.dynatempRange
-      ..dynatemp_exponent = args.hyperparameters.dynatempExponent
-      ..tfs_z = args.hyperparameters.tfsZ
-      ..typical_p = args.hyperparameters.typicalP
-      ..penalty_freq = args.hyperparameters.frequencyPenalty
-      ..penalty_present = args.hyperparameters.presencePenalty
-      ..penalty_repeat = args.hyperparameters.repeatPenalty
-      ..penalty_last_n = args.hyperparameters.repeatLastN
-      ..dry_multiplier = args.hyperparameters.dryMultiplier
-      ..dry_base = args.hyperparameters.dryBase
-      ..dry_allowed_length = args.hyperparameters.dryAllowedLength
-      ..dry_penalty_last_n = args.hyperparameters.dryPenaltyLastN
+      ..top_k = args.hyperparameters.topK ?? defaults.topK!
+      ..top_p = args.hyperparameters.topP ?? defaults.topP!
+      ..min_p = args.hyperparameters.minP ?? defaults.minP!
+      ..xtc_probability =
+          args.hyperparameters.xtcProbability ?? defaults.xtcProbability!
+      ..xtc_threshold =
+          args.hyperparameters.xtcThreshold ?? defaults.xtcThreshold!
+      ..dynatemp_range =
+          args.hyperparameters.dynatempRange ?? defaults.dynatempRange!
+      ..dynatemp_exponent =
+          args.hyperparameters.dynatempExponent ?? defaults.dynatempExponent!
+      ..tfs_z = args.hyperparameters.tfsZ ?? defaults.tfsZ!
+      ..typical_p = args.hyperparameters.typicalP ?? defaults.typicalP!
+      ..penalty_freq =
+          args.hyperparameters.frequencyPenalty ?? defaults.frequencyPenalty!
+      ..penalty_present =
+          args.hyperparameters.presencePenalty ?? defaults.presencePenalty!
+      ..penalty_repeat =
+          args.hyperparameters.repeatPenalty ?? defaults.repeatPenalty!
+      ..penalty_last_n =
+          args.hyperparameters.repeatLastN ?? defaults.repeatLastN!
+      ..dry_multiplier =
+          args.hyperparameters.dryMultiplier ?? defaults.dryMultiplier!
+      ..dry_base = args.hyperparameters.dryBase ?? defaults.dryBase!
+      ..dry_allowed_length =
+          args.hyperparameters.dryAllowedLength ?? defaults.dryAllowedLength!
+      ..dry_penalty_last_n =
+          args.hyperparameters.dryPenaltyLastN ?? defaults.dryPenaltyLastN!
       ..ignore_eos = args.modelSettings.ignoreEos
       ..flash_attn = args.modelSettings.flashAttention
       ..prompt_cache_all = args.modelSettings.promptCache

@@ -257,32 +257,59 @@ class ChatLogMessage {
 class ChatLogHyperparameters {
   int seed = -1;
   int tokens = 128;
-  int topK = 40;
-  double topP = 0.95;
-  double minP = 0.05;
-  double xtcProbability = 0.0;
-  double xtcThreshold = 0.1;
-  double temp = 0.8;
-  double dynatempRange = 0.0;
-  double dynatempExponent = 1.0;
-  double repeatPenalty = 1.04;
-  int repeatLastN = 1024;
-  double tfsZ = 1.0;
-  double typicalP = 1.0;
-  double frequencyPenalty = 0.0;
-  double presencePenalty = 0.0;
-  double dryMultiplier = 0.0;
-  double dryBase = 1.75;
-  int dryAllowedLength = 2;
-  int dryPenaltyLastN = -1;
-  int mirostatType = 0;
-  double mirostatEta = 0.1;
-  double mirostatTau = 5.0;
+  int? topK = 40;
+  double? topP = 0.95;
+  double? minP = 0.05;
+  double? xtcProbability = 0.0;
+  double? xtcThreshold = 0.1;
+  double? temp = 0.8;
+  double? dynatempRange = 0.0;
+  double? dynatempExponent = 1.0;
+  double? repeatPenalty = 1.04;
+  int? repeatLastN = 1024;
+  double? tfsZ = 1.0;
+  double? typicalP = 1.0;
+  double? frequencyPenalty = 0.0;
+  double? presencePenalty = 0.0;
+  double? dryMultiplier = 0.0;
+  double? dryBase = 1.75;
+  int? dryAllowedLength = 2;
+  int? dryPenaltyLastN = -1;
+  int? mirostatType = 0;
+  double? mirostatEta = 0.1;
+  double? mirostatTau = 5.0;
 
   ChatLogHyperparameters();
 
   factory ChatLogHyperparameters.fromJson(Map<String, dynamic> json) {
-    return _$ChatLogHyperparametersFromJson(json);
+    var newParams = _$ChatLogHyperparametersFromJson(json);
+
+    // we create a 'defaults' object here since the class has all the
+    // 'normal' default values initialized in the members; avoids duplication
+    final defaults = ChatLogHyperparameters();
+    newParams.topK ??= defaults.topK;
+    newParams.topP ??= defaults.topP;
+    newParams.minP ??= defaults.minP;
+    newParams.xtcProbability ??= defaults.xtcProbability;
+    newParams.xtcThreshold ??= defaults.xtcThreshold;
+    newParams.temp ??= defaults.temp;
+    newParams.dynatempRange ??= defaults.dynatempRange;
+    newParams.dynatempExponent ??= defaults.dynatempExponent;
+    newParams.repeatPenalty ??= defaults.repeatPenalty;
+    newParams.repeatLastN ??= defaults.repeatLastN;
+    newParams.tfsZ ??= defaults.tfsZ;
+    newParams.typicalP ??= defaults.typicalP;
+    newParams.frequencyPenalty ??= defaults.frequencyPenalty;
+    newParams.presencePenalty ??= defaults.presencePenalty;
+    newParams.dryMultiplier ??= defaults.dryMultiplier;
+    newParams.dryBase ??= defaults.dryBase;
+    newParams.dryAllowedLength ??= defaults.dryAllowedLength;
+    newParams.dryPenaltyLastN ??= defaults.dryPenaltyLastN;
+    newParams.mirostatType ??= defaults.mirostatType;
+    newParams.mirostatEta ??= defaults.mirostatEta;
+    newParams.mirostatTau ??= defaults.mirostatTau;
+
+    return newParams;
   }
 
   Map<String, dynamic> toJson() {
