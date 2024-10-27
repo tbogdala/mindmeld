@@ -264,6 +264,7 @@ class PredictionWorker {
                 // special case scenario, we have a cached prompt state and matching prompts
                 // first we free our resources
                 llamaModel!.freeGptSampler(predictionStreamState!.sampler!);
+                predictionStreamState!.params.dispose();
 
                 // then dethaw the state and set the modified state appropriately
                 var params = _buildTextGenParams(llamaModel, message);
