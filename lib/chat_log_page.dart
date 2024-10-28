@@ -389,14 +389,20 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     log("Prompt Built:");
     log(prompt);
 
+    // build the DRY sampler sequence breakers to make the sampler okay with
+    // seeing the character names.
+    List<String> drySequenceBreakers = ["\n", ":", "\"", "*", "Narrator"];
+
     // add the human user's name to the stop phrases
     List<String> stopPhrases = List.from(promptConfig.stopPhrases);
     final humanChar = targetChatlog.getHumanCharacter();
     if (humanChar != null && humanChar.name.isNotEmpty) {
       stopPhrases.add('${humanChar.name}:');
       stopPhrases.add('### ${humanChar.name}');
+      drySequenceBreakers.add((humanChar.name));
     } else {
       stopPhrases.add('${ChatLog.defaultUserName}:');
+      drySequenceBreakers.add(ChatLog.defaultUserName);
     }
 
     // throw in the narrator's name as well
@@ -408,6 +414,11 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     final isNarratorCommand =
         targetChatlog.messages.last.message.startsWith('/narrator ');
     inFlightCharacterName = isNarratorCommand ? 'Narrator' : aiCharacter!.name;
+    if (aiCharacter != null) {
+      drySequenceBreakers.add(aiCharacter.name);
+    }
+
+    log("DRY sampler sequence breakers: $drySequenceBreakers");
 
     final stopwatch = Stopwatch();
 
@@ -419,6 +430,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
         currentModelConfig,
         prompt,
         stopPhrases,
+        drySequenceBreakers,
         targetChatlog.hyperparmeters);
     var streamStartResult =
         await prognosticator!.startPredictionStream(request);
@@ -594,6 +606,10 @@ class ChatLogWidgetState extends State<ChatLogWidget>
                         await _generateAIMessage(false);
                       },
                     ),
+                  if (messageGenerationInProgress && msg.isTemporary ||
+                      (isContinuingMessage &&
+                          msg == widget.chatLog.messages.last))
+                    const SizedBox(height: 8),
                   if (messageGenerationInProgress && msg.isTemporary ||
                       (isContinuingMessage &&
                           msg == widget.chatLog.messages.last))

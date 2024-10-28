@@ -67,10 +67,16 @@ class StartPredictionStreamRequest {
   ConfigModelSettings modelSettings;
   String promptString;
   List<String> antipromptStrings;
+  List<String> drySequenceBreakerStrings;
   ChatLogHyperparameters hyperparameters;
 
-  StartPredictionStreamRequest(this.modelFilepath, this.modelSettings,
-      this.promptString, this.antipromptStrings, this.hyperparameters);
+  StartPredictionStreamRequest(
+      this.modelFilepath,
+      this.modelSettings,
+      this.promptString,
+      this.antipromptStrings,
+      this.drySequenceBreakerStrings,
+      this.hyperparameters);
 }
 
 class ContinuePredictionStreamResult {
@@ -407,6 +413,7 @@ class PredictionWorker {
       ..n_batch = args.modelSettings.batchSize ?? 128;
     params.setPrompt(args.promptString);
     params.setAntiprompts(args.antipromptStrings);
+    params.setDrySequenceBreakers(args.drySequenceBreakerStrings);
     log('_buildTextGenParams: A total of ${args.antipromptStrings.length} antiprompt strings: ${args.antipromptStrings.join(",")}');
     return params;
   }
