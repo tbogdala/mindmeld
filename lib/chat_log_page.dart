@@ -632,6 +632,13 @@ class ChatLogWidgetState extends State<ChatLogWidget>
   }
 
   Widget _buildMessageList(BuildContext context) {
+    // check to see if a new message is in flight and has started
+    // to be generated for this particular chat log.
+    final isNewMsgInFlight = inFlightMessage != null &&
+        inFlightMessage!.isNotEmpty &&
+        widget.chatLog.name == inFlightChatLog?.name &&
+        isContinuingMessage == false;
+
     // we do a double reversal - messages and list - so they come out in the
     // intended order but the listview starts at the bottom (most recent).
     final reverseMessages = widget.chatLog.messages.reversed;
@@ -641,14 +648,13 @@ class ChatLogWidgetState extends State<ChatLogWidget>
 
     return ListView.builder(
       reverse: true,
-      itemCount: widget.chatLog.messages.length,
+      itemCount: isNewMsgInFlight
+          ? widget.chatLog.messages.length + 1
+          : widget.chatLog.messages.length,
       shrinkWrap: true,
       itemBuilder: (context, index) {
         ChatLogMessage msg;
-        if (inFlightMessage != null &&
-            inFlightMessage!.isNotEmpty &&
-            widget.chatLog.name == inFlightChatLog?.name &&
-            isContinuingMessage == false) {
+        if (isNewMsgInFlight) {
           if (index > 0) {
             msg = reverseMessages.elementAt(index - 1);
           } else {
