@@ -13,6 +13,7 @@ APPIMAGETOOL="/home/timothy/Applications/appimagetool-x86_64.AppImage"
 #
 # Note: for Linux, AVX512 is not enabled by default. in fact ...
 # GGML_FMA, GGML_AVX, GGML_AVX2 nor GGML_AVX512 appear to be enabled by default.
+rm -rf $APPDIR
 ./make_linux_deps.sh
 
 # build the linux runner in release mode
@@ -24,8 +25,6 @@ mkdir $APPDIR
 # copy our build
 cp -r build/linux/x64/release/bundle/* $APPDIR
 cp packages/woolydart/src/build-linux/libwoolycore.so $APPDIR
-cp packages/woolydart/src/build-linux/llama.cpp/src/libllama.so $APPDIR
-cp packages/woolydart/src/build-linux/llama.cpp/ggml/src/libggml.so $APPDIR
 
 # copy some assets
 cp assets/app_icon_512.png $APPDIR
