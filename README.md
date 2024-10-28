@@ -1,4 +1,4 @@
-# MindMeld (Alpha Release)
+# MindMeld (v1.1.0)
 
 A simple-to-use, open source GUI for local AI chat.
 
