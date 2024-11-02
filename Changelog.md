@@ -1,5 +1,10 @@
 # Change Log
 
+## v1.2.0
+
+* update: upgraded project dependencies
+
+
 ## v1.1.0
 
 * update: upstream woolycore and woolydart libraries and updated build scripts to work with the newer versions.
