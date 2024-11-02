@@ -4,6 +4,7 @@ import 'dart:developer';
 
 import 'chat_log.dart';
 import 'chat_log_page.dart';
+import 'config_app.dart';
 import 'config_models.dart';
 import 'lorebook.dart';
 import 'new_chat_log_page.dart';
@@ -19,6 +20,7 @@ class MobileMindmeldApp extends StatefulWidget {
 }
 
 class _MobileMindmeldAppState extends State<MobileMindmeldApp> {
+  ConfigApp? configApp;
   List<ChatLog> chatLogs = [];
   List<Lorebook> lorebooks = [];
   ConfigModelFiles? configModelFiles;
@@ -41,6 +43,12 @@ class _MobileMindmeldAppState extends State<MobileMindmeldApp> {
     await ChatLog.ensureProfilePicsFolderExists();
     await Lorebook.ensureLorebooksFolderExists();
 
+    configApp = await ConfigApp.loadFromConfigFile();
+    if (configApp == null) {
+      log('Creating default config for application.');
+      configApp = ConfigApp();
+      await configApp!.saveJsonToConfigFile();
+    }
     configModelFiles = await ConfigModelFiles.loadFromConfigFile();
     lorebooks = await Lorebook.loadAllLorebooks();
     chatLogs = await ChatLog.loadAllChatlogs();
@@ -301,6 +309,7 @@ class _MobileMindmeldAppState extends State<MobileMindmeldApp> {
                             MaterialPageRoute(
                                 builder: (context) => ChatLogPage(
                                     chatLog: thisLog,
+                                    configApp: configApp!,
                                     configModelFiles: configModelFiles!,
                                     lorebooks: lorebooks,
                                     onChatLogWidgetChange: () {

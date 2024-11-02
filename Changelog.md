@@ -4,6 +4,10 @@
 
 * update: upgraded project dependencies
 
+* feature: new application-level configuration file added called 'mindmeld.json' in the documents folder.
+  it has an 'options' map of String to String, which is intended to be used for 'low-level' overrides
+  or experimental features.
+
 
 ## v1.1.0
 

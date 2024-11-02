@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mindmeld/config_app.dart';
 
 import 'package:path/path.dart' as p;
 import 'package:profile_photo/profile_photo.dart';
@@ -19,6 +20,7 @@ import 'prediction_worker.dart';
 
 class ChatLogPage extends StatefulWidget {
   final ChatLog chatLog;
+  final ConfigApp configApp;
   final ConfigModelFiles configModelFiles;
   final List<Lorebook> lorebooks;
 
@@ -28,6 +30,7 @@ class ChatLogPage extends StatefulWidget {
   const ChatLogPage(
       {super.key,
       required this.chatLog,
+      required this.configApp,
       required this.configModelFiles,
       required this.lorebooks,
       required this.onChatLogWidgetChange});
@@ -115,6 +118,7 @@ class _ChatLogPageState extends State<ChatLogPage> {
             child: ChatLogWidget(
               key: chatLogWidgetState,
               chatLog: widget.chatLog,
+              configApp: widget.configApp,
               configModelFiles: widget.configModelFiles,
               lorebooks: widget.lorebooks,
               onChatLogChange: () {
@@ -126,6 +130,7 @@ class _ChatLogPageState extends State<ChatLogPage> {
 
 class ChatLogWidget extends StatefulWidget {
   final ChatLog chatLog;
+  final ConfigApp configApp;
   final ConfigModelFiles configModelFiles;
   final List<Lorebook> lorebooks;
 
@@ -136,6 +141,7 @@ class ChatLogWidget extends StatefulWidget {
   const ChatLogWidget(
       {super.key,
       required this.chatLog,
+      required this.configApp,
       required this.configModelFiles,
       required this.lorebooks,
       required this.onChatLogChange});
@@ -850,23 +856,67 @@ class ChatLogWidgetState extends State<ChatLogWidget>
       });
       await widget.chatLog.saveToFile();
     } else {
-      // We're wanting to send a new message, so add it to
-      // the log and start generating a new message.
       if (newMsg.isNotEmpty) {
-        final chatLogMsg = ChatLogMessage(
-            widget.chatLog.getHumanCharacter()!.name, newMsg, true, null);
-        // update the UI with the new chatlog message
-        setState(() {
-          newMessgeController.clear();
-          widget.chatLog.messages.add(chatLogMsg);
-        });
+        // we're not editing a message but the new message area is not empty.
+        // check to see if a 'slash command' was used before sending the text
+        // off for the AI to reply to.
+        if (_startsWithSlashCommand(newMsg)) {
+          log('_OnMessageInputSend detected a slash command: $newMsg');
+          _doSlashCommand(newMsg);
 
-        // send our message off to the AI for a reply
-        await _generateAIMessage(false);
+          // update the UI with the new chatlog message
+          setState(() {
+            newMessgeController.clear();
+          });
+        } else {
+          // It's not a slash command so the user is wanting to send a new message,
+          // so add it to the log and start generating a new message.
+          final chatLogMsg = ChatLogMessage(
+              widget.chatLog.getHumanCharacter()!.name, newMsg, true, null);
+          // update the UI with the new chatlog message
+          setState(() {
+            newMessgeController.clear();
+            widget.chatLog.messages.add(chatLogMsg);
+          });
+
+          // send our message off to the AI for a reply
+          await _generateAIMessage(false);
+        }
       }
     }
 
     widget.onChatLogChange();
+  }
+
+  // checks to see if the string starts with a known 'slash-command' for the app
+  // NOTE: this does not check for the /narrator command.
+  bool _startsWithSlashCommand(String str) {
+    final lowerStr = str.toLowerCase();
+    if (lowerStr.startsWith('/set ')) {
+      return true;
+    } else if (lowerStr.startsWith('/unset ')) {
+      return true;
+    }
+    return false;
+  }
+
+  void _doSlashCommand(String str) {
+    final lowerStr = str.toLowerCase();
+
+    try {
+      // /set <variable_name> <string_value>
+      if (lowerStr.startsWith('/set ')) {
+        List<String> parts = str.trim().split(RegExp(r'\s+'));
+        widget.configApp.setOption(parts[1], parts.sublist(2).join(' '));
+      }
+      // /unset <variable_name>
+      else if (lowerStr.startsWith('/unset ')) {
+        List<String> parts = str.trim().split(RegExp(r'\s+'));
+        widget.configApp.unsetOption(parts[1]);
+      }
+    } catch (e) {
+      log('_doSlashCommand: exception caught while attempting command: $e');
+    }
   }
 
   @override

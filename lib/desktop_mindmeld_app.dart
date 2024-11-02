@@ -13,6 +13,8 @@ import 'package:mindmeld/chat_log_page.dart';
 import 'package:mindmeld/platform_and_theming.dart';
 import 'package:mindmeld/config_models.dart';
 
+import 'config_app.dart';
+
 class DesktopMindmeldApp extends StatefulWidget {
   const DesktopMindmeldApp({
     super.key,
@@ -25,6 +27,7 @@ class DesktopMindmeldApp extends StatefulWidget {
 class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
   late GlobalKey<ChatLogWidgetState> chatLogWidgetState;
   bool _isLoading = true;
+  ConfigApp? configApp;
   List<ChatLog> chatLogs = [];
   List<Lorebook> lorebooks = [];
   ConfigModelFiles? configModelFiles;
@@ -47,6 +50,12 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
     await ChatLog.ensureProfilePicsFolderExists();
     await Lorebook.ensureLorebooksFolderExists();
 
+    configApp = await ConfigApp.loadFromConfigFile();
+    if (configApp == null) {
+      log('Creating default config for application.');
+      configApp = ConfigApp();
+      await configApp!.saveJsonToConfigFile();
+    }
     configModelFiles = await ConfigModelFiles.loadFromConfigFile();
     lorebooks = await Lorebook.loadAllLorebooks();
     chatLogs = await ChatLog.loadAllChatlogs();
@@ -224,6 +233,7 @@ class _DesktopMindmeldAppState extends State<DesktopMindmeldApp> {
                           child: ChatLogWidget(
                             key: chatLogWidgetState,
                             chatLog: selectedLog,
+                            configApp: configApp!,
                             configModelFiles: configModelFiles!,
                             lorebooks: lorebooks,
                             onChatLogChange: () {
