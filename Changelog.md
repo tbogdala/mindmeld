@@ -6,7 +6,11 @@
 
 * feature: new application-level configuration file added called 'mindmeld.json' in the documents folder.
   it has an 'options' map of String to String, which is intended to be used for 'low-level' overrides
-  or experimental features.
+  or experimental features. these settings can be set with the `/set <option> <value>` command, 
+  unset with the `/unset <option>` command, or just manually edited in the configuration file itself,
+  though those settings are only read once at application loading.
+* feature: the prompt being constructed and sent to the AI LLM is now configurable through the
+  application configuration file. See docs/app_config.md for more information.
 
 
 ## v1.1.0

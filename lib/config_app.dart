@@ -38,6 +38,16 @@ class ConfigApp {
     saveJsonToConfigFile();
   }
 
+  // attempts to get the string value for `key` from `options`.
+  // if the `key` does not exist in `options`, the value of `defaultValue`
+  // will be returned, incluing null if not specified.
+  String? getOption(String key, {String? defaultValue}) {
+    if (options.containsKey(key)) {
+      return options[key];
+    }
+    return defaultValue;
+  }
+
   // attempts to get the string value for `key` from `options` and convert
   // it to a boolean with a potential `defaultValue`.
   // if the `key` does not exist in `options`, the value of `defaultValue`

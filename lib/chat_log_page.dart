@@ -389,8 +389,8 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     int tokenBudget = (currentModelConfig.contextSize ?? 2048) -
         targetChatlog.hyperparmeters.tokens;
     final promptConfig = targetChatlog.modelPromptStyle.getPromptConfig();
-    final prompt = await prognosticator!
-        .buildPrompt(targetChatlog, widget.lorebooks, tokenBudget, continueMsg);
+    final prompt = await prognosticator!.buildPrompt(widget.configApp,
+        targetChatlog, widget.lorebooks, tokenBudget, continueMsg);
     log("Token budget: $tokenBudget");
     log("Prompt Built:");
     log(prompt);
