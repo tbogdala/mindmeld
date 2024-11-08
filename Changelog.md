@@ -2,7 +2,7 @@
 
 ## v1.2.0
 
-* update: upgraded project dependencies
+* update: upgraded project dependencies; minimum iOS deployment is set to 17.6
 
 * feature: new application-level configuration file added called 'mindmeld.json' in the documents folder.
   it has an 'options' map of String to String, which is intended to be used for 'low-level' overrides
@@ -11,6 +11,8 @@
   though those settings are only read once at application loading.
 * feature: the prompt being constructed and sent to the AI LLM is now configurable through the
   application configuration file. See docs/app_config.md for more information.
+
+* bugfix: fixed build issues with Android ... something needed a version bump for java.
 
 
 ## v1.1.0
