@@ -391,7 +391,6 @@ class PredictionWorker {
           args.hyperparameters.dynatempRange ?? defaults.dynatempRange!
       ..dynatemp_exponent =
           args.hyperparameters.dynatempExponent ?? defaults.dynatempExponent!
-      ..tfs_z = args.hyperparameters.tfsZ ?? defaults.tfsZ!
       ..typical_p = args.hyperparameters.typicalP ?? defaults.typicalP!
       ..penalty_freq =
           args.hyperparameters.frequencyPenalty ?? defaults.frequencyPenalty!
