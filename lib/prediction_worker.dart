@@ -470,9 +470,14 @@ class PredictionWorker {
     // start by sampling the next token
     Token nextToken = llamaModel.sampleNextToken(streamState.sampler!);
 
+    // how many tokens to predict before starting to check for eog tokens
+    // or antiprompts
+    const minTokenCount = 3;
+
     // check to see if it should stop the text prediction process
-    if (llamaModel.checkEogAndAntiprompt(
-        streamState.params, streamState.sampler!)) {
+    if (streamState.predictions.length > minTokenCount &&
+        llamaModel.checkEogAndAntiprompt(
+            streamState.params, streamState.sampler!)) {
       log('PredictionWorker: End of generation or antiprompt token encountered - halting prediction...');
       streamState.predictions.add(nextToken);
       var finalResponse =

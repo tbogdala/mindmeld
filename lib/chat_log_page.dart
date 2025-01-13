@@ -421,6 +421,7 @@ class ChatLogWidgetState extends State<ChatLogWidget>
         targetChatlog.messages.last.message.startsWith('/narrator ');
     inFlightCharacterName = isNarratorCommand ? 'Narrator' : aiCharacter!.name;
     if (aiCharacter != null) {
+      stopPhrases.add('${aiCharacter.name}:');
       drySequenceBreakers.add(aiCharacter.name);
     }
 

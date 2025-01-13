@@ -14,6 +14,11 @@
 
 * bugfix: fixed build issues with Android ... something needed a version bump for java.
 
+* bugfix: made the inference loop only check for eog/antiprompts after a few tokens so that it won't
+  halt immediately when regenerating narrator replies.
+
+* bugfix: made sure the AI character name was getting added to the antiprompts.
+
 
 ## v1.1.0
 
