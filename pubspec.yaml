@@ -44,7 +44,7 @@ dependencies:
   json_serializable: ^6.9.3
   json_annotation: ^4.9.0
   build_runner: ^2.4.14
-  background_downloader: ^8.9.2
+  background_downloader: ^8.9.3
   window_manager: ^0.4.3
   profile_photo: ^1.0.3
 
@@ -58,7 +58,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
-  flutter_launcher_icons: ^0.14.2
+  flutter_launcher_icons: ^0.14.3
 
 flutter_launcher_icons:
   android: true
