@@ -47,6 +47,7 @@ dependencies:
   background_downloader: ^8.9.3
   window_manager: ^0.4.3
   profile_photo: ^1.0.3
+  jinja: ^0.6.0 
 
 dev_dependencies:
   flutter_test:

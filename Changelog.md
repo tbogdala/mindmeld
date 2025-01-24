@@ -15,9 +15,14 @@
   for overriding the prompt formatting are available. this did change the behavior of the chat log slightly,
   but that should be a backwards-compatible change.
 
-// NOTE: we might be taking a lot of this apart before merging back to main:
 * feature: the prompt being constructed and sent to the AI LLM is now configurable through the
-  application configuration file. See docs/app_config.md for more information.
+  application configuration file. See docs/app_config.md for more information. (now it uses
+  a jinja styled string to build the system message)
+
+* antifeature: filling up the prompt token space is now estimated on characters again. the multiplier
+  for this estimation is pulled from the app config variable named `chars_per_token`. this is in part
+  due to anticipation of remote API endpoints; secondarily, the more exacting estimates
+  with local LLMs can be added back in later.
 
 * bugfix: fixed build issues with Android ... something needed a version bump for java.
 

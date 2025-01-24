@@ -3,10 +3,10 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
-
 import 'package:path/path.dart' as p;
 import 'package:woolydart/woolydart.dart';
 import 'dart:developer';
+import 'package:jinja/jinja.dart';
 
 import 'chat_log.dart';
 import 'config_app.dart';
@@ -555,30 +555,99 @@ class PredictionWorker {
     return ContinuePredictionStreamResult(nextToken, false, null, detokenized);
   }
 
-  // will return the default prompt unless `system_prompt` is in the application
-  // configuration.
-  String _getSystemPrompt(ConfigApp configApp) {
+  // will return the prompt formatted system message for the special 'Narrator' response.
+  // uses the default format unless `prompt_narrator_system` is in the application configuration.
+  String _getNarratorSystemPromptText(ConfigApp configApp) {
+    const String defaultNarratorSystem =
+        '''You are an omniscient, creative Narrator for an interactive story. Your task is to vividly describe environments, characters, and events, as well as provide dialogue and actions for non-player characters (NPCs) when appropriate.
+
+The Narrator is an enigmatic, omniscient entity that guides the story. Unseen yet ever-present, the Narrator shapes the narrative, describes the world, and gives voice to NPCs. When invoked by the user, the Narrator will focus on the requested task. Otherwise, the Narrator will:
+
+- Provide vivid, sensory descriptions of environments
+- Introduce and describe characters
+- Narrate events and actions
+- Provide dialogue for NPCs
+- Create atmosphere and mood through descriptive language
+- Offer subtle hints or clues to guide the story
+- Respond to player actions with appropriate narrative consequences
+
+The Narrator's goal is to create an immersive, dynamic story world that reacts to player choices while maintaining narrative coherence.''';
+    String? configOverride = configApp.getOption('prompt_narrator_system');
+    return configOverride ?? defaultNarratorSystem;
+  }
+
+  String _getSystemPromptText(ConfigApp configApp) {
     const defaultSystemPrompt =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.Maintain the character persona but allow it to evolve with the story.\nBe creative and proactive. Drive the story forward, introducing plot lines and events when relevant.\nAll types of outputs are encouraged; respond accordingly to the narrative.\nInclude dialogues, actions, and thoughts in each response.\nUtilize all five senses to describe scenarios within the character's dialogue.\nUse emotional symbols such as \"!\" and \"~\" in appropriate contexts.\nIncorporate onomatopoeia when suitable.\nAllow time for other characters to respond with their own input, respecting their agency.\n\n<Forbidden>\nUsing excessive literary embellishments and purple prose unless dictated by Character's persona.\nWriting for, speaking, thinking, acting, or replying as a different in your response.\nRepetitive and monotonous outputs.\nPositivity bias in your replies.\nBeing overly extreme or NSFW when the narrative context is inappropriate.\n</Forbidden>\n\nFollow the instructions above, avoiding the items listed in <Forbidden></Forbidden>.\n";
+        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the information below.Maintain the character persona but allow it to evolve with the story.\nBe creative and proactive. Drive the story forward, introducing plot lines and events when relevant.\nAll types of outputs are encouraged; respond accordingly to the narrative.\nInclude dialogues, actions, and thoughts in each response.\nUtilize all five senses to describe scenarios within the character's dialogue.\nUse emotional symbols such as \"!\" and \"~\" in appropriate contexts.\nIncorporate onomatopoeia when suitable.\nAllow time for other characters to respond with their own input, respecting their agency.\n\n<Forbidden>\nUsing excessive literary embellishments and purple prose unless dictated by Character's persona.\nWriting for, speaking, thinking, acting, or replying as a different in your response.\nRepetitive and monotonous outputs.\nPositivity bias in your replies.\nBeing overly extreme or NSFW when the narrative context is inappropriate.\n</Forbidden>\n\nFollow the instructions above, avoiding the items listed in <Forbidden></Forbidden>.";
 
     var configOverride = configApp.getOption('prompt_system');
     return configOverride ?? defaultSystemPrompt;
   }
 
-  // will return the prompt formatted lorebook section. uses the default format
-  // unless `prompt_lorebook` is in the application configuration.
-  // if the loreEntriesString is empty, and empty string will be returned.
-  String _getLorebookPromptFragment(
-      ConfigApp configApp, String loreEntriesString) {
-    if (loreEntriesString.isEmpty) {
-      return loreEntriesString;
+  String _getSystemPrompt(
+    ConfigApp configApp,
+    String systemPrompt,
+    String storyContext,
+    List<ChatLogCharacter> characters,
+    List<LorebookEntry> relevantLore,
+  ) {
+    // rebuild the characters and lorebook by using Map<String,String> objects
+    // that the jinja environment understands better.
+    List<Map<String, String>> charObjects = [];
+    for (final c in characters) {
+      charObjects.add({
+        'name': c.name,
+        'description': c.description,
+        'personality': c.personality,
+      });
     }
 
-    const defaultPromptFragment = '## Relevant Lore:\n\n{{lorebook}}';
-    String? configOverride = configApp.getOption('prompt_lorebook');
-    String fragment = configOverride ?? defaultPromptFragment;
+    List<Map<String, String>> loreObjects = [];
+    for (final l in relevantLore) {
+      loreObjects.add({
+        'lore': l.lore,
+      });
+    }
 
-    return fragment.replaceAll('{{lorebook}}', loreEntriesString);
+    final context = {
+      'system': systemPrompt,
+      'context': storyContext,
+      'characters': charObjects,
+      'lorebook': loreObjects,
+    };
+
+    // try to get a different template from the configuration file if present
+    const defaultSystemFormat = '''{{ system }}
+
+## Overall Plot Description:
+
+{{ context }}
+
+## Characters:
+
+{% for ch in characters %}
+### {{ ch.name }}:
+
+{{ ch.description }}
+
+{{ ch.name }}'s Personality Traits: {{ ch.personality }}
+
+{% endfor %}
+## Relevant Lore:
+
+{% for item in lorebook %}
+{{ item.lore }}
+
+{% endfor %}
+''';
+
+    var configOverride = configApp.getOption('prompt_system_format');
+    final systemFormat = configOverride ?? defaultSystemFormat;
+
+    // run the jinja template for the system format to assemble everything
+    final templateEnv = Environment();
+    final template = templateEnv.fromString(systemFormat);
+    return template.render(context);
   }
 
   // will return the default maximum lore percentage allowed for the prompt unless
@@ -590,174 +659,15 @@ class PredictionWorker {
     return configOverride ?? defaultMaxLorePercentage;
   }
 
-  // will return the prompt formatted story context section. uses the default format
-  // unless `prompt_context` is in the application configuration.
-  String _getContextPromptFragment(ConfigApp configApp, String context) {
-    const defaultPromptFragment =
-        '\n## Overall Plot Description:\n\n{{context}}\n\n';
-    String? configOverride = configApp.getOption('prompt_context');
-    String fragment = configOverride ?? defaultPromptFragment;
-
-    return fragment.replaceAll('{{context}}', context);
-  }
-
-  // will return the prompt formatted AI character description. uses the default format
-  // unless `prompt_ai_desc` is in the application configuration. additionally, if
-  // `personality` is not empty, it will add a string to describe the personality
-  // of the character using the default format or the `prompt_ai_pers` value in the
-  // application configuration.
-  String _getAiCharacterDescPromptFragment(
-      ConfigApp configApp, String name, String desc, String personality) {
-    const defaultPromptFragment =
-        '### {{ai_name}}\n\n{{ai_desc}}\n{{ai_personality_frag}}';
-    String? configOverride = configApp.getOption('prompt_ai_desc');
-    String descFragment = configOverride ?? defaultPromptFragment;
-    final configuredDescFragment = descFragment
-        .replaceAll('{{ai_name}}', name)
-        .replaceAll('{{ai_desc}}', desc);
-
-    var configuredPersFragment = "";
-
-    if (personality.isNotEmpty) {
-      const defaultPersPromptFragment =
-          '\n{{ai_name}}\'s Personality Traits: {{ai_personality}}\n';
-      String? configPersOverride = configApp.getOption('prompt_ai_pers');
-      String persFragment = configPersOverride ?? defaultPersPromptFragment;
-      configuredPersFragment = persFragment
-          .replaceAll('{{ai_name}}', name)
-          .replaceAll('{{ai_personality}}', personality);
-    }
-
-    return configuredDescFragment.replaceAll(
-        "{{ai_personality_frag}}", configuredPersFragment);
-  }
-
-  // will return the prompt formatted character description for the human user.
-  // uses the default format unless `prompt_user_desc` is in the application configuration.
-  String _getUserCharacterDescPromptFragment(
-      ConfigApp configApp, String name, String desc) {
-    const defaultPromptFragment = '### {{user_name}}\n\n{{user_desc}}\n';
-    String? configOverride = configApp.getOption('prompt_user_desc');
-    String descFragment = configOverride ?? defaultPromptFragment;
-    return descFragment
-        .replaceAll('{{user_name}}', name)
-        .replaceAll('{{user_desc}}', desc);
-  }
-
-  // will return the prompt formatted section for all of the characters in the chatlog.
-  // this allows for configuring how the section as a whole is presented and the
-  // parameters `configuredUserDesc` and `configuredAiDesc` are for the user and
-  // AI character descriptions respectively and should have already gone through
-  // the 'configurability' pass to pull the formatting for each.
-  // uses the default format unless `prompt_characters` is in the application configuration.
-  String _getCharacterPromptFragment(
-      ConfigApp configApp, String configuredUserDesc, String configuredAiDesc) {
-    const defaultPromptFragment =
-        '## Characters:\n\n{{user_desc}}\n{{ai_desc}}';
-    String? configOverride = configApp.getOption('prompt_characters');
-    String descFragment = configOverride ?? defaultPromptFragment;
-    return descFragment
-        .replaceAll('{{user_desc}}', configuredUserDesc)
-        .replaceAll('{{ai_desc}}', configuredAiDesc);
-  }
-
-  // will return the prompt formatted section of the prompt for everything but
-  // the chatlog - in a normal invocation of the prompt building mechanism.
-  // this allows for configuring how the section as a whole is presented.
-  // the `system` parameter should give all the instructions for writing a response.
-  // the `context` parameter should be the story context from the chatlog.
-  // the `characters` parameter should be the formatted fragment for the user
-  // and AI character descriptions.
-  // the `lorebookEntries` parameter should be the formatted fragment for all of
-  // the relevant lorebook entries for this conversation - if empty, this section
-  // will be replaced with an empty string.
-  // uses the default format unless `prompt_chat` is in the application configuration.
-  String _getChatPromptFragment(ConfigApp configApp, String system,
-      String context, String characters, String lorebookEntries) {
-    const defaultPromptFragment =
-        '{{system}}{{story_context}}{{characters}}\n{{lorebook}}';
-    String? configOverride = configApp.getOption('prompt_chat');
-    String descFragment = configOverride ?? defaultPromptFragment;
-    return descFragment
-        .replaceAll('{{system}}', system)
-        .replaceAll('{{story_context}}', context)
-        .replaceAll('{{characters}}', characters)
-        .replaceAll('{{lorebook}}', lorebookEntries);
-  }
-
-  // will return the prompt formatted section of the prompt for everything but
-  // the chatlog for the special 'narrator' mode.
-  // this allows for configuring how the section as a whole is presented.
-  // the `system` parameter should give all the instructions for writing a response.
-  // the `context` parameter should be the story context from the chatlog.
-  // the `characters` parameter should be the formatted fragment for the user
-  // and AI character descriptions.
-  // the `lorebookEntries` parameter should be the formatted fragment for all of
-  // the relevant lorebook entries for this conversation - if empty, this section
-  // will be replaced with an empty string.
-  // the `narratorSyste
-  // uses the default format unless `prompt_narrator` is in the application configuration.
-  String _getNarratorPromptFragment(
-      ConfigApp configApp,
-      String system,
-      String context,
-      String characters,
-      String lorebookEntries,
-      String narratorDesc,
-      String narratorRequest) {
-    const defaultPromptFragment =
-        '{{system}}\nThe user has requested that you {{narrator_request}}\n{{story_context}}{{characters}}\n### Narrator\n\n{{narrator_desc}}\n\n{{lorebook}}';
-
-    String? configOverride = configApp.getOption('prompt_narrator');
-    String descFragment = configOverride ?? defaultPromptFragment;
-    return descFragment
-        .replaceAll('{{system}}', system)
-        .replaceAll('{{story_context}}', context)
-        .replaceAll('{{characters}}', characters)
-        .replaceAll('{{lorebook}}', lorebookEntries)
-        .replaceAll('{{narrator_desc}}', narratorDesc)
-        .replaceAll('{{narrator_request}}', narratorRequest);
-  }
-
-  // will return the prompt formatted character description for the special 'Narrator'.
-  // uses the default format unless `prompt_narrator_desc` is in the application configuration.
-  String _getNarratorDesc(ConfigApp configApp) {
-    const String defaultNarratorDescription = '''
-The Narrator is an enigmatic, omniscient entity that guides the story. Unseen yet ever-present, the Narrator shapes the narrative, describes the world, and gives voice to NPCs. When invoked with the '/narrator' command, the Narrator will focus on the requested task. Otherwise, the Narrator will:
-
-- Provide vivid, sensory descriptions of environments
-- Introduce and describe characters
-- Narrate events and actions
-- Provide dialogue for NPCs
-- Create atmosphere and mood through descriptive language
-- Offer subtle hints or clues to guide the story
-- Respond to player actions with appropriate narrative consequences
-
-The Narrator should maintain a neutral tone, avoiding direct interaction with players unless specifically addressed. The goal is to create an immersive, dynamic story world that reacts to player choices while maintaining narrative coherence.''';
-    String? configOverride = configApp.getOption('prompt_narrator_desc');
-    return configOverride ?? defaultNarratorDescription;
-  }
-
-  // will return the prompt formatted system message for the special 'Narrator' response.
-  // uses the default format unless `prompt_narrator_system` is in the application configuration.
-  String _getNarratorSystem(ConfigApp configApp) {
-    const String defaultNarratorSystem =
-        'You are an omniscient, creative narrator for an interactive story. Your task is to vividly describe environments, characters, and events, as well as provide dialogue and actions for non-player characters (NPCs) when appropriate.';
-    String? configOverride = configApp.getOption('prompt_narrator_system');
-    return configOverride ?? defaultNarratorSystem;
-  }
-
   // returns a string for the entire prompt to send to the AI to generate a response.
   // this potentially pulls many overrides from the application configuration file
   // to construct the whole prompt.
   Future<String> buildPrompt(ConfigApp configApp, ChatLog chatlog,
       List<Lorebook> lorebooks, int tokenBudget, bool continueMsg) async {
-    // start by getting the system prompt, which can be overridden in the app config.
-    String configuredSystemPrompt = _getSystemPrompt(configApp);
-
     // we have a hard cap on how much lore to add so it doesn't gobble the whole context
     double maxLorePercentage = _getLorePercentage(configApp);
 
+    // get the default prompt style to use for the loaded model
     var promptTemplate = modelPromptStyleFromString(chatlog.modelPromptStyle);
 
     // sort out the human and 'other' characters
@@ -777,9 +687,20 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
     allCharacters.addAll(otherCharacters.values);
     final activeLorebooks = _getActiveLorebooks(allCharacters, lorebooks);
     final activeEntries = _getActiveEntries(chatlog, activeLorebooks);
-    final (loreString, loreTokenCount) = await _buildLorebookEntryString(
-        configApp, activeEntries, (maxLorePercentage * tokenBudget).round());
-    log("A total of $loreTokenCount tokens used for lorebook entries.");
+
+    int currentCharCount = 0;
+    List<LorebookEntry> fittingLoreEntries = [];
+    final charsPerTokenEst =
+        configApp.getOptionAsDouble('chars_per_token') ?? 3.75;
+    final loreCharBudget =
+        ((maxLorePercentage * tokenBudget).round() * charsPerTokenEst).round();
+    for (final entry in activeEntries) {
+      currentCharCount += entry.lore.length + 1;
+      if (currentCharCount > loreCharBudget) {
+        break;
+      }
+      fittingLoreEntries.add(entry);
+    }
 
     // setup the human description strings for the user interacting with the app
     final String humanName = humanCharacter.name.isNotEmpty
@@ -790,7 +711,6 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
         : ChatLog.defaultUserDesc;
 
     String defaultAINameList = '';
-    String aiDescriptions = '';
     assert(otherCharacters.isNotEmpty);
 
     // add the AI character descriptions together into a final string
@@ -806,13 +726,6 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
         defaultAINameList += ', $ocName';
       }
 
-      // then we add the character description to the string that will be used in the full prompt.
-      final ocDesc =
-          oc.description.isNotEmpty ? oc.description : ChatLog.defaultAiDesc;
-      final aiDescFragment = _getAiCharacterDescPromptFragment(
-          configApp, ocName, ocDesc, oc.personality);
-      aiDescriptions += aiDescFragment;
-
       ocIndex += 1;
     }
 
@@ -820,31 +733,21 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
     String ctxDesc = chatlog.context.isNotEmpty
         ? chatlog.context
         : "$humanName$defaultAINameList are having a conversation over text messaging.";
-    final configuredCtxDesc = _getContextPromptFragment(configApp, ctxDesc);
 
-    // build the whole character section
-    String configuredUserDesc =
-        _getUserCharacterDescPromptFragment(configApp, humanName, humanDesc);
-    String configuredCharacters = _getCharacterPromptFragment(
-        configApp, configuredUserDesc, aiDescriptions);
-
-    // build the lorebook fragment
-    String configuredLorebook =
-        _getLorebookPromptFragment(configApp, loreString);
-
-    // tie all of it together: system message, chatlog story context and the characters
-    String system = _getChatPromptFragment(configApp, configuredSystemPrompt,
-        configuredCtxDesc, configuredCharacters, configuredLorebook);
+    // assemble the above information into a system prompt
+    // pull our overall system 'instruction' from the configuration file
+    final systemPromptText = _getSystemPromptText(configApp);
+    String systemPrompt = _getSystemPrompt(configApp, systemPromptText, ctxDesc,
+        allCharacters, fittingLoreEntries);
 
     // start keeping a running estimate of how many characters we have left to use
     final preambleTokenCountResp =
-        await getTokenCount(GetTokenCountRequest(system));
+        await getTokenCount(GetTokenCountRequest(systemPrompt));
     var remainingBudget = tokenBudget - preambleTokenCountResp.tokenCount;
 
     // messages are added in reverse order
     var reversedMessages = chatlog.messages.reversed;
     final firstMessage = reversedMessages.first;
-    const double charsPerTokenEstimate = 3.75;
     List<ChatMessage> msgBuffer = [];
 
     // check for any slash commands, of which we currently support one: /narrator
@@ -858,19 +761,12 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
           firstMessage.message.replaceFirst('/narrator ', '');
 
       // rebuild the prompt but swap out for the narrator parts and recalculate the budget
-      final configuredNarratorSystemMsg = _getNarratorSystem(configApp);
-      final configuredNarratorDesc = _getNarratorDesc(configApp);
-      system = _getNarratorPromptFragment(
-          configApp,
-          configuredNarratorSystemMsg,
-          configuredCtxDesc,
-          configuredCharacters,
-          configuredLorebook,
-          configuredNarratorDesc,
-          narratorRequest);
+      final narratorSystemMsg = _getNarratorSystemPromptText(configApp);
+      systemPrompt = _getSystemPrompt(configApp, narratorSystemMsg, ctxDesc,
+          allCharacters, fittingLoreEntries);
 
       final preambleTokenCountResp =
-          await getTokenCount(GetTokenCountRequest(system));
+          await getTokenCount(GetTokenCountRequest(systemPrompt));
       remainingBudget = tokenBudget - preambleTokenCountResp.tokenCount;
 
       // if we're using a narrator slash command the 'last' message should be the
@@ -878,7 +774,7 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
       final narratorDirection =
           ChatMessage("user", "Narrator, $narratorRequest");
       final msgTokenCountEst =
-          (narratorDirection.content.length / charsPerTokenEstimate).floor();
+          (narratorDirection.content.length / charsPerTokenEst).floor();
       remainingBudget -= msgTokenCountEst;
       msgBuffer.add(narratorDirection);
     }
@@ -894,7 +790,7 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
       }
 
       final msgTokenCountEst =
-          (formattedMsg.content.length / charsPerTokenEstimate).floor();
+          (formattedMsg.content.length / charsPerTokenEst).floor();
 
       if (remainingBudget - msgTokenCountEst < 0) {
         break;
@@ -909,7 +805,7 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
 
     // add the system mesg to the end of the msgBuffer, which will make it
     // the first item once reversed.
-    msgBuffer.add(ChatMessage("system", system));
+    msgBuffer.add(ChatMessage("system", systemPrompt));
 
     // reverse all the messages so we have the intended order.
     msgBuffer = msgBuffer.reversed.toList();
@@ -1005,40 +901,5 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
 
     log('matched ${matchedEntries.length} entries in total:');
     return matchedEntries;
-  }
-
-  // will return the prompt formatted lorebook entry. uses the default format
-  // unless `prompt_lorebook_entry` is in the application configuration.
-  String _getLorebookEntryPromptFragment(
-      ConfigApp configApp, LorebookEntry entry) {
-    const defaultPromptFragment = '{{entry_lore}}\n\n';
-    String? configOverride = configApp.getOption('prompt_lorebook_entry');
-    String fragment = configOverride ?? defaultPromptFragment;
-
-    return fragment.replaceAll('{{entry_lore}}', entry.lore);
-  }
-
-  Future<(String, int)> _buildLorebookEntryString(ConfigApp configApp,
-      List<LorebookEntry> matchedEntries, int loreTokenBudget) async {
-    String allEntries = "";
-    int usedTokens = 0;
-    for (final entry in matchedEntries) {
-      final entryString = _getLorebookEntryPromptFragment(configApp, entry);
-      final entryStringTokenCount =
-          await getTokenCount(GetTokenCountRequest(entryString));
-
-      usedTokens += entryStringTokenCount.tokenCount;
-
-      log('\tPadding lorebook entry (using ${entryStringTokenCount.tokenCount} tokens): ${entry.patterns}');
-      allEntries += entryString;
-
-      // if we've filled our budget, make sure to stop here; yes this can
-      // overflow the budget by the length of the last entry by design.
-      if (usedTokens >= loreTokenBudget) {
-        log('Lorebook entries have filled the budget of $loreTokenBudget tokens; stopping...');
-        return (allEntries, usedTokens);
-      }
-    }
-    return (allEntries, usedTokens);
   }
 }
