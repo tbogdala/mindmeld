@@ -98,7 +98,7 @@ Map<String, dynamic> _$ChatLogCharacterToJson(ChatLogCharacter instance) =>
 ChatLog _$ChatLogFromJson(Map<String, dynamic> json) => ChatLog(
       json['name'] as String,
       json['modelName'] as String,
-      $enumDecode(_$ModelPromptStyleEnumMap, json['modelPromptStyle']),
+      json['modelPromptStyle'] as String,
       json['context'] as String,
     )
       ..version = (json['version'] as num).toInt()
@@ -115,23 +115,9 @@ Map<String, dynamic> _$ChatLogToJson(ChatLog instance) => <String, dynamic>{
       'version': instance.version,
       'name': instance.name,
       'modelName': instance.modelName,
-      'modelPromptStyle': _$ModelPromptStyleEnumMap[instance.modelPromptStyle]!,
+      'modelPromptStyle': instance.modelPromptStyle,
       'context': instance.context,
       'hyperparmeters': instance.hyperparmeters,
       'characters': instance.characters,
       'messages': instance.messages,
     };
-
-const _$ModelPromptStyleEnumMap = {
-  ModelPromptStyle.alpaca: 'alpaca',
-  ModelPromptStyle.chatml: 'chatml',
-  ModelPromptStyle.gemma: 'gemma',
-  ModelPromptStyle.llama3: 'llama3',
-  ModelPromptStyle.mistralInstruct: 'mistralInstruct',
-  ModelPromptStyle.opusV14: 'opusV14',
-  ModelPromptStyle.phi3: 'phi3',
-  ModelPromptStyle.plainText: 'plainText',
-  ModelPromptStyle.tinyllama: 'tinyllama',
-  ModelPromptStyle.vicuna: 'vicuna',
-  ModelPromptStyle.zephyr: 'zephyr',
-};

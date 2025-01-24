@@ -148,7 +148,8 @@ class _NewChatLogWidgetState extends State<NewChatLogWidget> {
                 var result = ChatLog(
                     logNameController.text,
                     selectedModelFileOption,
-                    modelPromptStyleFromString(selectedPromptFormatOption),
+                    modelPromptStyleFromString(selectedPromptFormatOption)
+                        .nameAsString(),
                     '');
                 result.characters.add(ChatLogCharacter(
                     name: userNameController.text,

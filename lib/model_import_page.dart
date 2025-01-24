@@ -130,11 +130,11 @@ extension AutoDLModelsExtension on AutoDLModels {
         return ConfigModelSettings(
             filepath, 100, 8192, null, null, true, false, true, 'llama3');
       case AutoDLModels.mistral7bV03Instruct:
-        return ConfigModelSettings(filepath, 100, 8192, null, null, true, false,
-            true, 'mistralInstruct');
+        return ConfigModelSettings(
+            filepath, 100, 8192, null, null, true, false, true, 'mistral-v7');
       case AutoDLModels.mistralNemo2407:
-        return ConfigModelSettings(filepath, 100, 8192, null, null, true, false,
-            true, 'mistralInstruct');
+        return ConfigModelSettings(
+            filepath, 100, 8192, null, null, true, false, true, 'mistral-v7');
       case AutoDLModels.phi35MiniInstruct:
         return ConfigModelSettings(
             filepath, 100, 8192, null, null, true, false, true, 'phi3');
@@ -146,7 +146,7 @@ extension AutoDLModelsExtension on AutoDLModels {
             filepath, 100, 4096, null, null, true, false, true, 'chatml');
       default:
         return ConfigModelSettings(
-            filepath, 100, 2048, null, null, true, false, true, 'tinyllama');
+            filepath, 100, 2048, null, null, true, false, true, 'plaintext');
     }
   }
 }

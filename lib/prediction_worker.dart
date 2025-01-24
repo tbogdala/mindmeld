@@ -122,6 +122,22 @@ class EnsureModelLoadedResult {
 
 class CloseModelRequest {}
 
+class BuildPromptRequest {
+  List<ChatMessage> messages;
+  bool includeAssistant;
+  ModelPromptStyle templateOverride;
+
+  BuildPromptRequest(
+      this.messages, this.includeAssistant, this.templateOverride);
+}
+
+class BuildPromptResult {
+  int numProcessesd;
+  String prompt;
+
+  BuildPromptResult(this.numProcessesd, this.prompt);
+}
+
 class PredictionWorker {
   late Isolate _workerIsolate;
   late ReceivePort _fromIsoPort;
@@ -133,6 +149,7 @@ class PredictionWorker {
       Completer();
   Completer<GetTokenCountResult> _isoResponseTokenCount = Completer();
   Completer<EnsureModelLoadedResult> _isoResponseEnsureLoaded = Completer();
+  Completer<BuildPromptResult> _isoResponseBuildPrompt = Completer();
 
   static Future<PredictionWorker> spawn() async {
     log('PredictionWorker: spawning...');
@@ -151,6 +168,7 @@ class PredictionWorker {
     _isoResponsePredictionStreamStart = Completer();
     _isoResponseTokenCount = Completer();
     _isoResponseEnsureLoaded = Completer();
+    _isoResponseBuildPrompt = Completer();
     _toIsoPort!.send(CloseModelRequest());
   }
 
@@ -164,6 +182,7 @@ class PredictionWorker {
     _isoResponsePredictionStreamStart = Completer();
     _isoResponseTokenCount = Completer();
     _isoResponseEnsureLoaded = Completer();
+    _isoResponseBuildPrompt = Completer();
   }
 
   Future<StartPredictionStreamResult> startPredictionStream(
@@ -198,6 +217,14 @@ class PredictionWorker {
     return _isoResponseEnsureLoaded.future;
   }
 
+  Future<BuildPromptResult> handleBuildPrompt(
+      BuildPromptRequest request) async {
+    await _isoReady.future;
+    _isoResponseBuildPrompt = Completer();
+    _toIsoPort!.send(request);
+    return _isoResponseBuildPrompt.future;
+  }
+
   void _handleResponsesFromIsolate(dynamic message) {
     if (message is SendPort) {
       log('PredictionWorker: _handleResponseFromIsolate() got a ready notification');
@@ -215,6 +242,9 @@ class PredictionWorker {
     } else if (message is EnsureModelLoadedResult) {
       //log('PredictionWorker: _handleResponseFromIsolate() got an ensure model loaded reply');
       _isoResponseEnsureLoaded.complete(message);
+    } else if (message is BuildPromptResult) {
+      //log('PredictionWorker: _handleResponseFromIsolate() got a build prompt reply');
+      _isoResponseBuildPrompt.complete(message);
     } else {
       log("PredictionWorker: _handleResponseFromIsolate() got an unknown message: $message");
     }
@@ -321,6 +351,10 @@ class PredictionWorker {
             log("PredictionWorker: Worker is closing the loaded model...");
             llamaModel.freeModel();
           }
+        } else if (message is BuildPromptRequest) {
+          final result = _handleBuildPrompt(llamaModel!, message.messages,
+              message.includeAssistant, message.templateOverride);
+          port.send(result);
         }
       });
     } catch (e) {
@@ -331,6 +365,21 @@ class PredictionWorker {
         llamaModel?.freeModel();
       } finally {}
     }
+  }
+
+  static BuildPromptResult _handleBuildPrompt(
+    LlamaModel llamaModel,
+    List<ChatMessage> messages,
+    bool includeAssistant,
+    ModelPromptStyle templateOverride,
+  ) {
+    String? overrideStr;
+    if (templateOverride != ModelPromptStyle.builtIn) {
+      overrideStr = templateOverride.nameAsString();
+    }
+    var result = llamaModel.makePromptFromMessages(
+        messages, includeAssistant, overrideStr);
+    return BuildPromptResult(result.$2, result.$1);
   }
 
   static EnsureModelLoadedResult _ensureModelIsLoaded(
@@ -709,7 +758,7 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
     // we have a hard cap on how much lore to add so it doesn't gobble the whole context
     double maxLorePercentage = _getLorePercentage(configApp);
 
-    var promptConfig = chatlog.modelPromptStyle.getPromptConfig();
+    var promptTemplate = modelPromptStyleFromString(chatlog.modelPromptStyle);
 
     // sort out the human and 'other' characters
     assert(chatlog.characters.isNotEmpty);
@@ -773,11 +822,6 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
         : "$humanName$defaultAINameList are having a conversation over text messaging.";
     final configuredCtxDesc = _getContextPromptFragment(configApp, ctxDesc);
 
-    // bulid the whole system preamble
-    String promptFormatSystem = promptConfig.system.isNotEmpty
-        ? promptConfig.system
-        : configuredSystemPrompt;
-
     // build the whole character section
     String configuredUserDesc =
         _getUserCharacterDescPromptFragment(configApp, humanName, humanDesc);
@@ -789,24 +833,23 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
         _getLorebookPromptFragment(configApp, loreString);
 
     // tie all of it together: system message, chatlog story context and the characters
-    String system = _getChatPromptFragment(configApp, promptFormatSystem,
+    String system = _getChatPromptFragment(configApp, configuredSystemPrompt,
         configuredCtxDesc, configuredCharacters, configuredLorebook);
-
-    String preamble =
-        promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
 
     // start keeping a running estimate of how many characters we have left to use
     final preambleTokenCountResp =
-        await getTokenCount(GetTokenCountRequest(preamble));
+        await getTokenCount(GetTokenCountRequest(system));
     var remainingBudget = tokenBudget - preambleTokenCountResp.tokenCount;
 
     // messages are added in reverse order
     var reversedMessages = chatlog.messages.reversed;
     final firstMessage = reversedMessages.first;
-    String? slashCommandFooter;
+    const double charsPerTokenEstimate = 3.75;
+    List<ChatMessage> msgBuffer = [];
 
     // check for any slash commands, of which we currently support one: /narrator
-    if (firstMessage.message.startsWith('/narrator ')) {
+    bool isNarratorSlashcmd = firstMessage.message.startsWith('/narrator ');
+    if (isNarratorSlashcmd) {
       // take it out of circulation
       reversedMessages = reversedMessages.skip(1);
 
@@ -826,83 +869,95 @@ The Narrator should maintain a neutral tone, avoiding direct interaction with pl
           configuredNarratorDesc,
           narratorRequest);
 
-      preamble =
-          promptConfig.preSystemPrefix + system + promptConfig.preSystemSuffix;
       final preambleTokenCountResp =
-          await getTokenCount(GetTokenCountRequest(preamble));
+          await getTokenCount(GetTokenCountRequest(system));
       remainingBudget = tokenBudget - preambleTokenCountResp.tokenCount;
 
-      final userPrefix =
-          promptConfig.getWithSubsitutions(promptConfig.userPrefix, null);
-      final aiPrefix =
-          promptConfig.getWithSubsitutions(promptConfig.aiPrefix, null);
-      slashCommandFooter =
-          "${userPrefix}Narrator, $narratorRequest${promptConfig.userSuffix}${aiPrefix}Narrator: ";
-      final footerTokenCountResp =
-          await getTokenCount(GetTokenCountRequest(slashCommandFooter));
-      remainingBudget -= footerTokenCountResp.tokenCount;
+      // if we're using a narrator slash command the 'last' message should be the
+      // directive to the narrator, so create a user message for it.
+      final narratorDirection =
+          ChatMessage("user", "Narrator, $narratorRequest");
+      final msgTokenCountEst =
+          (narratorDirection.content.length / charsPerTokenEstimate).floor();
+      remainingBudget -= msgTokenCountEst;
+      msgBuffer.add(narratorDirection);
     }
 
-    List<String> msgBuffer = [];
     for (final m in reversedMessages) {
-      var formattedMsg = "";
+      ChatMessage formattedMsg;
 
       if (m.humanSent) {
-        final userPrefix = promptConfig.getWithSubsitutions(
-            promptConfig.userPrefix, humanCharacter);
-        formattedMsg =
-            "$userPrefix$humanName: ${m.message}${promptConfig.userSuffix}";
+        formattedMsg = ChatMessage("user", "${m.senderName}: ${m.message}");
       } else {
-        final aiPrefix = promptConfig.getWithSubsitutions(
-            promptConfig.aiPrefix, otherCharacters[m.senderName]);
-        formattedMsg = "$aiPrefix${m.senderName}: ${m.message}";
-        // if we're trying to continue the chatlog, then for the first message we
-        // encounter here, make sure not to include the suffix because it's been
-        // deemed incomplete by the user and we want _moar_ ...
-        if (msgBuffer.isNotEmpty) {
-          formattedMsg += promptConfig.aiSuffix;
-        }
+        formattedMsg =
+            ChatMessage("assistant", "${m.senderName}: ${m.message}");
       }
 
-      final msgTokenCountResp =
-          await getTokenCount(GetTokenCountRequest(formattedMsg));
+      final msgTokenCountEst =
+          (formattedMsg.content.length / charsPerTokenEstimate).floor();
 
-      if (remainingBudget - msgTokenCountResp.tokenCount < 0) {
+      if (remainingBudget - msgTokenCountEst < 0) {
         break;
       }
 
       // update our remaining budget
-      remainingBudget -= msgTokenCountResp.tokenCount;
+      remainingBudget -= msgTokenCountEst;
 
       // and push a new message onto the list
       msgBuffer.add(formattedMsg);
     }
 
-    // reverse the msgBuffer to get the correct ordering for the prompt
-    var budgettedChatlog = msgBuffer.reversed.join();
+    // add the system mesg to the end of the msgBuffer, which will make it
+    // the first item once reversed.
+    msgBuffer.add(ChatMessage("system", system));
+
+    // reverse all the messages so we have the intended order.
+    msgBuffer = msgBuffer.reversed.toList();
+
+    // if we're continuing a response, just keep the last message and paste it
+    // in at the last step so that the assistant role tag doesn't get closed.
+    var continueMsgContent = "";
+    if (continueMsg) {
+      continueMsgContent = msgBuffer.last.content;
+      msgBuffer.removeLast();
+    }
+
+    // now we call out to the worker to build the prompt using the chat template
+    // either built into the model or with the one configured to override the default.
+    String builtPrompt = "";
+    if (promptTemplate == ModelPromptStyle.plainText) {
+      for (final m in msgBuffer) {
+        builtPrompt += m.content;
+        builtPrompt += "\n";
+      }
+    } else {
+      var builtPromptResponse = await handleBuildPrompt(
+          BuildPromptRequest(msgBuffer, !continueMsg, promptTemplate));
+      builtPrompt = builtPromptResponse.prompt;
+    }
 
     // if we're not continuing the last message, add the prompt in to start
     // a new message prediction from the ai.
     // FIXME: once proper multi-character support is in, this will have to be updated.
     // it assumes one character and takes the first non-human. eventually, will
     // need to supply the character getting gnerated.
+    String nameDirective = "";
+    final firstOther = otherCharacters.values.first;
+    final ocName =
+        firstOther.name.isNotEmpty ? firstOther.name : ChatLog.defaultAiName;
     if (!continueMsg) {
       // if we don't have a special override due to a slash command, then build
       // the AI character prompt normally
-      if (slashCommandFooter == null) {
-        final firstOther = otherCharacters.values.first;
-        final ocName = firstOther.name.isNotEmpty
-            ? firstOther.name
-            : ChatLog.defaultAiName;
-        final aiPrefix =
-            promptConfig.getWithSubsitutions(promptConfig.aiPrefix, firstOther);
-        budgettedChatlog += "$aiPrefix$ocName:";
+      if (!isNarratorSlashcmd) {
+        nameDirective += "$ocName:";
       } else {
-        budgettedChatlog += slashCommandFooter;
+        nameDirective += "Narrator: ";
       }
+    } else {
+      nameDirective += continueMsgContent;
     }
 
-    final prompt = preamble + budgettedChatlog;
+    final prompt = builtPrompt + nameDirective;
 
     log("Remaining token budget: $remainingBudget (max of $tokenBudget)");
     return prompt;

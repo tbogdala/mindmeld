@@ -6,6 +6,7 @@ Supported platforms: iOS, Android (un-accelerated), Windows, MacOS, Linux
 
 ![Example of Mindmeld in action - chatting with the default character, Vox](docs/images/demo_240913A.png)
 
+
 ## Features
 
 * Based on [llama.cpp](https://github.com/ggerganov/llama.cpp) and supports any model supported by that project in GGUF form.
@@ -22,6 +23,8 @@ Supported platforms: iOS, Android (un-accelerated), Windows, MacOS, Linux
 * Streaming responses so you can see the AI generate it's response in real-time.
 * Extensive set of AI samplers: temp, top-k, top-p, min-p, tail free sampling, locally typical sampling, 
   dynamic temperature, DRY and XTC.
+* Automatic chat formatting rules pulled from the GGUF model itself if available with the ability to override the format.
+
 
 ## Instructions
 

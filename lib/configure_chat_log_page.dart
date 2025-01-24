@@ -412,8 +412,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
             const SizedBox(width: 16),
             Flexible(
               child: DropdownMenu(
-                initialSelection:
-                    widget.chatLog.modelPromptStyle.nameAsString(),
+                initialSelection: widget.chatLog.modelPromptStyle,
                 dropdownMenuEntries: promptFormatOptions
                     .map((option) => DropdownMenuEntry(
                         value: option,
@@ -427,7 +426,7 @@ class _ConfigureChatLogPageState extends State<ConfigureChatLogPage> {
                 onSelected: (value) {
                   setState(() {
                     widget.chatLog.modelPromptStyle =
-                        modelPromptStyleFromString(value!);
+                        modelPromptStyleFromString(value!).nameAsString();
                   });
                 },
               ),

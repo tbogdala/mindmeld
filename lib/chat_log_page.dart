@@ -388,19 +388,23 @@ class ChatLogWidgetState extends State<ChatLogWidget>
     // build the prompt to send off to the ai
     int tokenBudget = (currentModelConfig.contextSize ?? 2048) -
         targetChatlog.hyperparmeters.tokens;
-    final promptConfig = targetChatlog.modelPromptStyle.getPromptConfig();
     final prompt = await prognosticator!.buildPrompt(widget.configApp,
         targetChatlog, widget.lorebooks, tokenBudget, continueMsg);
     log("Token budget: $tokenBudget");
     log("Prompt Built:");
     log(prompt);
 
+    // log out the total number of tokens used to make the prompt
+    final promptTokenCountResult =
+        await prognosticator!.getTokenCount(GetTokenCountRequest(prompt));
+    log("Prompt token count: ${promptTokenCountResult.tokenCount}");
+
     // build the DRY sampler sequence breakers to make the sampler okay with
     // seeing the character names.
     List<String> drySequenceBreakers = ["\n", ":", "\"", "*", "Narrator"];
 
     // add the human user's name to the stop phrases
-    List<String> stopPhrases = List.from(promptConfig.stopPhrases);
+    List<String> stopPhrases = [];
     final humanChar = targetChatlog.getHumanCharacter();
     if (humanChar != null && humanChar.name.isNotEmpty) {
       stopPhrases.add('${humanChar.name}:');

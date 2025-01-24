@@ -9,220 +9,82 @@ import 'package:path/path.dart' as p;
 part 'chat_log.g.dart';
 
 // NOTE: REGENERATE JSON SERIALIZATION WHEN ADDING VALUES TO THIS!
+// Also Note: This now tracks what is definied in LLM_CHAT_TEMPLATES
+// for llama.cpp, though some lesser known templates are not added.
 enum ModelPromptStyle {
-  alpaca,
+  builtIn,
   chatml,
+  commandR,
+  deepseek3,
   gemma,
+  llama2,
   llama3,
-  mistralInstruct,
-  opusV14,
+  mistralV3,
+  mistralV7,
+  openchat,
   phi3,
+  phi4,
   plainText,
-  tinyllama,
+  rwkvWorld,
   vicuna,
+  vicunaOrca,
   zephyr
 }
 
 extension ModelPromptStyleExtension on ModelPromptStyle {
-  String nameAsString() => name;
-
-  ModelPromptConfig getPromptConfig() {
+  String nameAsString() {
     switch (this) {
-      case ModelPromptStyle.alpaca:
-        return ModelPromptConfig.alpaca();
+      case ModelPromptStyle.builtIn:
+        return "default";
       case ModelPromptStyle.chatml:
-        return ModelPromptConfig.chatML();
+        return "chatml";
+      case ModelPromptStyle.commandR:
+        return "command-r";
+      case ModelPromptStyle.deepseek3:
+        return "deepseek3";
       case ModelPromptStyle.gemma:
-        return ModelPromptConfig.gemmaInstruct();
+        return "gemma";
+      case ModelPromptStyle.llama2:
+        return "llama2";
       case ModelPromptStyle.llama3:
-        return ModelPromptConfig.llama3();
-      case ModelPromptStyle.opusV14:
-        return ModelPromptConfig.opusV14();
-      case ModelPromptStyle.mistralInstruct:
-        return ModelPromptConfig.mistralInstruct();
+        return "llama3";
+      case ModelPromptStyle.mistralV3:
+        return "mistral-v3";
+      case ModelPromptStyle.mistralV7:
+        return "mistral-v7";
+      case ModelPromptStyle.openchat:
+        return "openchat";
       case ModelPromptStyle.phi3:
-        return ModelPromptConfig.phi3();
+        return "phi3";
+      case ModelPromptStyle.phi4:
+        return "phi4";
       case ModelPromptStyle.plainText:
-        return ModelPromptConfig.plainText();
-      case ModelPromptStyle.tinyllama:
-        return ModelPromptConfig.tinyllama();
+        return "plaintext";
+      case ModelPromptStyle.rwkvWorld:
+        return "rwkv-world";
       case ModelPromptStyle.vicuna:
-        return ModelPromptConfig.vicuna();
+        return "vicuna";
+      case ModelPromptStyle.vicunaOrca:
+        return "vicuna-orca";
       case ModelPromptStyle.zephyr:
-        return ModelPromptConfig.zephyr();
-      default:
-        return ModelPromptConfig.alpaca();
+        return "zephyr";
     }
+  }
+
+  // Converts a string to an enum value
+  static ModelPromptStyle fromString(String value) {
+    return ModelPromptStyle.values.firstWhere(
+      (e) => e.nameAsString() == value,
+      orElse: () => ModelPromptStyle.builtIn,
+    );
   }
 }
 
 ModelPromptStyle modelPromptStyleFromString(String stringValue) {
-  return ModelPromptStyle.values
-      .firstWhere((style) => style.nameAsString() == stringValue);
-}
-
-// Many configurations were pulled from https://github.com/lmstudio-ai/configs (MIT)
-class ModelPromptConfig {
-  late String name;
-  late String system;
-  late String preSystemPrefix;
-  late String preSystemSuffix;
-  late String userPrefix;
-  late String userSuffix;
-  late String aiPrefix;
-  late String aiSuffix;
-  late List<String> stopPhrases;
-
-  ModelPromptConfig.alpaca() {
-    name = "Alpaca";
-    system = "";
-    preSystemPrefix = "";
-    preSystemSuffix = "";
-    userPrefix = "\n### Instruction:\n";
-    userSuffix = "";
-    aiPrefix = "\n### Response:\n";
-    aiSuffix = "";
-    stopPhrases = ["### Instruction:"];
-  }
-
-  ModelPromptConfig.chatML() {
-    name = "ChatML";
-    system = "";
-    preSystemPrefix = "<|im_start|>system\n";
-    preSystemSuffix = "<|im_end|>\n";
-    userPrefix = "<|im_start|>user\n";
-    userSuffix = "<|im_end|>\n";
-    aiPrefix = "<|im_start|>assistant\n";
-    aiSuffix = "<|im_end|>\n";
-    stopPhrases = [
-      "<|im_start|>",
-      "<|im_end|>",
-    ];
-  }
-
-  ModelPromptConfig.gemmaInstruct() {
-    name = "Gemma";
-    system = "";
-    preSystemPrefix = "";
-    preSystemSuffix = "";
-    userPrefix = "<start_of_turn>user\n";
-    userSuffix = "<end_of_turn>\n";
-    aiPrefix = "<start_of_turn>model\n";
-    aiSuffix = "<end_of_turn>\n";
-    stopPhrases = [
-      "<start_of_turn>user",
-      "<start_of_turn>model",
-      "<end_of_turn>"
-    ];
-  }
-
-  ModelPromptConfig.llama3() {
-    name = "Llama3";
-    system = "";
-    preSystemPrefix = "<|start_header_id|>system<|end_header_id|>\n\n";
-    preSystemSuffix = "<|eot_id|>\n";
-    userPrefix = "<|start_header_id|>user<|end_header_id|>\n\n";
-    userSuffix = "<|eot_id|>\n";
-    aiPrefix = "<|start_header_id|>assistant<|end_header_id|>\n\n";
-    aiSuffix = "<|eot_id|>\n";
-    stopPhrases = ["<|start_header_id|>", "<|eot_id|>"];
-  }
-
-  ModelPromptConfig.opusV14() {
-    name = "OpusV14";
-    system = "";
-    preSystemPrefix = "<|start_header_id|>system<|end_header_id|>\n\n";
-    preSystemSuffix = "\n<|eot_id|>\n";
-    userPrefix = "<|start_header_id|>user<|end_header_id|>\n\n";
-    userSuffix = "<|eot_id|>\n";
-    aiPrefix =
-        "<|start_header_id|>writer{{ character:char}}<|end_header_id|>\n\n";
-    aiSuffix = "<|eot_id|>\n";
-    stopPhrases = ["<|start_header_id|>", "<|eot_id|>"];
-  }
-
-  ModelPromptConfig.mistralInstruct() {
-    name = "Mistral Instruct";
-    system = "";
-    preSystemPrefix = "";
-    preSystemSuffix = "";
-    userPrefix = "[INST] ";
-    userSuffix = "[/INST]\n";
-    aiPrefix = "";
-    aiSuffix = "\n";
-    stopPhrases = ["[INST]"];
-  }
-
-  ModelPromptConfig.phi3() {
-    name = "Phi3";
-    system = "";
-    preSystemPrefix = "<|system|>\n";
-    preSystemSuffix = "<|end|>\n";
-    userPrefix = "<|user|>\n";
-    userSuffix = "<|end|>\n";
-    aiPrefix = "<|assistant|>\n";
-    aiSuffix = "<|end|>\n";
-    stopPhrases = ["<|end|>", "<|user|>"];
-  }
-
-  ModelPromptConfig.plainText() {
-    name = "Plain Text";
-    system = "";
-    preSystemPrefix = "";
-    preSystemSuffix = "";
-    userPrefix = "\n\n";
-    userSuffix = "";
-    aiPrefix = "\n\n";
-    aiSuffix = "";
-    stopPhrases = [];
-  }
-
-  ModelPromptConfig.tinyllama() {
-    name = "TinyLlama-Chat";
-    system =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the plot and character information below.\n";
-    preSystemPrefix = "<|system|>\n";
-    preSystemSuffix = "\n";
-    userPrefix = "<|user|>\n";
-    userSuffix = "\n";
-    aiPrefix = "<|assistant|>\n";
-    aiSuffix = "\n";
-    stopPhrases = ["<|system|>", "<|user|>"];
-  }
-
-  ModelPromptConfig.vicuna() {
-    name = "Vicuna";
-    system =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the plot and character information below.\n";
-    preSystemPrefix = "";
-    preSystemSuffix = "\n\n";
-    userPrefix = "USER: ";
-    userSuffix = "\n";
-    aiPrefix = "ASSISTANT: ";
-    aiSuffix = "\n";
-    stopPhrases = ["USER:"];
-  }
-
-  ModelPromptConfig.zephyr() {
-    name = "Zephyr";
-    system =
-        "You are an intelligent, skilled, versatile writer.\nYour task is to write a role-play response based on the plot and character information below.\n";
-    preSystemPrefix = "";
-    preSystemSuffix = "";
-    userPrefix = "<|user|>\n";
-    userSuffix = "<|endoftext|>\n";
-    aiPrefix = "<|assistant|>\n";
-    aiSuffix = "<|endoftext|>\n";
-    stopPhrases = ["<|system|>", "<|user|>", "<|endoftext|>"];
-  }
-
-  String getWithSubsitutions(String prefix, ChatLogCharacter? character) {
-    String result = prefix;
-    result = result.replaceAll('{{char}}', character?.name ?? '');
-    result = result.replaceAll('{{ character:char}}',
-        character == null ? "" : ' character: ${character.name}');
-    return result;
-  }
+  return ModelPromptStyle.values.firstWhere(
+    (style) => style.nameAsString() == stringValue,
+    orElse: () => ModelPromptStyle.builtIn,
+  );
 }
 
 @JsonSerializable()
@@ -372,7 +234,7 @@ class ChatLog {
   int version = 1;
   String name;
   String modelName;
-  ModelPromptStyle modelPromptStyle;
+  String modelPromptStyle;
   String context;
   ChatLogHyperparameters hyperparmeters = ChatLogHyperparameters();
   List<ChatLogCharacter> characters = [];
@@ -571,7 +433,10 @@ class ChatLog {
   // this function is used to build out a default chatlog with our built- character, Vox.
   static ChatLog buildDefaultChatLog(
       String modelName, ModelPromptStyle modelPromptStyle) {
-    final defaultLog = ChatLog("Default", modelName, modelPromptStyle,
+    final defaultLog = ChatLog(
+        "Default",
+        modelName,
+        modelPromptStyle.nameAsString(),
         "The human user is interacting with Vox through a text-messaging style interface.");
 
     defaultLog.characters.add(ChatLogCharacter(

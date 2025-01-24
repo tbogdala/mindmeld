@@ -9,6 +9,13 @@
   or experimental features. these settings can be set with the `/set <option> <value>` command, 
   unset with the `/unset <option>` command, or just manually edited in the configuration file itself,
   though those settings are only read once at application loading.
+
+* feature: chat prompt formatting is now able to be pulled from the GGUF model thanks to upstream
+  llama.cpp changes. the default is to use chatml if the model has nothing. all new selections
+  for overriding the prompt formatting are available. this did change the behavior of the chat log slightly,
+  but that should be a backwards-compatible change.
+
+// NOTE: we might be taking a lot of this apart before merging back to main:
 * feature: the prompt being constructed and sent to the AI LLM is now configurable through the
   application configuration file. See docs/app_config.md for more information.
 
