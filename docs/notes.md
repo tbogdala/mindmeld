@@ -60,3 +60,4 @@ Steps used to get iOS going, initially:
 * Configurable switch to select between prompt caching for regeneration and prompt caching for continuation
 * Consider ignoring '/narrator' slash-commands when not the last one in the log while
   building the prompt so they they don't have to be deleted.
+* Feature: "/rewrite <directions>" to have the AI take the last generated response and rewrite it with feedback in the directions parameter. (E.g. "/rewrite to have more action!").

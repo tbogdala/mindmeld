@@ -15,11 +15,17 @@ enum ModelPromptStyle {
   builtIn,
   chatml,
   commandR,
+  deepseek,
+  deepseek2,
   deepseek3,
+  falcon3,
   gemma,
+  granite,
   llama2,
   llama3,
+  mistralV1,
   mistralV3,
+  mistralV3Tekken,
   mistralV7,
   openchat,
   phi3,
@@ -40,16 +46,28 @@ extension ModelPromptStyleExtension on ModelPromptStyle {
         return "chatml";
       case ModelPromptStyle.commandR:
         return "command-r";
+      case ModelPromptStyle.deepseek:
+        return "deepseek";
+      case ModelPromptStyle.deepseek2:
+        return "deepseek2";
       case ModelPromptStyle.deepseek3:
         return "deepseek3";
+      case ModelPromptStyle.falcon3:
+        return "falcon3";
       case ModelPromptStyle.gemma:
         return "gemma";
+      case ModelPromptStyle.granite:
+        return "granite";
       case ModelPromptStyle.llama2:
         return "llama2";
       case ModelPromptStyle.llama3:
         return "llama3";
+      case ModelPromptStyle.mistralV1:
+        return "mistral-v1";
       case ModelPromptStyle.mistralV3:
         return "mistral-v3";
+      case ModelPromptStyle.mistralV3Tekken:
+        return "mistral-v3-tekken";
       case ModelPromptStyle.mistralV7:
         return "mistral-v7";
       case ModelPromptStyle.openchat:
